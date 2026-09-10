@@ -1,1 +1,1028 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PLC 기반 스마트 컨베이어벨트 시스템 | 캡스톤디자인</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/x3dom/1.8.3/x3dom.css">
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<style>
+  :root{
+    --bg: #0e1a29;
+    --panel: #132840;
+    --panel-2: #0f2136;
+    --line: #2c4a68;
+    --line-soft: rgba(94,140,178,0.18);
+    --accent: #f2b705;
+    --accent-2: #e2542b;
+    --text: #eaf1f7;
+    --text-dim: #8ea3b8;
+    --white: #ffffff;
+    --font-display: 'Space Grotesk', sans-serif;
+    --font-body: 'IBM Plex Sans KR', sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+  }
 
+  *{ box-sizing: border-box; }
+  html{ scroll-behavior: smooth; }
+  body{
+    margin:0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-weight: 400;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection{ background: var(--accent); color: #16232f; }
+
+  a{ color: inherit; }
+
+  .bp-grid{
+    background-image:
+      linear-gradient(var(--line-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  h1,h2,h3{
+    font-family: var(--font-display);
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+
+  .mono{ font-family: var(--font-mono); }
+
+  .wrap{
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 32px;
+  }
+
+  /* ---------- NAV ---------- */
+  header.nav{
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 50;
+    background: rgba(14,26,41,0.86);
+    backdrop-filter: blur(6px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-inner{
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 14px 32px;
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 24px;
+  }
+  .nav-brand{
+    display:flex; align-items:center; gap:10px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+  .nav-brand .dot{
+    width:8px;height:8px;border-radius:50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+  }
+  nav.links{ display:flex; gap: 26px; flex-wrap: wrap; }
+  nav.links a{
+    text-decoration:none;
+    font-size: 14.5px;
+    color: var(--text-dim);
+    transition: color .15s ease;
+    padding: 4px 0;
+    border-bottom: 1px solid transparent;
+  }
+  nav.links a:hover{ color: var(--text); border-color: var(--accent); }
+
+  /* ---------- HERO ---------- */
+  .hero{
+    position: relative;
+    min-height: 100svh;
+    display:flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 96px 0 0 0;
+    overflow: hidden;
+  }
+  .hero-frame{
+    position:absolute; inset: 22px;
+    border: 1px solid var(--line);
+    pointer-events:none;
+  }
+  .hero-frame::before, .hero-frame::after,
+  .corner-tl, .corner-br{
+    content:"";
+  }
+  .corner{
+    position:absolute; width:22px; height:22px;
+    border: 1px solid var(--text-dim);
+  }
+  .corner.tl{ top: 22px; left: 22px; border-right:none; border-bottom:none; }
+  .corner.tr{ top: 22px; right: 22px; border-left:none; border-bottom:none; }
+  .corner.bl{ bottom: 22px; left: 22px; border-right:none; border-top:none; }
+  .corner.br{ bottom: 22px; right: 22px; border-left:none; border-top:none; }
+
+  .hero-meta{
+    position:relative;
+    z-index: 2;
+    display:flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 0 56px;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: var(--text-dim);
+  }
+  .hero-meta .m-block{ display:flex; flex-direction:column; gap: 4px; }
+  .hero-meta .m-block span:first-child{ color: var(--accent); }
+  .hero-meta .m-right{ text-align:right; }
+
+  .hero-main{
+    position: relative;
+    z-index: 2;
+    padding: 40px 56px 0;
+    display:grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 40px;
+    align-items: end;
+  }
+  .hero-title{
+    font-size: clamp(40px, 5.4vw, 76px);
+    line-height: 1.05;
+  }
+  .hero-title .line2{ color: var(--accent); }
+  .hero-sub{
+    margin-top: 22px;
+    max-width: 46ch;
+    color: var(--text-dim);
+    font-size: 16px;
+  }
+  .hero-side{
+    border-left: 1px solid var(--line);
+    padding-left: 28px;
+    display:flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .hero-side .kv{ display:flex; justify-content: space-between; font-size: 13.5px; }
+  .hero-side .kv b{ font-weight:500; color: var(--text); }
+  .hero-side .kv span{ color: var(--text-dim); font-family: var(--font-mono); font-size: 12.5px; }
+
+  .titleblock{
+    position: relative;
+    z-index: 2;
+    margin: 56px 22px 22px;
+    border-top: 1px solid var(--line);
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+  }
+  .titleblock .cell{
+    border-right: 1px solid var(--line);
+    padding: 12px 16px;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--text-dim);
+  }
+  .titleblock .cell:last-child{ border-right:none; }
+  .titleblock .cell b{
+    display:block;
+    font-family: var(--font-body);
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--text);
+    margin-top: 4px;
+  }
+
+  /* ---------- SECTION GENERIC ---------- */
+  section{ padding: 120px 0; border-top: 1px solid var(--line); }
+  .sec-head{
+    display:flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 24px;
+    margin-bottom: 56px;
+    flex-wrap: wrap;
+  }
+  .sec-num{
+    font-family: var(--font-mono);
+    color: var(--accent);
+    font-size: 13px;
+  }
+  .sec-title{ font-size: clamp(28px, 3.4vw, 40px); }
+  .sec-desc{ color: var(--text-dim); max-width: 62ch; margin-top: 14px; font-size: 15.5px; }
+
+  /* ---------- OVERVIEW ---------- */
+  .overview-grid{
+    display:grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 64px;
+    align-items: center;
+  }
+  .overview-text p{ color: var(--text-dim); font-size: 15.5px; margin: 0 0 18px; }
+  .overview-text .goal-list{ list-style:none; margin: 28px 0 0; padding:0; display:flex; flex-direction:column; gap:14px; }
+  .overview-text .goal-list li{
+    display:flex; gap: 14px; align-items:flex-start;
+    font-size: 15px;
+  }
+  .overview-text .goal-list .tag{
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--accent);
+    border: 1px solid var(--line);
+    padding: 2px 7px;
+    flex-shrink:0;
+    margin-top:2px;
+  }
+
+  .schema{
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    padding: 28px;
+  }
+  .schema svg{ width:100%; height:auto; display:block; }
+  .schema-caption{
+    margin-top: 14px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    display:flex; justify-content:space-between;
+  }
+
+  /* ---------- BOM TABLE ---------- */
+  .bom{ width:100%; border-collapse: collapse; font-size: 14.5px; }
+  .bom thead th{
+    text-align:left;
+    font-family: var(--font-mono);
+    font-weight: 400;
+    font-size: 11.5px;
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--line);
+    padding: 10px 14px;
+  }
+  .bom tbody td{
+    padding: 16px 14px;
+    border-bottom: 1px solid var(--line-soft);
+    vertical-align: top;
+  }
+  .bom tbody tr:hover{ background: var(--line-soft); }
+  .bom td.no{ font-family: var(--font-mono); color: var(--accent); width: 48px; }
+  .bom td.name{ font-weight:500; }
+  .bom td.spec{ color: var(--text-dim); font-family: var(--font-mono); font-size: 13px; }
+  .bom td.qty{ font-family: var(--font-mono); color: var(--text-dim); width: 60px; }
+
+  /* ---------- STEPS ---------- */
+  .steps{ position:relative; }
+  .steps::before{
+    content:"";
+    position:absolute;
+    left: 27px; top: 8px; bottom: 8px;
+    width: 1px;
+    background: var(--line);
+  }
+  .step{
+    position: relative;
+    display:grid;
+    grid-template-columns: 56px 1fr;
+    gap: 28px;
+    padding-bottom: 56px;
+  }
+  .step:last-child{ padding-bottom: 0; }
+  .step-num{
+    width: 56px; height: 56px;
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    display:flex; align-items:center; justify-content:center;
+    font-family: var(--font-mono);
+    font-size: 18px;
+    color: var(--accent);
+    z-index:1;
+  }
+  .step-body{ padding-top: 8px; }
+  .step-tag{
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+  .step-title{ font-size: 20px; margin: 6px 0 10px; font-family: var(--font-display); font-weight:600; }
+  .step-desc{ color: var(--text-dim); font-size: 15px; max-width: 68ch; }
+
+  /* ---------- VIEWERS ---------- */
+  .viewer-grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+  }
+  .viewer-panel{
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+  }
+  .viewer-panel .vp-head{
+    display:flex; justify-content:space-between; align-items:center;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .viewer-panel .vp-head b{ color: var(--text); font-family: var(--font-body); font-weight:500; font-size:13.5px; }
+  .viewer-stage{
+    width: 100%;
+    height: 360px;
+    position: relative;
+    background:
+      radial-gradient(ellipse at 50% 20%, rgba(94,140,178,0.10), transparent 60%),
+      var(--panel-2);
+  }
+  .viewer-stage x3d{ width:100%; height:100%; }
+  .viewer-stage canvas{ display:block; }
+  .viewer-cap{
+    padding: 14px 18px;
+    font-size: 13px;
+    color: var(--text-dim);
+    border-top: 1px solid var(--line);
+  }
+  .viewer-cap b{ color: var(--text); font-weight:500; }
+  .loading-tag{
+    position:absolute; top:10px; left:10px;
+    font-family: var(--font-mono); font-size: 10.5px;
+    color: var(--text-dim); opacity:.7;
+  }
+
+  /* ---------- PLC SEQUENCE ---------- */
+  .plc-seq{
+    display:flex;
+    flex-wrap: wrap;
+    gap: 0;
+    border: 1px solid var(--line);
+  }
+  .plc-node{
+    flex: 1 1 160px;
+    padding: 22px 20px;
+    border-right: 1px solid var(--line);
+    position: relative;
+  }
+  .plc-node:last-child{ border-right:none; }
+  .plc-node .pn-idx{ font-family: var(--font-mono); font-size: 11px; color: var(--accent); }
+  .plc-node .pn-title{ font-weight:500; margin-top:8px; font-size:15px; }
+  .plc-node .pn-desc{ margin-top:6px; font-size:13px; color: var(--text-dim); }
+  .plc-node::after{
+    content: "→";
+    position:absolute;
+    right: -13px; top: 50%; transform: translateY(-50%);
+    color: var(--text-dim);
+    z-index:2;
+    background: var(--bg);
+  }
+  .plc-node:last-child::after{ content:""; }
+
+  /* ---------- OUTCOMES ---------- */
+  .outcomes{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+  }
+  .outcome{
+    background: var(--bg);
+    padding: 30px 26px;
+  }
+  .outcome .oc-num{ font-family: var(--font-mono); font-size: 26px; color: var(--accent); }
+  .outcome .oc-label{ margin-top: 10px; font-size: 14.5px; color: var(--text-dim); }
+
+  /* ---------- FOOTER TITLEBLOCK ---------- */
+  footer{
+    border-top: 1px solid var(--line);
+    padding: 0;
+  }
+  .foot-grid{
+    display:grid;
+    grid-template-columns: repeat(6, 1fr);
+  }
+  .foot-cell{
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    padding: 20px 22px;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--text-dim);
+  }
+  .foot-cell b{
+    display:block;
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    margin-top: 6px;
+  }
+  .foot-cell:nth-child(6n){ border-right:none; }
+  .foot-bottom{
+    padding: 18px 22px;
+    display:flex; justify-content:space-between;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--text-dim);
+  }
+
+  @media (max-width: 880px){
+    .hero-main{ grid-template-columns: 1fr; }
+    .hero-side{ border-left:none; border-top: 1px solid var(--line); padding-left:0; padding-top:20px; }
+    .overview-grid{ grid-template-columns: 1fr; }
+    .viewer-grid{ grid-template-columns: 1fr; }
+    .titleblock{ grid-template-columns: repeat(2, 1fr); }
+    .titleblock .cell:nth-child(2n){ border-right:none; }
+    .foot-grid{ grid-template-columns: repeat(2, 1fr); }
+    .foot-cell:nth-child(2n){ border-right:none; }
+    nav.links{ display:none; }
+    .plc-seq{ flex-direction: column; }
+    .plc-node{ border-right:none; border-bottom: 1px solid var(--line); }
+    .plc-node:last-child{ border-bottom:none; }
+    .plc-node::after{ content:"↓"; right: auto; left: 20px; top: auto; bottom:-13px; transform:none; }
+    .outcomes{ grid-template-columns: 1fr; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{ scroll-behavior: auto; }
+  }
+</style>
+</head>
+<body class="bp-grid">
+
+<header class="nav">
+  <div class="nav-inner">
+    <div class="nav-brand"><span class="dot"></span> CAPSTONE&nbsp;DESIGN · DWG-2026-CVB01</div>
+    <nav class="links">
+      <a href="#overview">개요</a>
+      <a href="#system">시스템 구성</a>
+      <a href="#modeling">모델링 단계</a>
+      <a href="#viewer">3D 뷰어</a>
+      <a href="#control">제어 시퀀스</a>
+      <a href="#outcome">기대효과</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ================= HERO ================= -->
+<section class="hero" id="top">
+  <div class="hero-frame"></div>
+  <div class="corner tl"></div>
+  <div class="corner tr"></div>
+  <div class="corner bl"></div>
+  <div class="corner br"></div>
+
+  <div class="hero-meta">
+    <div class="m-block">
+      <span>DRAWN BY</span>
+      <span>산업공학과 캡스톤디자인팀</span>
+    </div>
+    <div class="m-block m-right">
+      <span>SCALE</span>
+      <span>NOT TO SCALE (WEB 3D)</span>
+    </div>
+  </div>
+
+  <div class="hero-main">
+    <div>
+      <h1 class="hero-title">
+        PLC 기반<br>
+        <span class="line2">스마트 컨베이어벨트 시스템</span>
+      </h1>
+      <p class="hero-sub">
+        센서·모터·PLC 제어 로직을 통합한 컨베이어벨트 자동화 시스템을 설계하고,
+        전체 구조와 동작 원리를 x3dom과 three.js 기반 웹 3D 콘텐츠로 재구성하여
+        누구나 브라우저에서 직접 확인할 수 있도록 게시하는 프로젝트입니다.
+      </p>
+    </div>
+    <div class="hero-side">
+      <div class="kv"><b>과목</b><span>2026-2 캡스톤디자인</span></div>
+      <div class="kv"><b>구현 대상</b><span>PLC 컨베이어벨트</span></div>
+      <div class="kv"><b>게시 방식</b><span>WEB / X3DOM / THREE.JS</span></div>
+      <div class="kv"><b>진행 상태</b><span>SHOP DRAWING · REV.01</span></div>
+    </div>
+  </div>
+
+  <div class="titleblock">
+    <div class="cell">도면명<b>PLC 컨베이어벨트 시스템</b></div>
+    <div class="cell">도면번호<b>DWG-2026-CVB01</b></div>
+    <div class="cell">작성일<b>2026. 09.</b></div>
+    <div class="cell">지도교수<b>OOO 교수님</b></div>
+    <div class="cell">담당팀<b>캡스톤디자인 O팀</b></div>
+    <div class="cell">매수<b>1 / 1</b></div>
+  </div>
+</section>
+
+<!-- ================= OVERVIEW ================= -->
+<section id="overview">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <div class="sec-num">01 — OVERVIEW</div>
+        <h2 class="sec-title">프로젝트 개요</h2>
+      </div>
+      <p class="sec-desc">
+        실제 컨베이어벨트 설비를 PLC로 제어하는 자동화 시스템을 구현하고,
+        그 구조와 동작을 웹 기반 3D 콘텐츠로 시각화하여 성과를 공유합니다.
+      </p>
+    </div>
+
+    <div class="overview-grid">
+      <div class="overview-text">
+        <p>
+          본 캡스톤디자인은 산업 현장에서 널리 쓰이는 컨베이어벨트 시스템을
+          PLC(Programmable Logic Controller)로 제어하는 소형 자동화 설비를 설계·구현하는 것을 목표로 합니다.
+          물체 감지, 모터 구동, 정지·역전 제어 등 실제 생산라인의 핵심 동작을 재현합니다.
+        </p>
+        <p>
+          완성된 시스템은 텍스트와 사진만으로는 구조가 전달되기 어렵다는 점을 보완하기 위해,
+          x3dom과 three.js를 활용한 웹 3D 모델링 콘텐츠로 제작하여 팀 홈페이지에 단계별로 게시합니다.
+        </p>
+        <ul class="goal-list">
+          <li><span class="tag">HW</span> PLC·센서·모터를 이용한 컨베이어벨트 자동제어 회로 구현</li>
+          <li><span class="tag">SW</span> 래더 로직 기반 제어 시퀀스 설계 및 검증</li>
+          <li><span class="tag">WEB</span> x3dom·three.js 기반 3D 모델링 콘텐츠 제작 및 게시</li>
+        </ul>
+      </div>
+
+      <div class="schema">
+        <svg viewBox="0 0 480 320" fill="none">
+          <rect x="20" y="40" width="440" height="60" stroke="#5e8cb2" stroke-width="1"/>
+          <text x="40" y="75" fill="#8ea3b8" font-family="IBM Plex Mono" font-size="12">SENSOR ARRAY</text>
+
+          <line x1="240" y1="100" x2="240" y2="140" stroke="#5e8cb2" stroke-width="1"/>
+
+          <rect x="150" y="140" width="180" height="60" stroke="#f2b705" stroke-width="1.4"/>
+          <text x="168" y="175" fill="#f2b705" font-family="IBM Plex Mono" font-size="12">PLC CONTROLLER</text>
+
+          <line x1="240" y1="200" x2="240" y2="240" stroke="#5e8cb2" stroke-width="1"/>
+
+          <rect x="60" y="240" width="360" height="50" stroke="#5e8cb2" stroke-width="1"/>
+          <text x="80" y="270" fill="#8ea3b8" font-family="IBM Plex Mono" font-size="12">CONVEYOR MOTOR · BELT DRIVE</text>
+
+          <circle cx="80" cy="70" r="4" fill="#e2542b"/>
+          <circle cx="150" cy="70" r="4" fill="#e2542b"/>
+          <circle cx="220" cy="70" r="4" fill="#e2542b"/>
+          <circle cx="290" cy="70" r="4" fill="#e2542b"/>
+          <circle cx="360" cy="70" r="4" fill="#e2542b"/>
+        </svg>
+        <div class="schema-caption">
+          <span>FIG.01 — SIGNAL FLOW</span>
+          <span>SENSOR → PLC → ACTUATOR</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SYSTEM COMPONENTS (BOM) ================= -->
+<section id="system">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <div class="sec-num">02 — SYSTEM</div>
+        <h2 class="sec-title">시스템 구성</h2>
+      </div>
+      <p class="sec-desc">
+        컨베이어벨트 시스템을 구성하는 주요 부품과 역할을 부품표(BOM) 형식으로 정리했습니다.
+      </p>
+    </div>
+
+    <table class="bom">
+      <thead>
+        <tr>
+          <th>NO</th><th>구성 요소</th><th>사양 / 규격</th><th>역할</th><th>수량</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="no">01</td>
+          <td class="name">PLC 본체</td>
+          <td class="spec">DC 24V / 입출력 16점</td>
+          <td>전체 시퀀스 제어, 센서 입력 처리</td>
+          <td class="qty">1</td>
+        </tr>
+        <tr>
+          <td class="no">02</td>
+          <td class="name">포토 센서</td>
+          <td class="spec">적외선 반사형</td>
+          <td>이송 물체 감지 및 위치 판단</td>
+          <td class="qty">2</td>
+        </tr>
+        <tr>
+          <td class="no">03</td>
+          <td class="name">구동 모터</td>
+          <td class="spec">DC 기어드모터 12V</td>
+          <td>벨트 이송 구동 및 속도 제어</td>
+          <td class="qty">1</td>
+        </tr>
+        <tr>
+          <td class="no">04</td>
+          <td class="name">벨트 · 롤러</td>
+          <td class="spec">PVC 벨트 / 알루미늄 롤러</td>
+          <td>물체 이송 및 회전 동력 전달</td>
+          <td class="qty">2</td>
+        </tr>
+        <tr>
+          <td class="no">05</td>
+          <td class="name">릴레이 모듈</td>
+          <td class="spec">DC 24V 구동형</td>
+          <td>PLC 출력과 모터 구동부 절연 연결</td>
+          <td class="qty">1</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ================= MODELING STEPS ================= -->
+<section id="modeling">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <div class="sec-num">03 — WEB 3D MODELING</div>
+        <h2 class="sec-title">3D 모델링 제작 단계</h2>
+      </div>
+      <p class="sec-desc">
+        완성된 컨베이어벨트 시스템을 x3dom으로 빠르게 형상화한 뒤,
+        three.js로 정밀 모델링과 동작 애니메이션을 더해 홈페이지에 단계별로 게시합니다.
+      </p>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-tag">실측 · 도면화</div>
+          <div class="step-title">시스템 형상 실측 및 치수 정리</div>
+          <div class="step-desc">
+            제작한 컨베이어벨트 프레임, 롤러 간격, 모터 위치 등을 실측하여 3D 모델링에 필요한
+            치수와 좌표 데이터를 정리합니다.
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-tag">X3DOM · 기초 형상</div>
+          <div class="step-title">x3dom을 이용한 선언적 3D 목업 제작</div>
+          <div class="step-desc">
+            HTML 태그만으로 3D 장면을 구성할 수 있는 x3dom을 사용해 프레임·롤러·센서 위치를
+            단순 도형(Box, Cylinder)으로 배치한 저해상도 목업을 먼저 만들어 구조를 검증합니다.
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-tag">구조 검증</div>
+          <div class="step-title">PLC 연동 지점 및 센서 배치 표시</div>
+          <div class="step-desc">
+            x3dom 목업 위에 센서·릴레이·모터 연결 지점을 라벨로 표시하여 실제 배선도와 3D 모델이
+            일치하는지 팀 내부에서 교차 검토합니다.
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <div class="step-tag">THREE.JS · 정밀 모델링</div>
+          <div class="step-title">three.js로 세부 형상 및 재질 표현</div>
+          <div class="step-desc">
+            검증이 끝난 구조를 기반으로 three.js에서 프레임 챔퍼, 롤러 금속 재질, 벨트 표면 등을
+            세밀하게 표현하고, 카메라 조작(OrbitControls)을 붙여 자유롭게 살펴볼 수 있도록 합니다.
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <div class="step-tag">애니메이션 · 게시</div>
+          <div class="step-title">동작 애니메이션 구현 및 웹 게시</div>
+          <div class="step-desc">
+            모터·롤러 회전과 벨트 이송 애니메이션을 three.js로 구현한 뒤, 두 결과물을 홈페이지의
+            모델링 섹션에 나란히 게시하여 제작 과정을 한눈에 비교할 수 있도록 합니다.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= VIEWERS ================= -->
+<section id="viewer">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <div class="sec-num">04 — VIEWER</div>
+        <h2 class="sec-title">3D 모델 뷰어</h2>
+      </div>
+      <p class="sec-desc">
+        아래 두 뷰어는 실제 게시될 모델링 콘텐츠의 예시입니다. x3dom 뷰어는 마우스로 드래그하면
+        회전하고, three.js 뷰어는 컨베이어 동작 애니메이션이 자동 재생됩니다.
+      </p>
+    </div>
+
+    <div class="viewer-grid">
+      <div class="viewer-panel">
+        <div class="vp-head"><b>FIG.02 · X3DOM 기초 형상 모델</b><span class="mono">STEP 02</span></div>
+        <div class="viewer-stage" id="x3d-stage">
+          <span class="loading-tag">drag to orbit</span>
+          <x3d width="100%" height="100%">
+            <scene>
+              <background skyColor="0.055 0.1 0.16"></background>
+              <viewpoint position="0 1.6 5.2" orientation="0 1 0 0.35" fieldOfView="0.9"></viewpoint>
+
+              <!-- 프레임 -->
+              <transform translation="0 0 0">
+                <shape>
+                  <appearance><material diffuseColor="0.24 0.36 0.46" specularColor="0.1 0.1 0.1"></material></appearance>
+                  <box size="3.2 0.15 1"></box>
+                </shape>
+              </transform>
+
+              <!-- 벨트 상판 -->
+              <transform translation="0 0.12 0">
+                <shape>
+                  <appearance><material diffuseColor="0.95 0.72 0.02" transparency="0.15"></material></appearance>
+                  <box size="3.0 0.04 0.9"></box>
+                </shape>
+              </transform>
+
+              <!-- 좌측 롤러 -->
+              <transform translation="-1.5 0 0" rotation="1 0 0 1.5708" DEF="rollerL">
+                <shape>
+                  <appearance><material diffuseColor="0.55 0.6 0.65"></material></appearance>
+                  <cylinder height="1" radius="0.16"></cylinder>
+                </shape>
+              </transform>
+
+              <!-- 우측 롤러 -->
+              <transform translation="1.5 0 0" rotation="1 0 0 1.5708" DEF="rollerR">
+                <shape>
+                  <appearance><material diffuseColor="0.55 0.6 0.65"></material></appearance>
+                  <cylinder height="1" radius="0.16"></cylinder>
+                </shape>
+              </transform>
+
+              <!-- 지지 다리 -->
+              <transform translation="-1.4 -0.55 0.35">
+                <shape><appearance><material diffuseColor="0.2 0.28 0.36"></material></appearance><box size="0.08 1 0.08"></box></shape>
+              </transform>
+              <transform translation="1.4 -0.55 0.35">
+                <shape><appearance><material diffuseColor="0.2 0.28 0.36"></material></appearance><box size="0.08 1 0.08"></box></shape>
+              </transform>
+              <transform translation="-1.4 -0.55 -0.35">
+                <shape><appearance><material diffuseColor="0.2 0.28 0.36"></material></appearance><box size="0.08 1 0.08"></box></shape>
+              </transform>
+              <transform translation="1.4 -0.55 -0.35">
+                <shape><appearance><material diffuseColor="0.2 0.28 0.36"></material></appearance><box size="0.08 1 0.08"></box></shape>
+              </transform>
+
+              <!-- 센서 표시 -->
+              <transform translation="1.9 0.3 0">
+                <shape><appearance><material diffuseColor="0.89 0.33 0.17" emissiveColor="0.4 0.1 0.05"></material></appearance><sphere radius="0.06"></sphere></shape>
+              </transform>
+            </scene>
+          </x3d>
+        </div>
+        <div class="viewer-cap"><b>기초 형상 목업.</b> 프레임·롤러·센서 위치를 단순 도형으로 배치해 전체 구조를 우선 검증합니다.</div>
+      </div>
+
+      <div class="viewer-panel">
+        <div class="vp-head"><b>FIG.03 · Three.js 정밀 모델 (동작 애니메이션)</b><span class="mono">STEP 04–05</span></div>
+        <div class="viewer-stage" id="three-stage">
+          <span class="loading-tag">auto-playing</span>
+        </div>
+        <div class="viewer-cap"><b>정밀 모델 + 애니메이션.</b> 모터 회전과 벨트 이송, 물체 이동을 재현하여 실제 동작을 시뮬레이션합니다.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PLC SEQUENCE ================= -->
+<section id="control">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <div class="sec-num">05 — CONTROL LOGIC</div>
+        <h2 class="sec-title">PLC 제어 시퀀스</h2>
+      </div>
+      <p class="sec-desc">
+        컨베이어벨트가 물체를 감지한 뒤 이송·정지하는 기본 제어 흐름입니다.
+      </p>
+    </div>
+
+    <div class="plc-seq">
+      <div class="plc-node">
+        <div class="pn-idx">01</div>
+        <div class="pn-title">센서 감지</div>
+        <div class="pn-desc">입구 포토센서가 물체 진입을 감지</div>
+      </div>
+      <div class="plc-node">
+        <div class="pn-idx">02</div>
+        <div class="pn-title">PLC 입력 처리</div>
+        <div class="pn-desc">래더 로직에서 감지 신호 판정</div>
+      </div>
+      <div class="plc-node">
+        <div class="pn-idx">03</div>
+        <div class="pn-title">모터 구동</div>
+        <div class="pn-desc">릴레이를 통해 구동 모터 ON</div>
+      </div>
+      <div class="plc-node">
+        <div class="pn-idx">04</div>
+        <div class="pn-title">벨트 이송</div>
+        <div class="pn-desc">설정 시간 동안 벨트 이동</div>
+      </div>
+      <div class="plc-node">
+        <div class="pn-idx">05</div>
+        <div class="pn-title">정지 판정</div>
+        <div class="pn-desc">출구 센서 감지 시 모터 OFF</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= OUTCOMES ================= -->
+<section id="outcome">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <div class="sec-num">06 — EXPECTED OUTCOME</div>
+        <h2 class="sec-title">기대효과</h2>
+      </div>
+      <p class="sec-desc">
+        하드웨어 구현 결과를 웹 3D 콘텐츠로 병행 게시함으로써 얻는 실질적 효과입니다.
+      </p>
+    </div>
+
+    <div class="outcomes">
+      <div class="outcome">
+        <div class="oc-num">01</div>
+        <div class="oc-label">별도 뷰어 설치 없이 브라우저에서 시스템 구조를 즉시 확인 가능</div>
+      </div>
+      <div class="outcome">
+        <div class="oc-num">02</div>
+        <div class="oc-label">제작 단계(설계→목업→정밀 모델)를 기록으로 남겨 평가 및 발표에 활용</div>
+      </div>
+      <div class="outcome">
+        <div class="oc-num">03</div>
+        <div class="oc-label">PLC 제어 로직과 3D 동작을 연결해 비전공자도 원리를 직관적으로 이해</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="foot-grid">
+    <div class="foot-cell">과목명<b>캡스톤디자인</b></div>
+    <div class="foot-cell">프로젝트<b>PLC 컨베이어벨트 시스템</b></div>
+    <div class="foot-cell">지도교수<b>OOO 교수님</b></div>
+    <div class="foot-cell">팀 구성<b>OOO 외 3인</b></div>
+    <div class="foot-cell">사용 기술<b>PLC · X3DOM · Three.js</b></div>
+    <div class="foot-cell">최종 수정<b>2026. 09.</b></div>
+  </div>
+  <div class="wrap foot-bottom">
+    <span>DWG-2026-CVB01 · REV.01</span>
+    <span>ⓒ 2026 CAPSTONE DESIGN TEAM</span>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/x3dom/1.8.3/x3dom-full.js"></script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const stage = document.getElementById('three-stage');
+
+const scene = new THREE.Scene();
+scene.background = null;
+
+const camera = new THREE.PerspectiveCamera(45, stage.clientWidth / stage.clientHeight, 0.1, 100);
+camera.position.set(4.2, 2.6, 5.2);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setSize(stage.clientWidth, stage.clientHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+stage.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.autoRotate = true;
+controls.autoRotateSpeed = 0.6;
+controls.target.set(0, 0.2, 0);
+
+const hemi = new THREE.HemisphereLight(0xbfd4e6, 0x0e1a29, 1.1);
+scene.add(hemi);
+const key = new THREE.DirectionalLight(0xffffff, 1.4);
+key.position.set(4, 6, 3);
+scene.add(key);
+const rim = new THREE.PointLight(0xf2b705, 0.9, 12);
+rim.position.set(-3, 2, -2);
+scene.add(rim);
+
+// --- 프레임 ---
+const frameMat = new THREE.MeshStandardMaterial({ color: 0x3a5570, metalness: 0.4, roughness: 0.55 });
+const frame = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.14, 1.05), frameMat);
+scene.add(frame);
+
+// --- 다리 ---
+const legMat = new THREE.MeshStandardMaterial({ color: 0x1c2c3d, metalness: 0.5, roughness: 0.5 });
+const legGeo = new THREE.BoxGeometry(0.08, 1.1, 0.08);
+[[-1.5, 0.4], [1.5, 0.4], [-1.5, -0.4], [1.5, -0.4]].forEach(([x, z]) => {
+  const leg = new THREE.Mesh(legGeo, legMat);
+  leg.position.set(x, -0.62, z);
+  scene.add(leg);
+});
+
+// --- 롤러 ---
+const rollerMat = new THREE.MeshStandardMaterial({ color: 0x8fa3b8, metalness: 0.75, roughness: 0.3 });
+const rollerGeo = new THREE.CylinderGeometry(0.17, 0.17, 1.1, 24);
+const rollerL = new THREE.Mesh(rollerGeo, rollerMat);
+rollerL.rotation.x = Math.PI / 2;
+rollerL.position.set(-1.55, 0.08, 0);
+scene.add(rollerL);
+
+const rollerR = new THREE.Mesh(rollerGeo, rollerMat);
+rollerR.rotation.x = Math.PI / 2;
+rollerR.position.set(1.55, 0.08, 0);
+scene.add(rollerR);
+
+// --- 벨트 상판 ---
+const beltMat = new THREE.MeshStandardMaterial({ color: 0x223142, metalness: 0.2, roughness: 0.8 });
+const belt = new THREE.Mesh(new THREE.BoxGeometry(3.1, 0.05, 0.95), beltMat);
+belt.position.y = 0.2;
+scene.add(belt);
+
+// --- 이송 물체 ---
+const boxMat = new THREE.MeshStandardMaterial({ color: 0xf2b705, metalness: 0.1, roughness: 0.6 });
+const cargoGeo = new THREE.BoxGeometry(0.32, 0.32, 0.32);
+const cargos = [];
+for (let i = 0; i < 3; i++) {
+  const c = new THREE.Mesh(cargoGeo, boxMat);
+  c.position.set(-1.4 + i * 1.4, 0.4, 0);
+  scene.add(c);
+  cargos.push(c);
+}
+
+// --- 센서 ---
+const sensorMat = new THREE.MeshStandardMaterial({ color: 0xe2542b, emissive: 0x5a1a08 });
+const sensor = new THREE.Mesh(new THREE.SphereGeometry(0.05, 16, 16), sensorMat);
+sensor.position.set(1.65, 0.32, 0);
+scene.add(sensor);
+
+// --- 바닥 그림자 helper (블루프린트 원형) ---
+const ringGeo = new THREE.RingGeometry(2.1, 2.15, 64);
+const ringMat = new THREE.MeshBasicMaterial({ color: 0x2c4a68, side: THREE.DoubleSide, transparent: true, opacity: 0.5 });
+const ring = new THREE.Mesh(ringGeo, ringMat);
+ring.rotation.x = -Math.PI / 2;
+ring.position.y = -0.7;
+scene.add(ring);
+
+const clock = new THREE.Clock();
+const beltSpeed = 0.9;
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = clock.getDelta();
+
+  rollerL.rotation.y += beltSpeed * dt * 6;
+  rollerR.rotation.y += beltSpeed * dt * 6;
+
+  cargos.forEach((c) => {
+    c.position.x += beltSpeed * dt;
+    if (c.position.x > 1.7) c.position.x = -1.7;
+  });
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
+function handleResize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h);
+}
+window.addEventListener('resize', handleResize);
+</script>
+
+</body>
+</html>
