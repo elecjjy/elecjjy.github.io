@@ -1,0 +1,1572 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b2545">
+<title>정·역회전 인터록 결선 실습 | 전기기능사 디지털 트윈</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f4f6fa;--card:#fff;--ink:#17202b;--muted:#5a6676;--line:#dde3ec;
+  --navy:#0b2545;--accent:#0b63ce;--accent2:#e8f1fd;--warn:#d9480f;--warn2:#fff4e6;
+  --ok:#2b8a3e;--ok2:#ebfbee;--bad:#e03131;--bad2:#fff5f5;--amber:#f08c00;
+  --L1:#8b4a1c;--L2:#1f2328;--L3:#8a9099;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+section,.stage{scroll-margin-top:52px}
+body{margin:0;font-family:"Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--ink);background:var(--bg);line-height:1.7;-webkit-text-size-adjust:100%;word-break:keep-all}
+a{color:var(--accent)}
+.wrap{max-width:1200px;margin:0 auto;padding:0 18px}
+/* hero */
+.hero{background:radial-gradient(1200px 400px at 85% -10%,#2e6db4 0,transparent 60%),linear-gradient(135deg,#071a33 0%,#0b2545 45%,#13315c 100%);color:#fff;padding:40px 0 28px}
+.hero .kicker{font-size:13px;letter-spacing:.12em;color:#9cc3ff;font-weight:700}
+.hero h1{font-size:clamp(26px,4.4vw,42px);line-height:1.25;margin:6px 0 10px;font-weight:900}
+.hero p.lead{max-width:780px;color:#d6e4f7;font-size:clamp(14.5px,1.8vw,17px);margin:0 0 16px}
+.badges{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px}
+.badge{font-size:12.5px;padding:5px 11px;border-radius:999px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18)}
+.hero-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.hcard{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:14px 16px}
+.hcard h3{margin:0 0 8px;font-size:15px;color:#ffd38a}
+.hcard.err h3{color:#ff9b9b}
+.hcard ul{margin:0;padding-left:18px;font-size:14px;color:#e6eefb}
+.cta{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+.btn{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:10px;padding:10px 16px;font:inherit;font-weight:700;font-size:14.5px;cursor:pointer;text-decoration:none}
+.btn.pri{background:#ffb703;color:#1b1300}
+.btn.sec{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.25)}
+nav.toc{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+nav.toc .wrap{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+nav.toc .wrap::-webkit-scrollbar{display:none}
+nav.toc a{flex:0 0 auto;padding:11px 12px;font-size:14px;color:var(--muted);text-decoration:none;font-weight:500;border-bottom:2px solid transparent}
+nav.toc a:hover{color:var(--accent);border-color:var(--accent)}
+/* sections */
+section.sec{padding:38px 0 8px}
+.sec-h{display:flex;align-items:baseline;gap:12px;margin-bottom:6px}
+.sec-h .no{font-family:var(--mono);font-weight:700;color:var(--accent);font-size:14px;background:var(--accent2);border-radius:6px;padding:2px 8px}
+.sec-h h2{margin:0;font-size:clamp(21px,2.8vw,27px);font-weight:900}
+.sec p.desc{color:var(--muted);margin:2px 0 18px;max-width:900px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+.card h3{margin:0 0 8px;font-size:17px}
+.card h4{margin:14px 0 6px;font-size:15px}
+.card ul,.card ol{padding-left:20px;margin:6px 0}
+.card li{margin:3px 0}
+.note{font-size:13px;color:var(--muted)}
+.callout{border-radius:12px;padding:12px 14px;margin:12px 0;font-size:14.5px}
+.callout.warn{background:var(--warn2);border:1px solid #ffd8a8}
+.callout.bad{background:var(--bad2);border:1px solid #ffc9c9}
+.callout.ok{background:var(--ok2);border:1px solid #b2f2bb}
+.callout.info{background:var(--accent2);border:1px solid #c5dcfa}
+.kbd{font-family:var(--mono);font-size:.9em;background:#eef1f6;border:1px solid #d7dde7;border-radius:5px;padding:0 5px}
+.tag{display:inline-block;font-size:12px;font-weight:700;border-radius:6px;padding:1px 7px;margin-right:4px}
+.tag.blue{background:#e7f0ff;color:#0b4fae}.tag.red{background:#ffe3e3;color:#c92a2a}.tag.green{background:#e6fcf5;color:#087f5b}.tag.amber{background:#fff3bf;color:#8a5a00}
+table.t{width:100%;border-collapse:collapse;font-size:14px;min-width:640px}
+table.t th,table.t td{border-bottom:1px solid var(--line);padding:9px 10px;text-align:left;vertical-align:top}
+table.t th{background:#f0f3f8;font-weight:700;white-space:nowrap}
+table.t td:first-child{font-family:var(--mono);font-weight:700;white-space:nowrap}
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:12px;border:1px solid var(--line);background:#fff}
+.wirecol{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:4px;border:1px solid rgba(0,0,0,.2)}
+/* schematics */
+.sch-card{padding:14px 14px 16px}
+.sch-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.sch-head h3{margin:0}
+.live-pill{font-size:11.5px;font-weight:700;color:#0b7a3e;background:#e6fcf5;border:1px solid #96f2d7;border-radius:999px;padding:2px 9px}
+.sch{width:100%;overflow-x:auto}
+.sch svg{display:block;width:100%;height:auto;min-width:420px}
+.sch .w{fill:none;stroke:#3d4757;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.sch .w.live{stroke:#f08c00;stroke-width:2.6;stroke-dasharray:7 5;animation:flow .55s linear infinite}
+.sch .bar{stroke:#3d4757;stroke-width:2.6;stroke-linecap:round}
+.sch .ct.live .bar{stroke:#f08c00}
+.sch .thin{stroke-width:1.6}
+.sch .slash{stroke:#3d4757;stroke-width:1.7}
+.sch .bridge{stroke:#2b8a3e;stroke-width:3;stroke-linecap:round}
+.sch .lbl{font-size:12px;fill:#2a3442;text-anchor:middle;font-family:"Noto Sans KR",sans-serif}
+.sch .lbls{font-size:12.5px;fill:#2a3442;font-weight:700;font-family:"Noto Sans KR",sans-serif}
+.sch .lblb{font-size:15px;font-weight:900;fill:#17202b;text-anchor:middle;font-family:var(--mono)}
+.sch .coil{fill:#fff;stroke:#3d4757;stroke-width:2}
+.sch .coil.on{fill:#ffe8cc;stroke:#f08c00}
+.sch .coiltx{font-size:11.5px;font-weight:700;text-anchor:middle;fill:#17202b;font-family:var(--mono)}
+.sch .lamp{fill:#fff;stroke:#3d4757;stroke-width:2}
+.sch .lamp.on.rl{fill:#ff8787}.sch .lamp.on.gl{fill:#69db7c}.sch .lamp.on.yl{fill:#ffd43b}
+.sch .dot{fill:#3d4757}
+.sch .ilbox{fill:#fff4e6;stroke:#f59f00;stroke-width:1.3;stroke-dasharray:4 3}
+.sch .ilbox.bad{fill:#fff5f5;stroke:#e03131}
+.sch .miss{stroke:#e03131;stroke-width:2.4;stroke-dasharray:5 4;fill:none}
+.sch .redtx{fill:#e03131;font-weight:700}
+.sch .oktx{fill:#2b8a3e;font-weight:700}
+.sch .dbox{fill:none;stroke:#8592a6;stroke-width:1.2;stroke-dasharray:5 4}
+.sch .ph{fill:none;stroke-width:3;stroke-linecap:round}
+.sch .mflow{fill:none;stroke:#ffb000;stroke-width:3.2;stroke-dasharray:6 8;animation:flow .45s linear infinite;stroke-linecap:round}
+.sch .sflow{fill:none;stroke:#ff1f1f;stroke-width:5;stroke-dasharray:5 5;animation:flow .14s linear infinite}
+.sch .blade{stroke-width:3;stroke-linecap:round}
+.sch .mc-bar{stroke:#17202b;stroke-width:2.6}
+.sch .motor{fill:#f1f3f5;stroke:#3d4757;stroke-width:2}
+.sch .motor.on{fill:#e7f5ff;stroke:#1971c2}
+.sch .heater{fill:none;stroke:#17202b;stroke-width:1.8}
+@keyframes flow{to{stroke-dashoffset:-24}}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12.5px;color:var(--muted);margin-top:8px}
+.legend i{display:inline-block;width:22px;height:0;border-top:3px solid;vertical-align:middle;margin-right:5px}
+.miniops{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0 14px;padding:10px 12px;background:#fff;border:1px solid var(--line);border-radius:14px}
+.miniops .lab{font-size:13px;font-weight:700;color:var(--muted);margin-right:4px}
+.mbtn{border:1px solid #cfd6e1;background:#f8fafc;border-radius:10px;padding:7px 12px;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.mbtn.g{background:#ebfbee;border-color:#8ce99a;color:#1b6e2b}
+.mbtn.b{background:#e7f5ff;border-color:#74c0fc;color:#1864ab}
+.mbtn.r{background:#fff5f5;border-color:#ffa8a8;color:#c92a2a}
+.mbtn.o{background:#fff4e6;border-color:#ffc078;color:#a34700}
+.mbtn.down{transform:translateY(1px);filter:brightness(.92);box-shadow:inset 0 2px 4px rgba(0,0,0,.15)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12.5px;font-weight:700;border-radius:999px;padding:3px 10px;background:#eef1f6;color:#4a5566;border:1px solid #dbe1ea;white-space:nowrap}
+.chip.ok{background:#e6fcf5;color:#087f5b;border-color:#96f2d7}
+.chip.on{background:#fff3bf;color:#7a5200;border-color:#ffe066}
+.chip.bad{background:#ffe3e3;color:#c92a2a;border-color:#ffa8a8}
+.chip.fwd{background:#e6fcf5;color:#087f5b;border-color:#63e6be}
+.chip.rev{background:#e7f5ff;color:#1864ab;border-color:#74c0fc}
+.loglist{font-size:13px;margin:8px 0 0;padding:0;list-style:none;max-height:120px;overflow:auto}
+.loglist li{padding:4px 0;border-top:1px dashed var(--line)}
+.loglist time{font-family:var(--mono);font-size:11px;color:#8a95a5;margin-right:6px}
+.loglist .warn{color:#b35000}.loglist .bad{color:#c92a2a;font-weight:700}.loglist .ok{color:#1b6e2b}
+/* steps & timing */
+.steps{counter-reset:s;list-style:none;padding:0;margin:0}
+.steps li{counter-increment:s;position:relative;padding:10px 12px 10px 48px;border-bottom:1px solid var(--line)}
+.steps li:last-child{border:0}
+.steps li::before{content:counter(s);position:absolute;left:8px;top:10px;width:28px;height:28px;border-radius:50%;background:var(--navy);color:#fff;font-weight:900;font-family:var(--mono);display:grid;place-items:center;font-size:14px}
+.steps b{color:var(--navy)}
+.timing svg{width:100%;height:auto;min-width:640px;display:block}
+/* checklist & quiz */
+.check{list-style:none;padding:0;margin:0}
+.check li{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-bottom:1px dashed var(--line)}
+.check input{width:18px;height:18px;margin-top:4px;accent-color:var(--ok);flex:0 0 auto}
+.check label{cursor:pointer}
+.quiz .q{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:10px 0;background:#fff}
+.quiz .q p{margin:0 0 8px;font-weight:700}
+.quiz .opts{display:grid;gap:6px}
+.quiz .opts button{text-align:left;border:1px solid #d5dce6;background:#f8fafc;border-radius:9px;padding:8px 11px;font:inherit;font-size:14px;cursor:pointer}
+.quiz .opts button.right{background:#ebfbee;border-color:#51cf66;font-weight:700}
+.quiz .opts button.wrong{background:#fff5f5;border-color:#ff8787}
+.quiz .exp{display:none;font-size:13.5px;color:#334;background:#f4f7fb;border-radius:9px;padding:8px 11px;margin-top:8px}
+.quiz .q.done .exp{display:block}
+.score{font-weight:900;color:var(--accent)}
+/* ===== 3D LAB ===== */
+.lab-sec{background:#0b1220;color:#dce6f3;margin-top:36px;padding:34px 0 40px}
+.lab-sec .sec-h h2{color:#fff}
+.lab-sec .sec-h .no{background:#163056;color:#8ec5ff}
+.lab-sec p.desc{color:#9fb0c6}
+.lab-howto{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:0 0 14px}
+.lab-howto div{background:#111b2e;border:1px solid #1f2d45;border-radius:12px;padding:10px 12px;font-size:13.5px;color:#b9c7da}
+.lab-howto b{color:#ffd38a}
+.stage{position:relative;height:min(88vh,880px);min-height:560px;background:#0f1720;border-radius:18px;overflow:hidden;border:1px solid #1f2d45;touch-action:none;user-select:none;-webkit-user-select:none}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block;outline:none}
+.hud{position:absolute;z-index:5;color:#e8eef6;font-size:13px}
+.panel{background:rgba(10,16,26,.82);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.09);border-radius:14px}
+.hud.top{top:10px;left:10px;right:10px;display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between;pointer-events:none}
+.hud.top>*{pointer-events:auto}
+.seg{display:inline-flex;gap:2px;padding:3px;background:rgba(10,16,26,.82);border:1px solid rgba(255,255,255,.09);border-radius:12px;backdrop-filter:blur(8px)}
+.seg button{border:0;background:transparent;color:#b8c6d8;font:inherit;font-size:13px;font-weight:700;padding:7px 11px;border-radius:9px;cursor:pointer;white-space:nowrap;touch-action:manipulation}
+.seg button:hover{color:#fff;background:rgba(255,255,255,.06)}
+.seg button.on{background:#ffb703;color:#1b1300}
+.seg button.act{background:#1c7ed6;color:#fff}
+.hud.stat{top:62px;left:10px;width:262px;padding:10px 12px}
+.hud.stat .chips{gap:5px}
+.hud .chip{background:#1a2638;color:#aebcd0;border-color:#26354d;font-size:12px}
+.hud .chip.ok{background:#0f3a2c;color:#63e6be;border-color:#12634a}
+.hud .chip.on{background:#3d3110;color:#ffd43b;border-color:#6b5414}
+.hud .chip.bad{background:#4a1418;color:#ff8787;border-color:#8a1f26}
+.hud .chip.fwd{background:#0f3a2c;color:#63e6be;border-color:#12634a}
+.hud .chip.rev{background:#0c2f4f;color:#74c0fc;border-color:#1864ab}
+.hud .loglist{max-height:150px;color:#c5d2e3}
+.hud .loglist li{border-color:#25334a}
+.hud .loglist .warn{color:#ffc078}.hud .loglist .bad{color:#ff8787}.hud .loglist .ok{color:#8ce99a}
+.hud.side{top:62px;right:10px;width:318px;max-height:calc(100% - 150px);display:flex;flex-direction:column}
+.side-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px 6px;font-size:14px}
+.side-head b{color:#ffd38a}
+.side-body{padding:0 12px 12px;overflow:auto}
+.hud.side.collapsed .side-body{display:none}
+.mini{border:0;background:#1a2638;color:#cfe0f5;border-radius:8px;padding:3px 9px;font:inherit;cursor:pointer}
+.hud h4{margin:6px 0 4px;font-size:15px;color:#fff}
+.hud p{margin:4px 0 8px;color:#c3d0e2;line-height:1.55}
+.task-prog{display:flex;gap:4px;margin:2px 0 6px}
+.task-prog span{flex:1;height:6px;border-radius:3px;background:#24324a}
+.task-prog span.done{background:#51cf66}.task-prog span.cur{background:#ffb703}
+.task-from{background:#13233a;border:1px solid #23406a;border-radius:9px;padding:7px 9px;font-size:12.5px;color:#cfe0f5}
+.task-from b{color:#ffd43b;font-family:var(--mono)}
+.fb{margin:8px 0;font-size:13px;min-height:1em;line-height:1.5}
+.fb.ok{color:#8ce99a}.fb.bad{color:#ff8787}.fb.hint{color:#ffd43b}
+.row{display:flex;flex-wrap:wrap;gap:6px}
+.row button,.opt button{border:1px solid #2a3b57;background:#16233a;color:#dce8f7;font:inherit;font-size:12.5px;font-weight:700;padding:6px 10px;border-radius:9px;cursor:pointer}
+.row button:hover{background:#1d2e4b}
+.opt{margin:6px 0 10px}
+.opt>span{display:block;font-weight:700;color:#cfe0f5;margin-bottom:4px}
+.seg2{display:flex;gap:4px;flex-wrap:wrap}
+.seg2 button.on{background:#ffb703;color:#1b1300;border-color:#ffb703}
+.seg2 button.on.danger{background:#fa5252;border-color:#fa5252;color:#fff}
+.mission{list-style:none;padding:0;margin:6px 0 0}
+.mission li{display:flex;gap:8px;align-items:flex-start;padding:5px 0;color:#b9c7da;font-size:13px;line-height:1.45}
+.mission li::before{content:"○";color:#5c6f8c;font-weight:900;flex:0 0 auto}
+.mission li.done{color:#8ce99a}
+.mission li.done::before{content:"✔";color:#51cf66}
+.hud.ops{left:50%;bottom:10px;transform:translateX(-50%);display:flex;gap:7px;padding:7px;flex-wrap:nowrap}
+.op{border:0;border-radius:12px;min-width:66px;padding:8px 10px 6px;font:inherit;font-weight:900;font-size:14px;cursor:pointer;color:#fff;background:#2b3a52;display:flex;flex-direction:column;align-items:center;line-height:1.15;touch-action:manipulation;user-select:none;-webkit-user-select:none;box-shadow:0 3px 0 rgba(0,0,0,.35)}
+.op small{font-size:11px;font-weight:500;opacity:.9;margin-top:2px}
+.op.g{background:#2f9e44}.op.b{background:#1c7ed6}.op.r{background:#e03131}.op.o{background:#e8590c}
+.op.mccb.on{background:#0ca678}.op.mccb.off{background:#495057}.op.mccb.trip{background:#c92a2a;animation:blink .6s steps(2) infinite}
+.op.down{transform:translateY(3px);box-shadow:0 0 0 rgba(0,0,0,.35);filter:brightness(1.15)}
+@keyframes blink{50%{filter:brightness(1.5)}}
+.tip{position:absolute;z-index:8;pointer-events:none;background:rgba(5,10,18,.92);color:#fff;border:1px solid #2e4466;border-radius:8px;padding:5px 8px;font-size:12.5px;display:none;max-width:240px;line-height:1.45}
+.tip b{color:#ffd43b}
+.alarm{position:absolute;inset:0;z-index:6;pointer-events:none;display:none}
+.alarm.on{display:block;animation:alarm .22s steps(2) 7;box-shadow:inset 0 0 160px 30px rgba(255,20,20,.55)}
+.alarm .msg{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);background:rgba(120,0,0,.9);color:#fff;font-weight:900;font-size:clamp(16px,2.6vw,24px);padding:12px 20px;border-radius:12px;border:2px solid #ff6b6b;text-align:center;white-space:nowrap}
+@keyframes alarm{50%{box-shadow:inset 0 0 40px 4px rgba(255,20,20,.2)}}
+.loading{position:absolute;inset:0;z-index:20;display:grid;place-items:center;background:#0f1720;color:#9fb0c6;font-size:14px;text-align:center;padding:20px}
+.loading .spin{width:38px;height:38px;border:3px solid #24324a;border-top-color:#ffb703;border-radius:50%;margin:0 auto 12px;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#vrExit{position:absolute;z-index:30;top:10px;left:50%;transform:translateX(-50%);display:none;border:0;border-radius:999px;background:rgba(0,0,0,.6);color:#fff;font:inherit;font-weight:700;padding:7px 14px}
+.stage.cardboard{position:fixed;inset:0;z-index:1000;height:100vh;height:100dvh;min-height:0;border-radius:0;border:0}
+.stage.cardboard .hud,.stage.cardboard .tip{display:none!important}
+.stage.cardboard #vrExit{display:block}
+.stage.cardboard::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:2px;background:#000;z-index:4;pointer-events:none}
+.stage:fullscreen{height:100%;border-radius:0}
+footer{padding:28px 0 40px;color:#7d8899;font-size:13px;background:#0b1220;border-top:1px solid #1a2538}
+@media (max-width:760px){
+  .wrap{padding:0 14px}
+  .stage{height:calc(100svh - 20px);min-height:600px;border-radius:14px}
+  .seg button{padding:6px 8px;font-size:12px}
+  .hud.top{top:6px;left:6px;right:6px;gap:5px}
+  .hud.stat{bottom:auto;left:6px;width:auto;max-width:calc(100% - 12px);padding:7px 8px;top:140px}
+  .hud.stat .loglist{display:none}
+  .hud.stat .lastmsg{display:block}
+  .hud.side{top:auto;right:6px;left:6px;width:auto;bottom:74px;max-height:36%}
+  .hud.ops{bottom:6px;gap:5px;padding:5px;left:6px;right:6px;transform:none;justify-content:space-between}
+  .op{min-width:0;flex:1;padding:7px 4px 5px;font-size:13px}
+  .op small{font-size:10px}
+  .grid2{grid-template-columns:1fr}
+}
+.lastmsg{display:none;margin-top:5px;font-size:12px;color:#c3d0e2;line-height:1.4}
+@media (prefers-reduced-motion:reduce){.sch .w.live,.sch .mflow,.sch .sflow{animation:none}}
+</style>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker">ELECTRIC CRAFTSMAN · DIGITAL TWIN LAB</div>
+    <h1>정·역회전 인터록 결선 실습</h1>
+    <p class="lead">정회전(MC1)·역회전(MC2) 전자접촉기가 <b>동시에 투입되지 못하도록</b> 상대 MC의 b접점으로 인터록 회로를 결선합니다. 이론과 회로도로 원리를 익힌 뒤, 아래 3D 디지털 트윈에서 직접 결선하고 전류 흐름·정상 동작·오류 상황을 체험하세요.</p>
+    <div class="badges">
+      <span class="badge">⚡ 전기기능사 실기 대비</span><span class="badge">🧩 3D 디지털 트윈</span><span class="badge">📱 모바일 VR (카드보드·WebXR)</span><span class="badge">🔆 전류 흐름 시각화</span>
+    </div>
+    <div class="hero-grid">
+      <div class="hcard"><h3>학습 포인트</h3><ul><li>MC 2개(MC1 정회전·MC2 역회전) 구성</li><li>인터록: 상대 MC의 <b>b접점(21-22)</b>을 자기 코일과 직렬</li><li>주회로 상 교체: MC2 부하측에서 <b>R↔T</b> 교차</li></ul></div>
+      <div class="hcard err"><h3>체험 오류</h3><ul><li>인터록 누락 → 동시 투입 → <b>R–T 상간 단락</b>, MCCB 트립</li><li>주회로 상 교체 오류(미교체·순환) → <b>역회전 불가</b></li></ul></div>
+    </div>
+    <div class="cta"><a class="btn pri" href="#lab">▶ 3D 실습 바로가기</a><a class="btn sec" href="#circuit">회로도 보기</a><a class="btn sec" href="#exam">기능사 대비</a></div>
+  </div>
+</header>
+
+<nav class="toc" aria-label="목차"><div class="wrap">
+  <a href="#principle">1. 회전 원리</a><a href="#parts">2. 구성 기기</a><a href="#circuit">3. 회로도</a><a href="#sequence">4. 동작 순서</a><a href="#types">5. 인터록 종류</a><a href="#faults">6. 오류 시나리오</a><a href="#exam">7. 기능사 대비</a><a href="#lab">8. 3D 실습</a>
+</div></nav>
+
+<main>
+<!-- 1 -->
+<section class="sec" id="principle"><div class="wrap">
+  <div class="sec-h"><span class="no">01</span><h2>3상 유도전동기 회전 방향의 원리</h2></div>
+  <p class="desc">전동기의 회전 방향은 고정자에 만들어지는 <b>회전자계의 방향</b>으로 정해지고, 회전자계의 방향은 전원의 <b>상순(R→S→T)</b>으로 정해집니다.</p>
+  <div class="grid2">
+    <div class="card">
+      <h3>상순과 회전자계</h3>
+      <svg viewBox="0 0 400 200" role="img" aria-label="상순에 따른 회전자계 방향 비교" style="width:100%;height:auto">
+        <defs><marker id="ah" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10z" fill="#0b63ce"/></marker>
+        <marker id="ah2" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10z" fill="#e8590c"/></marker></defs>
+        <g transform="translate(100,95)">
+          <circle r="62" fill="#f4f8fe" stroke="#c5d6ee"/>
+          <line x1="0" y1="0" x2="0" y2="-52" stroke="#8b4a1c" stroke-width="4"/><text x="0" y="-62" text-anchor="middle" font-weight="900" font-size="14">R</text>
+          <line x1="0" y1="0" x2="45" y2="26" stroke="#1f2328" stroke-width="4"/><text x="58" y="38" text-anchor="middle" font-weight="900" font-size="14">S</text>
+          <line x1="0" y1="0" x2="-45" y2="26" stroke="#8a9099" stroke-width="4"/><text x="-58" y="38" text-anchor="middle" font-weight="900" font-size="14">T</text>
+          <path d="M 30 -68 A 74 74 0 0 1 72 -12" fill="none" stroke="#0b63ce" stroke-width="3" marker-end="url(#ah)"/>
+          <text x="0" y="92" text-anchor="middle" font-size="13" font-weight="700" fill="#0b63ce">R→S→T : 시계방향(정회전)</text>
+        </g>
+        <g transform="translate(300,95)">
+          <circle r="62" fill="#fff8f2" stroke="#f3d3bd"/>
+          <line x1="0" y1="0" x2="0" y2="-52" stroke="#8a9099" stroke-width="4"/><text x="0" y="-62" text-anchor="middle" font-weight="900" font-size="14">T</text>
+          <line x1="0" y1="0" x2="45" y2="26" stroke="#1f2328" stroke-width="4"/><text x="58" y="38" text-anchor="middle" font-weight="900" font-size="14">S</text>
+          <line x1="0" y1="0" x2="-45" y2="26" stroke="#8b4a1c" stroke-width="4"/><text x="-58" y="38" text-anchor="middle" font-weight="900" font-size="14">R</text>
+          <path d="M -30 -68 A 74 74 0 0 0 -72 -12" fill="none" stroke="#e8590c" stroke-width="3" marker-end="url(#ah2)"/>
+          <text x="0" y="92" text-anchor="middle" font-size="13" font-weight="700" fill="#e8590c">R↔T 교체 : 반시계(역회전)</text>
+        </g>
+      </svg>
+    </div>
+    <div class="card">
+      <h3>핵심 정리</h3>
+      <ul>
+        <li>3상 전원선 <b>3가닥 중 임의의 2가닥</b>을 서로 바꾸면 상순이 반대가 되어 <b>역회전</b>합니다.</li>
+        <li>정·역 회로에서는 정회전 MC1이 <span class="kbd">R-U, S-V, T-W</span>, 역회전 MC2가 <span class="kbd">R-W, S-V, T-U</span>로 연결되도록 <b>R상과 T상을 교체</b>하고 S상은 그대로 둡니다.</li>
+        <li>3가닥을 한 칸씩 돌려 연결(<b>순환 교체</b>: R→V, S→W, T→U 등)하면 상순은 그대로이므로 <b>방향이 바뀌지 않습니다.</b></li>
+      </ul>
+      <div class="callout warn"><b>왜 인터록이 필요할까?</b> MC1과 MC2가 동시에 닫히면 U 단자에는 R상(MC1)과 T상(MC2)이, W 단자에는 T상(MC1)과 R상(MC2)이 함께 연결됩니다. 즉 <b>R상과 T상이 접촉기를 통해 직접 맞붙는 상간(선간) 단락</b>이 일어납니다.</div>
+    </div>
+  </div>
+</div></section>
+
+<!-- 2 -->
+<section class="sec" id="parts"><div class="wrap">
+  <div class="sec-h"><span class="no">02</span><h2>구성 기기와 단자</h2></div>
+  <p class="desc">단자 번호는 IEC 표기 기준입니다. 시험장 기구(소켓형 MC·THR 등)는 핀 번호 체계가 다를 수 있으므로 <b>시험지의 내부 결선도</b>를 반드시 확인하세요.</p>
+  <div class="tscroll"><table class="t">
+    <thead><tr><th>기호</th><th>명칭</th><th>역할</th><th>주요 단자</th></tr></thead>
+    <tbody>
+      <tr><td>MCCB</td><td>배선용 차단기</td><td>주회로 개폐, 과부하·<b>단락 시 자동 트립</b></td><td>1/L1·3/L2·5/L3 → 2/T1·4/T2·6/T3</td></tr>
+      <tr><td>MC1</td><td>정회전 전자접촉기 (MC-F)</td><td>R-U, S-V, T-W 연결 → 정회전</td><td>주접점 L1~L3/T1~T3, 코일 A1·A2, 보조 a 13-14, b 21-22</td></tr>
+      <tr><td>MC2</td><td>역회전 전자접촉기 (MC-R)</td><td>부하측에서 R↔T 교체 → 역회전</td><td>MC1과 동일</td></tr>
+      <tr><td>THR</td><td>열동형 과부하 계전기</td><td>과전류 지속 시 트립: <b>95-96(b) 개방</b>으로 MC 소자, <b>95-98(a) 폐로</b>로 경보</td><td>히터 1/L1~6/T3, 보조 95·96·98 (제품에 따라 97-98 분리형)</td></tr>
+      <tr><td>PB0</td><td>정지 푸시버튼 (적색)</td><td>b접점 — 누르면 제어회로 차단, 자기유지 해제</td><td>1-2 (b)</td></tr>
+      <tr><td>PB1 / PB2</td><td>정회전 / 역회전 기동 버튼</td><td>a접점 — 누르는 동안만 코일에 전원 공급</td><td>3-4 (a)</td></tr>
+      <tr><td>RL / GL / YL</td><td>표시등</td><td>정회전 / 역회전 / 과부하(경보) 표시</td><td>1-2</td></tr>
+      <tr><td>IM</td><td>3상 유도전동기</td><td>U·V·W 권선, 상순에 따라 회전 방향 결정</td><td>U·V·W (TB2 경유)</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note" style="margin-top:8px">전선 색상(KEC 상 식별): <span class="wirecol" style="background:var(--L1)"></span>L1 갈색 <span class="wirecol" style="background:var(--L2)"></span>L2 흑색 <span class="wirecol" style="background:var(--L3)"></span>L3 회색 <span class="wirecol" style="background:#1971c2"></span>N 청색 <span class="wirecol" style="background:linear-gradient(90deg,#2f9e44 50%,#fcc419 50%)"></span>PE 녹-황. 제어회로 전선 색상과 굵기는 시험지 지정 사항을 따릅니다(3D에서는 황색으로 표시).</p>
+</div></section>
+
+<!-- 3 -->
+<section class="sec" id="circuit"><div class="wrap">
+  <div class="sec-h"><span class="no">03</span><h2>회로도 — 3D 시뮬레이터와 실시간 연동</h2></div>
+  <p class="desc">아래 버튼이나 3D 화면에서 조작하면 두 회로도에 <b style="color:#f08c00">전류 흐름(주황 점선)</b>과 접점 상태(<b style="color:#2b8a3e">초록 = 닫힘</b>)가 함께 표시됩니다. 오류 체험 모드의 설정도 도면에 반영됩니다.</p>
+  <div class="miniops">
+    <span class="lab">조작</span>
+    <button class="mbtn" data-act="mccb" data-mccb>MCCB</button>
+    <button class="mbtn g" data-pb="1">PB1 정회전</button>
+    <button class="mbtn b" data-pb="2">PB2 역회전</button>
+    <button class="mbtn r" data-pb="0">PB0 정지</button>
+    <button class="mbtn o" data-act="thrTrip">THR 과부하</button>
+    <button class="mbtn" data-act="reset">↺ 리셋</button>
+    <span style="flex:1"></span>
+    <div class="chips">
+      <span class="chip" data-stat="mode"></span><span class="chip" data-stat="mccb"></span><span class="chip" data-stat="mcf"></span><span class="chip" data-stat="mcr"></span><span class="chip" data-stat="thr"></span><span class="chip" data-stat="motor"></span>
+    </div>
+  </div>
+  <div class="grid2" style="grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr)">
+    <div class="card sch-card">
+      <div class="sch-head"><h3>주회로 (동력회로)</h3><span class="live-pill">● LIVE</span></div>
+      <div class="sch" id="mainSvg"></div>
+      <div class="legend"><span><i style="border-color:var(--L1)"></i>R(L1)</span><span><i style="border-color:var(--L2)"></i>S(L2)</span><span><i style="border-color:var(--L3)"></i>T(L3)</span><span><i style="border-color:#ffb000;border-top-style:dashed"></i>전류</span><span><i style="border-color:#ff1f1f;border-top-style:dashed"></i>단락</span></div>
+      <ul class="note" style="margin-top:10px;padding-left:18px">
+        <li>MCCB 2차측에서 MC1·MC2 <b>전원측(L)을 병렬</b>로 연결합니다.</li>
+        <li>MC2 <b>부하측(T)에서 R·T를 교차</b>해 MC1 부하측(= THR 1차측)과 연결합니다.</li>
+        <li>THR 히터는 주회로에 직렬, 출력은 TB2를 거쳐 전동기 U·V·W로 갑니다.</li>
+      </ul>
+    </div>
+    <div class="card sch-card">
+      <div class="sch-head"><h3>제어회로 (시퀀스 회로)</h3><span class="live-pill">● LIVE</span></div>
+      <div class="sch" id="ctrlSvg"></div>
+      <div class="legend"><span><i style="border-color:#f08c00;border-top-style:dashed"></i>전류 흐름</span><span><i style="border-color:#2b8a3e"></i>접점 닫힘</span><span><i style="border-color:#f59f00;border-top-style:dotted"></i>인터록 접점</span></div>
+      <ul class="note" style="margin-top:10px;padding-left:18px">
+        <li>공통: <b>THR 95-96(b) → PB0(b)</b> 를 거쳐 정·역 회로로 분기합니다.</li>
+        <li>정회전: <b>[PB1 ∥ MC1 a(13-14)]</b> → <b>MC2 b(21-22)</b> → MC1 코일. 역회전은 대칭입니다.</li>
+        <li>RL·GL은 각 코일과 병렬, YL은 THR 95-98(a)로 과부하 시 점등합니다.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card" style="margin-top:14px"><h3 style="font-size:15px">동작 기록</h3><ul class="loglist" id="logTheory"></ul></div>
+</div></section>
+
+<!-- 4 -->
+<section class="sec" id="sequence"><div class="wrap">
+  <div class="sec-h"><span class="no">04</span><h2>동작 순서와 타임차트</h2></div>
+  <div class="grid2">
+    <div class="card" style="padding:8px 14px">
+      <ol class="steps">
+        <li><b>MCCB ON</b> — 주회로와 제어회로에 전원이 공급됩니다. 모든 b접점(THR 95-96, PB0, MC1·MC2 21-22)은 닫혀 있습니다.</li>
+        <li><b>PB1 누름</b> — MC1 코일 여자 → 주접점 폐로(정회전), <b>13-14 폐로(자기유지)</b>, <b>21-22 개방(MC2 회로 차단 = 인터록)</b>, RL 점등.</li>
+        <li><b>정회전 중 PB2 누름</b> — MC1의 21-22가 열려 있으므로 MC2 코일에 전류가 흐르지 않습니다. <span class="tag green">인터록 동작</span></li>
+        <li><b>PB0 누름</b> — 제어회로 차단 → MC1 소자 → 자기유지·인터록 해제, 전동기 정지.</li>
+        <li><b>PB2 누름</b> — MC2 여자 → R·T가 교체된 전원으로 <b>역회전</b>, GL 점등, MC2 21-22 개방으로 MC1 차단.</li>
+        <li><b>과부하 발생</b> — THR 트립 → 95-96 개방(운전 중인 MC 소자), 95-98 폐로(YL 점등). 원인 제거 후 THR 리셋 → 재기동.</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h3>타임차트</h3>
+      <div class="timing" id="timing" style="overflow-x:auto"></div>
+      <p class="note">PB2를 처음 누른 시점(정회전 중)은 인터록 때문에 MC2가 투입되지 않습니다. 반드시 <b>정지 → 반대 방향 기동</b> 순서로 전환합니다.</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- 5 -->
+<section class="sec" id="types"><div class="wrap">
+  <div class="sec-h"><span class="no">05</span><h2>인터록의 종류</h2></div>
+  <div class="grid3">
+    <div class="card"><span class="tag blue">본 실습</span><h3>전기적 인터록 (보조 b접점)</h3><p>상대 MC의 보조 b접점(21-22)을 자기 코일 회로에 <b>직렬</b>로 넣습니다. 상대가 투입되면 b접점이 열려 자기 코일 회로가 끊어집니다. 정·역 회로의 기본이며 기능사 실기에서 가장 많이 출제됩니다.</p></div>
+    <div class="card"><span class="tag amber">응용</span><h3>버튼 인터록 (복합 푸시버튼)</h3><p>PB1의 b접점을 MC2 회로에, PB2의 b접점을 MC1 회로에 넣어 반대 버튼을 누르는 순간 기존 MC를 끊습니다. 정지 없이 바로 전환되지만, 회전 중 역상이 걸려 <b>큰 돌입전류와 기계적 충격</b>이 생기므로 사용 조건을 확인해야 합니다.</p></div>
+    <div class="card"><span class="tag green">실무</span><h3>기계적 인터록</h3><p>두 MC 사이의 기계적 레버로 한쪽이 닫히면 다른 쪽이 <b>물리적으로</b> 닫히지 못하게 합니다(가역형 전자접촉기). 실무에서는 접점 용착 등에 대비해 <b>전기적 + 기계적 인터록을 함께</b> 쓰는 것이 일반적입니다.</p></div>
+  </div>
+</div></section>
+
+<!-- 6 -->
+<section class="sec" id="faults"><div class="wrap">
+  <div class="sec-h"><span class="no">06</span><h2>오류 체험 시나리오</h2></div>
+  <p class="desc">3D 실습의 <b>오류 체험</b> 모드에서 아래 상황을 그대로 재현할 수 있습니다. 교육용 모의이며, 실제 설비에서 시도해서는 안 됩니다.</p>
+  <div class="grid2">
+    <div class="card">
+      <h3>❶ 인터록 누락 → 상간 단락</h3>
+      <ol>
+        <li>MC1·MC2 코일 회로에 상대 b접점 없이 바로 연결된 상태</li>
+        <li>정회전 운전 중 PB2를 누르면 MC2도 투입 → <b>두 MC 동시 투입</b></li>
+        <li>전류 경로: <span class="kbd">R → MC1(L1→T1) → U 단자 ← MC2(T3←L3) ← T</span></li>
+        <li>R–T 사이에 부하 없이 전류가 흐르는 <b>선간 단락</b> → 정격의 수십 배 이상 단락전류, 아크·접점 용착 → <b>MCCB 트립</b></li>
+      </ol>
+      <div class="callout bad"><b>진단법</b> — 전원 차단 상태에서 MC1을 수동으로 눌러 둔 채 PB2를 누르고, 제어회로 양단(R–T) 저항을 측정합니다. MC2 코일 저항값이 측정되면 <b>인터록 누락</b>입니다(정상이면 ∞).</div>
+    </div>
+    <div class="card">
+      <h3>❷ 주회로 상 교체 오류 → 역회전 불가</h3>
+      <ul>
+        <li><b>미교체</b>: MC2도 R-U, S-V, T-W → PB2를 눌러도 <b>정회전</b>. (동시 투입되어도 같은 상끼리 병렬이라 단락은 없음)</li>
+        <li><b>3상 순환 교체</b>(R→V, S→W, T→U): 상순 R→S→T가 그대로 유지 → <b>정회전</b>. 동시 투입 시에는 3상이 모두 맞물려 단락.</li>
+        <li><b>한 선 미결선(결상)</b>: 기동 불가, 웅웅거리는 소음·과열 → THR 트립.</li>
+      </ul>
+      <div class="callout info"><b>확인법</b> — 테스터로 MC2를 수동 투입한 상태에서 <span class="kbd">R–W, S–V, T–U</span> 도통을 확인합니다. 시운전 시 전동기 축 방향(부하측에서 본 회전 방향)을 반드시 관찰하세요.</div>
+    </div>
+  </div>
+</div></section>
+
+<!-- 7 -->
+<section class="sec" id="exam"><div class="wrap">
+  <div class="sec-h"><span class="no">07</span><h2>전기기능사 실기 대비</h2></div>
+  <div class="grid2">
+    <div class="card">
+      <h3>결선 체크리스트</h3>
+      <ul class="check" id="checklist">
+        <li><input type="checkbox" id="ck1"><label for="ck1">MC1 코일 앞에 <b>MC2 b(21-22)</b>, MC2 코일 앞에 <b>MC1 b(21-22)</b>를 직렬로 넣었다.</label></li>
+        <li><input type="checkbox" id="ck2"><label for="ck2">자기유지: PB1 ∥ MC1 a(13-14), PB2 ∥ MC2 a(13-14) — <b>병렬</b> 연결이다.</label></li>
+        <li><input type="checkbox" id="ck3"><label for="ck3">MC2 부하측에서 <b>R↔T 교차</b>, S상은 그대로다(도면 지정 교체상 확인).</label></li>
+        <li><input type="checkbox" id="ck4"><label for="ck4">THR <b>95-96은 제어 공통선에 직렬</b>, 95-98은 YL(경보)에 연결했다.</label></li>
+        <li><input type="checkbox" id="ck5"><label for="ck5">코일 A2·표시등 공통은 모두 <b>T상(귀로)</b>에 모였다.</label></li>
+        <li><input type="checkbox" id="ck6"><label for="ck6">단자 1개에 전선 2가닥 이하, 피복 벗김·압착이 적정하고 나사가 조여 있다.</label></li>
+        <li><input type="checkbox" id="ck7"><label for="ck7">주회로 L1·L2·L3 색상(갈·흑·회)과 시험지 지정 색상을 지켰다.</label></li>
+      </ul>
+      <p class="note" id="ckScore"></p>
+    </div>
+    <div class="card">
+      <h3>전원 투입 전 테스터 점검 순서</h3>
+      <ol>
+        <li><b>제어회로 R–T</b> 저항: <b>∞</b> (단락 없음)</li>
+        <li><b>PB1</b>을 누름 → MC1 코일 저항값 표시</li>
+        <li>MC1을 손으로 눌러(수동 투입) <b>PB1에서 손을 떼도</b> 저항값 유지 → 자기유지 정상</li>
+        <li>MC1 수동 투입 상태에서 <b>PB2</b> 누름 → 값 변화 없음(MC2 회로 차단) → <b>인터록 정상</b></li>
+        <li>같은 방법으로 역회전(PB2, MC2) 확인</li>
+        <li><b>PB0</b>을 함께 누르면 ∞ → 정지 정상 / THR 트립 버튼 → ∞ → 과부하 보호 정상</li>
+        <li>주회로: MC1 수동 투입 시 <b>R-U·S-V·T-W</b>, MC2 수동 투입 시 <b>R-W·S-V·T-U</b> 도통</li>
+      </ol>
+      <h4>자주 하는 실수</h4>
+      <ul>
+        <li>인터록에 <b>자기 자신의 b접점</b>을 사용 → 투입 즉시 스스로 끊김(채터링)</li>
+        <li>인터록에 상대 <b>a접점</b>을 사용 → 반대 논리로 동작 불가</li>
+        <li>자기유지 a접점을 PB와 <b>직렬</b>로 연결 → 기동 불가</li>
+        <li>상 교체를 MC2 <b>전원측과 부하측 양쪽</b>에서 해서 다시 원래대로(정회전)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card quiz" style="margin-top:16px">
+    <h3>확인 문제 <span class="score" id="quizScore"></span></h3>
+    <div id="quiz"></div>
+  </div>
+</div></section>
+
+<!-- 8 LAB -->
+<section class="lab-sec" id="lab"><div class="wrap">
+  <div class="sec-h"><span class="no">08</span><h2>3D 디지털 트윈 실습</h2></div>
+  <p class="desc">분전반 모형에서 기기를 조작하고, 인터록·상 교체 배선을 직접 결선해 보세요. 빛나는 입자가 실제 전류 경로를 따라 움직입니다.</p>
+  <div class="lab-howto">
+    <div><b>운전</b> — PB1·PB2·PB0와 MCCB, THR를 눌러 정상 동작과 인터록을 확인합니다.</div>
+    <div><b>결선 실습</b> — 깜박이는 출발 단자에서 알맞은 도착 단자를 터치해 인터록 4가닥과 상 교체 3가닥을 결선합니다.</div>
+    <div><b>오류 체험</b> — 인터록 누락·상 교체 오류를 켜고 운전해 단락과 역회전 불가를 체험합니다.</div>
+    <div><b>모바일 VR</b> — 📱 VR을 누르고 휴대폰을 카드보드에 넣으면, 화면 중앙 조준점을 1초간 응시해 버튼을 누를 수 있습니다.</div>
+  </div>
+
+  <div class="stage" id="stage">
+    <canvas id="c3d" tabindex="0" aria-label="정역회전 인터록 3D 실습 화면"></canvas>
+
+    <div class="hud top">
+      <div class="seg" role="tablist" aria-label="모드">
+        <button data-mode="run">운전</button><button data-mode="wire">결선 실습</button><button data-mode="fault">오류 체험</button>
+      </div>
+      <div class="seg" aria-label="시점">
+        <button data-view="all">전체</button><button data-view="mc">접촉기</button><button data-view="box">조작함</button><button data-view="motor">전동기</button>
+      </div>
+      <div class="seg">
+        <button data-act="ilhl" title="인터록 배선 강조">🔍 인터록</button><button data-act="sound" title="소리">🔊</button><button id="btnCB" title="모바일 카드보드 VR">📱 VR</button><button id="btnXR" hidden title="WebXR 헤드셋">🥽 XR</button><button data-act="full" title="전체화면">⛶</button>
+      </div>
+    </div>
+
+    <div class="hud stat panel" id="statPanel">
+      <div class="chips"><span class="chip" data-stat="mccb"></span><span class="chip" data-stat="mcf"></span><span class="chip" data-stat="mcr"></span><span class="chip" data-stat="thr"></span><span class="chip" data-stat="motor"></span></div>
+      <div class="lastmsg" id="lastMsg"></div>
+      <ul class="loglist" id="log3d"></ul>
+    </div>
+
+    <div class="hud side panel" id="side">
+      <div class="side-head"><b id="sideTitle">운전 미션</b><button class="mini" data-act="collapse" aria-label="패널 접기/펼치기">▾</button></div>
+      <div class="side-body">
+        <div id="pRun"><p>버튼을 눌러 미션을 완료하세요.</p><ol class="mission" id="missionRun"></ol></div>
+        <div id="pWire" hidden>
+          <div class="task-prog" id="taskProg"></div>
+          <h4 id="taskTitle"></h4>
+          <p id="taskDesc"></p>
+          <div class="task-from">출발 <b id="taskFrom"></b> (노란색 깜박임) → 3D 화면에서 <b>도착 단자</b>를 터치</div>
+          <div class="fb" id="taskFb"></div>
+          <div class="row"><button data-act="hint">💡 힌트</button><button data-act="auto">자동 결선</button><button data-act="wreset">처음부터</button></div>
+        </div>
+        <div id="pFault" hidden>
+          <div class="opt"><span>인터록 b접점 (21-22)</span><div class="seg2"><button data-il="0">정상</button><button data-il="1" class="danger">누락</button></div></div>
+          <div class="opt"><span>MC2 주회로 상 교체</span><div class="seg2"><button data-sw="ok">R↔T (정상)</button><button data-sw="none" class="danger">미교체</button><button data-sw="cyc" class="danger">3상 순환</button></div></div>
+          <ol class="mission" id="missionFault"></ol>
+        </div>
+      </div>
+    </div>
+
+    <div class="hud ops panel">
+      <button class="op mccb" data-act="mccb" data-mccb>MCCB<small>ON</small></button>
+      <button class="op g" data-pb="1">PB1<small>정회전</small></button>
+      <button class="op b" data-pb="2">PB2<small>역회전</small></button>
+      <button class="op r" data-pb="0">PB0<small>정지</small></button>
+      <button class="op o" data-act="thrTrip">THR<small>과부하</small></button>
+      <button class="op" data-act="reset">↺<small>리셋</small></button>
+    </div>
+
+    <div class="tip" id="tip"></div>
+    <div class="alarm" id="alarm"><div class="msg">⚡ R–T 상간 단락! MCCB 트립</div></div>
+    <button id="vrExit">✕ VR 종료</button>
+    <div class="loading" id="loading"><div><div class="spin"></div>3D 모델을 불러오는 중…</div></div>
+  </div>
+</div></section>
+</main>
+
+<footer><div class="wrap">
+  본 콘텐츠는 교육용 시뮬레이션이며 실제 설비의 안전 검증을 대체하지 않습니다. 실제 전기 작업은 반드시 전원을 차단하고 관련 법규(KEC)·안전 규정과 전문가 확인을 따르세요.<br>
+  정·역회전 인터록 결선 실습 · 전기기능사 대비 디지털 트윈
+</div></footer>
+
+<!-- ================= 시뮬레이션 코어 (2D/3D 공용) ================= -->
+<script>
+(function(){
+'use strict';
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const PH=['R','S','T'], UVW=['U','V','W'], SRC=['IN_R','IN_S','IN_T'];
+const MAPS={ok:[2,1,0],none:[0,1,2],cyc:[1,2,0]};
+const SWNAME={ok:'R↔T 교체',none:'상 교체 없음',cyc:'3상 순환'};
+
+/* ---------- 단자 ---------- */
+const TERMS={};
+const tm=(id,name,desc)=>{TERMS[id]={name,desc};};
+PH.forEach((p,i)=>tm(SRC[i],`전원 ${p}상 (L${i+1})`,'3상 전원 입력 단자대(TB1)'));
+for(let i=1;i<=3;i++){tm(`MCCB_L${i}`,`MCCB ${2*i-1}/L${i}`,'차단기 전원측');tm(`MCCB_T${i}`,`MCCB ${2*i}/T${i}`,'차단기 부하측');}
+[['MCF','MC1(정회전)'],['MCR','MC2(역회전)']].forEach(([k,n])=>{
+  for(let i=1;i<=3;i++){tm(`${k}_L${i}`,`${n} ${2*i-1}/L${i}`,'주접점 전원측');tm(`${k}_T${i}`,`${n} ${2*i}/T${i}`,'주접점 부하측');}
+  tm(`${k}_A1`,`${n} A1`,'코일 단자 — 기동 신호 입력');tm(`${k}_A2`,`${n} A2`,'코일 단자 — T상 공통(귀로)');
+  tm(`${k}_13`,`${n} 13`,'보조 a접점(NO) 입력');tm(`${k}_14`,`${n} 14`,'보조 a접점(NO) 출력');
+  tm(`${k}_21`,`${n} 21`,'보조 b접점(NC) 입력');tm(`${k}_22`,`${n} 22`,'보조 b접점(NC) 출력');
+});
+for(let i=1;i<=3;i++){tm(`THR_I${i}`,`THR ${2*i-1}/L${i}`,'히터 입력(MC1 부하측과 연결)');tm(`THR_O${i}`,`THR ${2*i}/T${i}`,'히터 출력(전동기측)');}
+tm('THR_95','THR 95','보조접점 공통');tm('THR_96','THR 96','b접점 — 트립 시 개방');tm('THR_98','THR 98','a접점 — 트립 시 폐로(경보)');
+UVW.forEach(u=>{tm(`TBM_${u}`,`TB2 ${u}`,'전동기 단자대');tm(`MOT_${u}`,`전동기 ${u}`,'전동기 권선 단자');});
+tm('PB0_1','PB0 1','정지 b접점');tm('PB0_2','PB0 2','정지 b접점');
+tm('PB1_3','PB1 3','정회전 기동 a접점 입력');tm('PB1_4','PB1 4','정회전 기동 a접점 출력');
+tm('PB2_3','PB2 3','역회전 기동 a접점 입력');tm('PB2_4','PB2 4','역회전 기동 a접점 출력');
+[['RL','정회전 표시등'],['GL','역회전 표시등'],['YL','과부하 경보등']].forEach(([k,n])=>{tm(`${k}_1`,`${k} 1`,n);tm(`${k}_2`,`${k} 2`,n+' 공통(T상)');});
+
+/* ---------- 배선 ---------- */
+const W={};
+const wire=(id,a,b,kind,phase,x)=>{W[id]=Object.assign({id,a,b,kind,phase},x||{});};
+for(let i=0;i<3;i++){
+  const n=i+1;
+  wire(`m_in${i}`,SRC[i],`MCCB_L${n}`,'main',i);
+  wire(`m_cb${i}`,`MCCB_T${n}`,`MCF_L${n}`,'main',i);
+  wire(`m_jp${i}`,`MCF_L${n}`,`MCR_L${n}`,'main',i);
+  wire(`m_th${i}`,`MCF_T${n}`,`THR_I${n}`,'main',i);
+  wire(`m_out${i}`,`THR_O${n}`,`TBM_${UVW[i]}`,'main',i);
+  wire(`m_mot${i}`,`TBM_${UVW[i]}`,`MOT_${UVW[i]}`,'main',i);
+}
+[['c1','MCCB_T1','THR_95'],['c2','THR_96','PB0_1'],['c3','PB0_2','PB1_3'],['c4','PB1_3','PB2_3'],
+ ['c5','PB1_3','MCF_13'],['c6','PB2_3','MCR_13'],['c7','PB1_4','MCF_14'],['c8','PB2_4','MCR_14'],
+ ['c13','MCF_A1','RL_1'],['c14','MCR_A1','GL_1'],['c15','THR_98','YL_1'],
+ ['c16','MCCB_T3','MCF_A2'],['c17','MCF_A2','MCR_A2'],['c18','MCR_A2','RL_2'],['c19','RL_2','GL_2'],['c20','GL_2','YL_2']
+].forEach(([id,a,b])=>wire(id,a,b,'ctrl'));
+wire('il1','MCF_14','MCR_21','ctrl',null,{il:true});
+wire('il2','MCR_22','MCF_A1','ctrl',null,{il:true});
+wire('il3','MCR_14','MCF_21','ctrl',null,{il:true});
+wire('il4','MCF_22','MCR_A1','ctrl',null,{il:true});
+wire('bp1','MCF_14','MCF_A1','ctrl',null,{bad:true});
+wire('bp2','MCR_14','MCR_A1','ctrl',null,{bad:true});
+Object.keys(MAPS).forEach(k=>MAPS[k].forEach((j,i)=>wire(`sw_${k}_${i}`,`MCR_T${i+1}`,`MCF_T${j+1}`,'main',i,{sw:k})));
+const BASE=Object.keys(W).filter(id=>/^(m_|c\d)/.test(id));
+
+/* ---------- 내부 접점(기기 내부 경로) ---------- */
+const IE=[];
+const ie=(id,a,b,c)=>IE.push({id,a,b,c});
+for(let i=0;i<3;i++){
+  const n=i+1;
+  ie(`mccb${i}`,`MCCB_L${n}`,`MCCB_T${n}`,s=>s.mccb);
+  ie(`mcf_p${i}`,`MCF_L${n}`,`MCF_T${n}`,s=>s.mcF);
+  ie(`mcr_p${i}`,`MCR_L${n}`,`MCR_T${n}`,s=>s.mcR);
+  ie(`thr_h${i}`,`THR_I${n}`,`THR_O${n}`,()=>true);
+}
+ie('mcf_a','MCF_13','MCF_14',s=>s.mcF); ie('mcf_b','MCF_21','MCF_22',s=>!s.mcF);
+ie('mcr_a','MCR_13','MCR_14',s=>s.mcR); ie('mcr_b','MCR_21','MCR_22',s=>!s.mcR);
+ie('thr_b','THR_95','THR_96',s=>!s.thrTrip); ie('thr_a','THR_95','THR_98',s=>s.thrTrip);
+ie('pb0','PB0_1','PB0_2',s=>!s.pb[0]); ie('pb1','PB1_3','PB1_4',s=>s.pb[1]); ie('pb2','PB2_3','PB2_4',s=>s.pb[2]);
+const LOADS={coilF:['MCF_A1','MCF_A2'],coilR:['MCR_A1','MCR_A2'],rl:['RL_1','RL_2'],gl:['GL_1','GL_2'],yl:['YL_1','YL_2']};
+
+/* ---------- 결선 과제 ---------- */
+const TASKS=[
+ {wire:'il1',from:'MCF_14',to:'MCR_21',title:'① MC1 코일 회로에 인터록 b접점 넣기',
+  desc:'MC1 14(PB1·자기유지 출력)에서 출발합니다. MC2가 투입되면 이 경로가 끊어지도록 하려면 MC2의 어느 단자로 가야 할까요?',hint:'MC2 보조 b접점 입력 — 21번',
+  wrong:{MCF_A1:'인터록 누락! MC1 코일로 바로 가면 MC2 투입 중에도 MC1이 들어가 상간 단락이 발생합니다.',MCF_21:'자기 자신(MC1)의 b접점입니다. 투입되는 순간 스스로 회로를 끊어 채터링이 생깁니다.',MCR_13:'MC2의 a접점입니다. MC2가 투입돼야만 MC1이 동작하는 반대 논리가 됩니다.',MCR_14:'MC2의 a접점 출력입니다. 인터록에는 상대 MC의 b접점을 씁니다.',MCR_22:'b접점의 출력(22)입니다. 입력 21 → 출력 22 순서로 결선하세요.'}},
+ {wire:'il2',from:'MCR_22',to:'MCF_A1',title:'② 인터록 b접점 출력 → MC1 코일',
+  desc:'MC2 b접점(21-22)을 통과한 정회전 신호를 어디로 보내야 MC1이 동작할까요?',hint:'MC1 코일 A1',
+  wrong:{MCR_A1:'MC2 코일입니다. 정회전 버튼으로 역회전 MC가 투입되는 오결선입니다.',MCF_A2:'A2는 T상 공통(귀로)입니다. R상과 T상이 직결되어 제어회로 단락이 납니다.',MCR_A2:'A2는 T상 공통(귀로)입니다. 제어회로 단락이 납니다.'}},
+ {wire:'il3',from:'MCR_14',to:'MCF_21',title:'③ MC2 코일 회로에 인터록 b접점 넣기',
+  desc:'역회전도 대칭입니다. MC2 14(PB2·자기유지 출력)에서 출발해, MC1이 투입되면 끊어지는 접점으로 보내세요.',hint:'MC1 보조 b접점 입력 — 21번',
+  wrong:{MCR_A1:'인터록 누락! MC1 투입 중에도 MC2가 들어가 상간 단락이 발생합니다.',MCR_21:'자기 자신(MC2)의 b접점입니다. 투입 순간 스스로 끊어집니다(채터링).',MCF_13:'MC1의 a접점입니다. 반대 논리가 됩니다.',MCF_14:'MC1의 a접점 출력입니다. 상대 MC의 b접점을 사용하세요.',MCF_22:'b접점 출력(22)입니다. 21 → 22 순서로 결선하세요.'}},
+ {wire:'il4',from:'MCF_22',to:'MCR_A1',title:'④ 인터록 b접점 출력 → MC2 코일',
+  desc:'MC1 b접점을 통과한 역회전 신호를 MC2 코일로 연결합니다.',hint:'MC2 코일 A1',
+  wrong:{MCF_A1:'MC1 코일입니다. 역회전 버튼으로 정회전 MC가 투입됩니다.',MCR_A2:'A2는 T상 공통입니다. 제어회로 단락이 납니다.',MCF_A2:'A2는 T상 공통입니다. 제어회로 단락이 납니다.'}},
+ {wire:'sw_ok_2',from:'MCF_T1',to:'MCR_T3',title:'⑤ 주회로 상 교체 — U 단자에 T상',
+  desc:'MC1 T1(전동기 U로 가는 선)을 MC2 부하측과 연결합니다. 역회전하려면 MC2를 통해 U에 어느 상이 와야 할까요?',hint:'MC2 6/T3 (T상)',
+  wrong:{MCR_T1:'상 교체 없음! MC2도 R→U가 되어 역회전 버튼을 눌러도 정회전합니다.',MCR_T2:'R↔S 교체도 역회전은 되지만, 이 도면은 R↔T(1↔3) 교체입니다. 시험에서는 반드시 도면대로!'}},
+ {wire:'sw_ok_1',from:'MCF_T2',to:'MCR_T2',title:'⑥ 주회로 — S상은 그대로',
+  desc:'가운데 S상(V 단자)은 교체하지 않습니다.',hint:'MC2 4/T2 (S상)',
+  wrong:{MCR_T1:'V 단자에 R상이 오면 순환 결선이 되어 상순이 그대로일 수 있습니다. S상은 그대로 둡니다.',MCR_T3:'V 단자에 T상이 오면 교체가 꼬입니다. S상은 그대로 둡니다.'}},
+ {wire:'sw_ok_0',from:'MCF_T3',to:'MCR_T1',title:'⑦ 주회로 상 교체 — W 단자에 R상',
+  desc:'마지막으로 MC1 T3(전동기 W로 가는 선)을 연결합니다.',hint:'MC2 2/T1 (R상)',
+  wrong:{MCR_T3:'상 교체 없음 — T→W 그대로입니다.',MCR_T2:'W 단자에 S상이 오면 교체가 꼬입니다.'}}
+];
+
+/* ---------- 상태 ---------- */
+const st={mode:'run',mccb:true,tripped:false,thrTrip:false,mcF:false,mcR:false,pb:[false,false,false],
+  fault:{il:false,sw:'ok'},wireDone:new Set(),mistakes:0,feedback:null,shortActive:false,shortPh:null,
+  out:{},log:[],sound:true,
+  ach:{fwd:false,ilBlock:false,stop:false,rev:false,thr:false,short:false,noRev:false,cycRev:false}};
+let flow=new Map();
+const listeners={};
+const on=(ev,fn)=>{(listeners[ev]||(listeners[ev]=[])).push(fn);};
+const emit=(ev,...a)=>(listeners[ev]||[]).forEach(f=>{try{f(...a);}catch(e){console.error(e);}});
+
+function activeIds(){
+  const ids=BASE.slice();
+  if(st.mode==='run'){ids.push('il1','il2','il3','il4');[0,1,2].forEach(i=>ids.push(`sw_ok_${i}`));}
+  else if(st.mode==='fault'){
+    if(st.fault.il) ids.push('bp1','bp2'); else ids.push('il1','il2','il3','il4');
+    [0,1,2].forEach(i=>ids.push(`sw_${st.fault.sw}_${i}`));
+  } else TASKS.forEach(t=>{if(st.wireDone.has(t.wire)) ids.push(t.wire);});
+  return ids;
+}
+
+/* ---------- 회로 해석 (합집합-찾기 + BFS) ---------- */
+function solve(s){
+  const edges=[];
+  for(const id of activeIds()){const w=W[id];edges.push({id,a:w.a,b:w.b});}
+  for(const e of IE) if(e.c(s)) edges.push({id:e.id,a:e.a,b:e.b});
+  const par=new Map();
+  const find=x=>{let r=x;while(par.has(r)&&par.get(r)!==r) r=par.get(r);let y=x;while(par.has(y)&&par.get(y)!==r){const n=par.get(y);par.set(y,r);y=n;}return r;};
+  edges.forEach(e=>{const ra=find(e.a),rb=find(e.b);if(ra!==rb) par.set(ra,rb);});
+  const sr=SRC.map(find);
+  const phaseOf=n=>{const r=find(n);let p=-1;for(let i=0;i<3;i++) if(sr[i]===r){if(p>=0) return 9;p=i;}return p;};
+  const shorts=[];for(let i=0;i<3;i++)for(let j=i+1;j<3;j++) if(sr[i]===sr[j]) shorts.push([i,j]);
+  return {edges,phaseOf,shorts,adj:null};
+}
+function path(g,from,to){
+  if(!g.adj){g.adj=new Map();const add=(n,e,m)=>{if(!g.adj.has(n)) g.adj.set(n,[]);g.adj.get(n).push([e,m]);};g.edges.forEach(e=>{add(e.a,e,e.b);add(e.b,e,e.a);});}
+  const prev=new Map([[from,null]]);const q=[from];
+  while(q.length){const n=q.shift();if(n===to) break;for(const [e,m] of (g.adj.get(n)||[])) if(!prev.has(m)){prev.set(m,[n,e]);q.push(m);}}
+  if(!prev.has(to)) return [];
+  const out=[];let n=to;while(prev.get(n)){const [p,e]=prev.get(n);out.push({id:e.id,dir:p===e.a?1:-1});n=p;}
+  return out.reverse();
+}
+function loadOn(g,k){const [a,b]=LOADS[k];const pa=g.phaseOf(a),pb=g.phaseOf(b);return pa>=0&&pb>=0&&pa<9&&pb<9&&pa!==pb;}
+const snap=(F,R)=>Object.assign({},st,{mcF:F,mcR:R});
+
+function evaluate(reason){
+  if(st.shortActive) return;
+  const prevF=st.mcF,prevR=st.mcR,prevRun=st.out.running,prevDir=st.out.dir,prevSingle=st.out.single;
+  let F=st.mcF,R=st.mcR,guard=0,changed=true,short=null;
+  while(changed&&guard++<10){
+    changed=false;
+    let g=solve(snap(F,R));
+    const nf=loadOn(g,'coilF');if(nf!==F){F=nf;changed=true;}
+    g=solve(snap(F,R));if(g.shorts.length){short=g;break;}
+    const nr=loadOn(g,'coilR');if(nr!==R){R=nr;changed=true;}
+    g=solve(snap(F,R));if(g.shorts.length){short=g;break;}
+  }
+  st.mcF=F;st.mcR=R;
+  if(F!==prevF||R!==prevR) sfx.clack();
+  if(short){triggerShort(short);return;}
+  const g=solve(st);
+  const o={};Object.keys(LOADS).forEach(k=>o[k]=loadOn(g,k));
+  const mp=UVW.map(u=>g.phaseOf(`MOT_${u}`));
+  const valid=mp.filter(p=>p>=0&&p<3);
+  o.running=valid.length===3&&new Set(mp).size===3;
+  o.single=!o.running&&new Set(valid).size>=2;
+  o.dir=o.running?(((mp[1]-mp[0]+3)%3===1&&(mp[2]-mp[1]+3)%3===1)?1:-1):0;
+  o.phases=mp;
+  st.out=o;
+  // 전류 경로
+  flow=new Map();
+  const mark=(arr,kind,phase)=>arr.forEach(p=>{if(!flow.has(p.id)) flow.set(p.id,{dir:p.dir,kind,phase});});
+  if(o.running) UVW.forEach((u,j)=>mark(path(g,SRC[mp[j]],`MOT_${u}`),'main',mp[j]));
+  Object.keys(LOADS).forEach(k=>{if(!o[k]) return;const [a,b]=LOADS[k];const pa=g.phaseOf(a),pb=g.phaseOf(b);mark(path(g,SRC[pa],a),'ctrl');mark(path(g,b,SRC[pb]),'ctrl');});
+  messages(reason,prevF,prevR,prevRun,prevDir,prevSingle);
+  sfx.hum(o.running);
+  emit('update');render();
+}
+
+function triggerShort(g){
+  const [i,j]=g.shorts[0];
+  st.shortActive=true;st.shortPh=[...new Set(g.shorts.flat())];
+  flow=new Map();
+  g.shorts.forEach(([a,b])=>path(g,SRC[a],SRC[b]).forEach(p=>{if(!flow.has(p.id)) flow.set(p.id,{dir:p.dir,kind:'short'});}));
+  st.out=Object.assign({},st.out,{running:false,dir:0});
+  const names=st.shortPh.map(p=>PH[p]).join('–');
+  log('bad',`⚡ ${names} 상간 단락! MC1·MC2 동시 투입 → 단락전류 → MCCB 트립`);
+  st.ach.short=true;
+  sfx.bang();sfx.hum(false);
+  emit('short',st.shortPh);emit('update');render();
+  setTimeout(()=>{
+    st.shortActive=false;st.shortPh=null;st.mccb=false;st.tripped=true;st.pb=[false,false,false];
+    log('warn','MCCB 트립(차단) — 전원 차단 후 인터록 결선을 점검하고 MCCB를 다시 ON 하세요.');
+    evaluate('trip');
+  },1500);
+}
+
+function messages(reason,prevF,prevR,prevRun,prevDir,prevSingle){
+  const F=st.mcF,R=st.mcR,o=st.out;
+  if(reason==='pb1+'||reason==='pb2+'){
+    const fw=reason==='pb1+';
+    if(!st.mccb) log('warn',st.tripped?'MCCB가 트립 상태입니다. 원인을 확인한 뒤 MCCB를 다시 ON 하세요.':'MCCB가 OFF입니다. 먼저 MCCB를 ON 하세요.');
+    else if(st.thrTrip) log('warn','THR 트립 상태 — 95-96 b접점이 열려 있어 기동할 수 없습니다. THR 리셋 후 기동하세요.');
+    else{
+      const mine=fw?F:R,other=fw?R:F,me=fw?'MC1':'MC2',ot=fw?'MC2':'MC1';
+      if(!mine){
+        if(other){
+          const g=solve(Object.assign({},st,fw?{mcR:false}:{mcF:false}));
+          if(loadOn(g,fw?'coilF':'coilR')){log('info',`🔒 인터록 동작: ${ot}${ot==='MC1'?'이':'가'} 투입 중이라 ${ot} b접점(21-22)이 열려 ${me} 코일이 여자되지 않습니다. 정지(PB0) 후 전환하세요.`);st.ach.ilBlock=true;}
+          else log('warn',`${me} 코일 회로가 완성되지 않았습니다. 결선을 확인하세요.`);
+        } else log('warn',`${me} 코일 회로가 완성되지 않았습니다. 결선을 확인하세요.`);
+      }
+    }
+  }
+  if(F&&!prevF) log('ok','MC1 투입 → 주접점 폐로 · 13-14 자기유지 · 21-22 개방(MC2 차단) · RL 점등');
+  if(R&&!prevR) log('ok','MC2 투입 → 주접점 폐로 · 13-14 자기유지 · 21-22 개방(MC1 차단) · GL 점등');
+  if((!F&&prevF)||(!R&&prevR)){
+    const who=[!F&&prevF?'MC1':null,!R&&prevR?'MC2':null].filter(Boolean).join('·');
+    const why=reason==='pb0+'?'PB0 정지 → 제어회로 차단':reason==='thr'?'THR 트립 → 95-96 개방':(reason==='mccb'||reason==='trip')?'MCCB 차단 → 제어전원 상실':'코일 소자';
+    log('info',`${why} → ${who} 소자, 자기유지 해제`);
+    if(reason==='pb0+') st.ach.stop=true;
+  }
+  if(reason==='thr'){log('warn','THR 트립(과부하) → 95-96 개방: 운전 MC 소자 / 95-98 폐로: YL 점등');st.ach.thr=true;}
+  if(reason==='thrr') log('info','THR 리셋 → 95-96 복귀, YL 소등');
+  if(F&&R&&!(prevF&&prevR)) log('bad','⚠ MC1·MC2 동시 투입! (인터록 누락) — 상 교체가 없어 단락은 피했지만 매우 위험한 상태입니다.');
+  if(o.running&&(!prevRun||o.dir!==prevDir)){
+    if(F&&!R&&o.dir===1) st.ach.fwd=true;
+    if(R&&!F&&o.dir===-1){st.ach.rev=true;log('ok','R·T 상 교체 → 상순 반전 → 전동기 역회전');}
+    if(R&&!F&&o.dir===1){
+      if(st.mode==='fault'&&st.fault.sw==='cyc') st.ach.cycRev=true; else st.ach.noRev=true;
+      log('bad',`⚠ MC2(역회전)가 투입됐는데 전동기가 정회전합니다 → 주회로 상 교체 오류(${st.mode==='fault'?SWNAME[st.fault.sw]:'결선 확인'})`);
+    }
+  }
+  if(st.out.single&&!prevSingle) log('bad','결상 운전 — 한 상이 연결되지 않아 기동 불가(과열·소음)');
+}
+
+function log(lv,msg){
+  const d=new Date();const t=`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
+  if(st.log[0]&&st.log[0].msg===msg&&st.log[0].t===t) return;
+  st.log.unshift({t,lv,msg});if(st.log.length>40) st.log.pop();
+  emit('log',{lv,msg});
+}
+
+/* ---------- 조작 API ---------- */
+function press(k){if(st.shortActive||st.pb[k]) return;sfx.init();st.pb[k]=true;evaluate(`pb${k}+`);}
+function release(k){if(!st.pb[k]) return;st.pb[k]=false;evaluate(`pb${k}-`);}
+function pulse(k,ms){press(k);setTimeout(()=>release(k),ms||500);}
+function toggleMCCB(){if(st.shortActive) return;sfx.init();sfx.clack();if(st.mccb){st.mccb=false;log('info','MCCB OFF');}else{st.mccb=true;st.tripped=false;log('ok','MCCB ON → 주회로·제어회로 전원 공급');}evaluate('mccb');}
+function thrTrip(){if(st.shortActive||st.thrTrip) return;sfx.init();st.thrTrip=true;evaluate('thr');}
+function thrReset(){if(!st.thrTrip) return;st.thrTrip=false;evaluate('thrr');}
+function resetAll(quiet){st.shortActive=false;st.mcF=st.mcR=false;st.pb=[false,false,false];st.mccb=true;st.tripped=false;st.thrTrip=false;if(!quiet) log('info','초기화 — MCCB ON, 모든 MC 개방');evaluate('reset');}
+function setMode(m){if(st.mode===m) return;st.mode=m;st.feedback=null;log('info',`모드 전환: ${MODENAME[m]}`);resetAll(true);emit('mode',m);}
+function setFault(k,v){if(st.mode!=='fault'){st.mode='fault';emit('mode','fault');}st.fault[k]=v;log('warn',k==='il'?`인터록 ${v?'누락 ✗':'정상'} 설정`:`MC2 주회로: ${SWNAME[v]} 설정`);resetAll(true);}
+const MODENAME={run:'운전(정상 결선)',wire:'결선 실습',fault:'오류 체험'};
+function currentTask(){return TASKS.find(t=>!st.wireDone.has(t.wire))||null;}
+function wireAttempt(term){
+  if(st.mode!=='wire'||st.shortActive) return;
+  const t=currentTask();if(!t||term===t.from) return;
+  sfx.init();
+  if(term===t.to){
+    st.wireDone.add(t.wire);st.feedback={cls:'ok',text:`✔ 정답! ${TERMS[t.from].name} → ${TERMS[t.to].name} 결선 완료`};
+    sfx.ok();emit('wire',t.wire);
+    if(!currentTask()){st.feedback={cls:'ok',text:`🎉 모든 결선 완료! (오답 ${st.mistakes}회) PB1·PB2로 정·역 운전과 인터록을 시험해 보세요.`};log('ok','결선 실습 완료 — 시운전 가능');}
+    evaluate('wire');
+  } else {
+    st.mistakes++;
+    st.feedback={cls:'bad',text:'✗ '+(t.wrong[term]||genericWrong(term,t))};
+    sfx.err();emit('wrong',term);render();
+  }
+}
+function genericWrong(term,t){
+  const nm=TERMS[term]?TERMS[term].name:term;
+  if(t.wire.startsWith('sw')&&/_L\d$/.test(term)) return `${nm}은(는) 전원측(L) 단자입니다. 상 교체는 MC2 부하측(T) 단자로 합니다.`;
+  if(/^(PB|RL|GL|YL|IN|TBM|MOT)/.test(term)) return `${nm} 단자는 이미 결선되어 있습니다. 이번에는 접촉기(MC) 단자 사이를 연결합니다.`;
+  return `${nm} 단자는 이번 결선의 목적지가 아닙니다. 회로도를 확인하거나 💡 힌트를 눌러 보세요.`;
+}
+function hint(){const t=currentTask();if(!t) return;st.feedback={cls:'hint',text:`💡 도착 단자: ${t.hint} (초록색으로 표시)`};emit('hint',t.to);render();}
+function autoWire(){TASKS.forEach(t=>{if(!st.wireDone.has(t.wire)){st.wireDone.add(t.wire);emit('wire',t.wire);}});st.feedback={cls:'ok',text:'자동 결선 완료 — 운전해 보세요.'};evaluate('wire');}
+function resetWire(){st.wireDone.clear();st.mistakes=0;st.feedback=null;resetAll(true);log('info','결선 초기화');}
+
+/* ---------- 사운드 ---------- */
+const sfx=(()=>{
+  let ac=null,humOsc=null,humGain=null;
+  const init=()=>{if(!ac){try{ac=new (window.AudioContext||window.webkitAudioContext)();humGain=ac.createGain();humGain.gain.value=0;humGain.connect(ac.destination);
+    humOsc=ac.createOscillator();humOsc.type='sawtooth';humOsc.frequency.value=60;const lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=260;humOsc.connect(lp).connect(humGain);humOsc.start();}catch(e){ac=null;}}
+    if(ac&&ac.state==='suspended') ac.resume();};
+  const noise=(dur,f,q,gain,type)=>{if(!ac||!st.sound) return;const len=Math.floor(ac.sampleRate*dur);const buf=ac.createBuffer(1,len,ac.sampleRate);const d=buf.getChannelData(0);
+    for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.5);const s=ac.createBufferSource();s.buffer=buf;const fl=ac.createBiquadFilter();fl.type=type||'bandpass';fl.frequency.value=f;fl.Q.value=q;const g=ac.createGain();g.gain.value=gain;s.connect(fl).connect(g).connect(ac.destination);s.start();};
+  const tone=(f,dur,gain,type)=>{if(!ac||!st.sound) return;const o=ac.createOscillator();o.type=type||'sine';o.frequency.value=f;const g=ac.createGain();g.gain.setValueAtTime(gain,ac.currentTime);g.gain.exponentialRampToValueAtTime(0.0001,ac.currentTime+dur);o.connect(g).connect(ac.destination);o.start();o.stop(ac.currentTime+dur);};
+  return {init,
+    clack:()=>noise(0.07,2200,1.1,0.7),
+    bang:()=>{noise(0.9,500,0.4,2.2,'lowpass');tone(55,0.8,0.25,'sawtooth');setTimeout(()=>noise(0.25,3000,0.8,0.6),120);},
+    ok:()=>{tone(880,0.12,0.12);setTimeout(()=>tone(1320,0.15,0.1),90);},
+    err:()=>tone(180,0.25,0.18,'square'),
+    hum:(on)=>{if(!ac||!humGain) return;humGain.gain.setTargetAtTime(on&&st.sound?0.05:0,ac.currentTime,0.25);}
+  };
+})();
+
+/* ---------- 2D 회로도 렌더링 ---------- */
+function ilState(side){
+  if(st.mode==='run') return 'ok';
+  if(st.mode==='fault') return st.fault.il?'missing':'ok';
+  return (side==='F'?['il1','il2']:['il3','il4']).every(i=>st.wireDone.has(i))?'ok':'open';
+}
+function currentMap(){
+  if(st.mode==='run') return [2,1,0];
+  if(st.mode==='fault') return MAPS[st.fault.sw].slice();
+  return [0,1,2].map(i=>st.wireDone.has(`sw_ok_${i}`)?2-i:null);
+}
+function ctrlSVG(){
+  const o=st.out||{},has=id=>flow.has(id),any=!!(o.coilF||o.coilR||o.rl||o.gl||o.yl);
+  const k={thrb:has('thr_b'),pb0:has('pb0'),fin:has('pb1')||has('mcf_a'),fpb:has('pb1'),fsh:has('mcf_a'),fil:!!(o.coilF||o.rl),fcoil:!!o.coilF,rl:!!o.rl,
+    rin:has('pb2')||has('mcr_a'),rpb:has('pb2'),rsh:has('mcr_a'),ril:!!(o.coilR||o.gl),rcoil:!!o.coilR,gl:!!o.gl,yl:!!o.yl};
+  let s='';
+  const pl=(pts,on,cls)=>{s+=`<polyline class="w${on?' live':''}${cls?' '+cls:''}" points="${pts}"/>`;};
+  const dot=(x,y)=>{s+=`<circle class="dot" cx="${x}" cy="${y}" r="3.2"/>`;};
+  const ct=(x,y,type,closed,on,label,pb)=>{
+    const a=x-8,b=x+8;s+=`<g class="ct${on?' live':''}">`;
+    s+=`<line class="bar" x1="${a}" y1="${y-11}" x2="${a}" y2="${y+11}"/><line class="bar" x1="${b}" y1="${y-11}" x2="${b}" y2="${y+11}"/>`;
+    if(type==='b') s+=`<line class="slash" x1="${a-6}" y1="${y+12}" x2="${b+6}" y2="${y-12}"/>`;
+    if(closed) s+=`<line class="bridge" x1="${a+1}" y1="${y}" x2="${b-1}" y2="${y}"/>`;
+    if(pb) s+=`<line class="bar thin" x1="${x}" y1="${y-13}" x2="${x}" y2="${y-24}"/><line class="bar thin" x1="${x-9}" y1="${y-24}" x2="${x+9}" y2="${y-24}"/>`;
+    s+=`<text class="lbl" x="${x}" y="${y+28}">${label}</text></g>`;
+  };
+  const coil=(x,y,t,on)=>{s+=`<circle class="coil${on?' on':''}" cx="${x}" cy="${y}" r="16"/><text class="coiltx" x="${x}" y="${y+4}">${t}</text>`;};
+  const lamp=(x,y,t,on,c)=>{s+=`<circle class="lamp ${c}${on?' on':''}" cx="${x}" cy="${y}" r="13"/><line class="slash" x1="${x-9}" y1="${y-9}" x2="${x+9}" y2="${y+9}"/><line class="slash" x1="${x-9}" y1="${y+9}" x2="${x+9}" y2="${y-9}"/><text class="lbl" x="${x}" y="${y+29}">${t}</text>`;};
+  const il=(x,y,state,on,closed,label)=>{
+    if(state==='ok'){s+=`<rect class="ilbox" x="${x-30}" y="${y-30}" width="60" height="64" rx="6"/><text class="lbl" x="${x}" y="${y-34}" style="fill:#d9480f;font-weight:700">인터록</text>`;pl(`${x-30},${y} ${x-8},${y}`,on);ct(x,y,'b',closed,on,label);pl(`${x+8},${y} ${x+30},${y}`,on);}
+    else if(state==='missing'){s+=`<rect class="ilbox bad" x="${x-30}" y="${y-30}" width="60" height="64" rx="6"/><text class="lbl redtx" x="${x}" y="${y-34}">인터록 누락</text>`;pl(`${x-30},${y} ${x+30},${y}`,on,'');s+=`<line class="miss" x1="${x-12}" y1="${y-12}" x2="${x+12}" y2="${y+12}"/><line class="miss" x1="${x-12}" y1="${y+12}" x2="${x+12}" y2="${y-12}"/><text class="lbl redtx" x="${x}" y="${y+28}">직결(✗)</text>`;}
+    else{s+=`<rect class="ilbox bad" x="${x-30}" y="${y-30}" width="60" height="64" rx="6"/><text class="lbl redtx" x="${x}" y="${y-34}">미결선</text><text class="lbl redtx" x="${x}" y="${y+5}">? ?</text>`;}
+  };
+  s+=`<text class="lblb" x="50" y="24">R</text><text class="lblb" x="770" y="24">T</text><circle cx="50" cy="38" r="4" fill="#8b4a1c"/><circle cx="770" cy="38" r="4" fill="#8a9099"/>`;
+  pl('50,38 50,60',any);dot(50,60);
+  pl('50,60 102,60',k.thrb);ct(110,60,'b',!st.thrTrip,k.thrb,'THR 95-96');pl('118,60 187,60',k.thrb);
+  ct(195,60,'b',!st.pb[0],k.pb0,'PB0 정지',true);pl('203,60 250,60',k.pb0);
+  pl('250,60 250,120',k.pb0);pl('250,120 250,225',k.rin||k.gl&&k.rin);dot(250,120);
+  // 정회전 렁
+  pl('250,120 282,120',k.fin);dot(265,120);ct(290,120,'a',st.pb[1],k.fpb,'PB1 정',true);pl('298,120 345,120',k.fpb);
+  pl('265,120 265,165 282,165',k.fsh);ct(290,165,'a',st.mcF,k.fsh,'MC1 a(13-14)');pl('298,165 345,165 345,120',k.fsh);dot(345,120);
+  pl('345,120 430,120',k.fil);il(460,120,ilState('F'),k.fil,!st.mcR,'MC2 b');pl('490,120 560,120',k.fil);dot(560,120);
+  pl('560,120 624,120',k.fcoil);coil(640,120,'MC1',o.coilF);pl('656,120 770,120',k.fcoil);
+  pl('560,120 560,165 627,165',k.rl);lamp(640,165,'RL',o.rl,'rl');pl('653,165 770,165',k.rl);dot(770,120);dot(770,165);
+  // 역회전 렁
+  pl('250,225 282,225',k.rin);dot(265,225);ct(290,225,'a',st.pb[2],k.rpb,'PB2 역',true);pl('298,225 345,225',k.rpb);
+  pl('265,225 265,270 282,270',k.rsh);ct(290,270,'a',st.mcR,k.rsh,'MC2 a(13-14)');pl('298,270 345,270 345,225',k.rsh);dot(345,225);
+  pl('345,225 430,225',k.ril);il(460,225,ilState('R'),k.ril,!st.mcF,'MC1 b');pl('490,225 560,225',k.ril);dot(560,225);
+  pl('560,225 624,225',k.rcoil);coil(640,225,'MC2',o.coilR);pl('656,225 770,225',k.rcoil);
+  pl('560,225 560,270 627,270',k.gl);lamp(640,270,'GL',o.gl,'gl');pl('653,270 770,270',k.gl);dot(770,225);dot(770,270);
+  // 과부하 경보
+  pl('50,60 50,325 102,325',k.yl);ct(110,325,'a',st.thrTrip,k.yl,'THR 95-98');pl('118,325 627,325',k.yl);lamp(640,325,'YL',o.yl,'yl');pl('653,325 770,325',k.yl);
+  s+=`<line x1="110" y1="74" x2="110" y2="308" stroke="#9aa5b4" stroke-width="1" stroke-dasharray="3 4"/>`;
+  pl('770,38 770,325',any);
+  return `<svg viewBox="0 0 820 372" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="제어회로도">${s}</svg>`;
+}
+function mainSVG(){
+  const X=[70,110,150],XR=[290,330,370],PC=['#8b4a1c','#1f2328','#8a9099'];
+  const map=currentMap(),o=st.out||{},run=!!o.running,sh=st.shortActive?st.shortPh:null;
+  const phOn=i=>run||(sh&&sh.includes(i));
+  const fl=on=>on?(sh?'sflow':'mflow'):'';
+  let s='';
+  const seg=(x1,y1,x2,y2,c,f)=>{s+=`<line class="ph" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}"/>`;if(f) s+=`<line class="${f}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;};
+  const dot=(x,y)=>{s+=`<circle class="dot" cx="${x}" cy="${y}" r="3.6"/>`;};
+  const mc=(x,closed,c)=>{s+=`<line class="mc-bar" x1="${x-9}" y1="182" x2="${x+9}" y2="182"/><line class="mc-bar" x1="${x-9}" y1="198" x2="${x+9}" y2="198"/>`;if(closed) s+=`<line class="bridge" x1="${x}" y1="183" x2="${x}" y2="197"/>`;};
+  for(let i=0;i<3;i++){s+=`<text class="lblb" x="${X[i]}" y="20">${PH[i]}</text><circle cx="${X[i]}" cy="32" r="4" fill="${PC[i]}"/>`;}
+  s+=`<rect class="dbox" x="50" y="58" width="120" height="44" rx="5"/><text class="lbls" x="178" y="84">MCCB</text>`;
+  const Ty=[118,132,146];
+  for(let i=0;i<3;i++){
+    const x=X[i];seg(x,32,x,68,PC[i],fl(phOn(i)));
+    if(st.mccb){seg(x,68,x,92,PC[i],fl(phOn(i)));}else{s+=`<line class="blade" x1="${x}" y1="92" x2="${x+13}" y2="72" stroke="${PC[i]}"/>`;}
+    s+=`<circle cx="${x}" cy="68" r="2.5" fill="#333"/><circle cx="${x}" cy="92" r="2.5" fill="#333"/>`;
+    seg(x,92,x,Ty[i],PC[i],fl(phOn(i)));
+    seg(x,Ty[i],x,182,PC[i],fl(st.mcF&&phOn(i)));
+    seg(x,Ty[i],XR[i],Ty[i],PC[i],fl(st.mcR&&phOn(i)));dot(x,Ty[i]);
+    seg(XR[i],Ty[i],XR[i],182,PC[i],fl(st.mcR&&phOn(i)));
+    mc(x,st.mcF);mc(XR[i],st.mcR);
+  }
+  s+=`<line x1="58" y1="190" x2="162" y2="190" stroke="#8592a6" stroke-dasharray="3 3"/><line x1="278" y1="190" x2="382" y2="190" stroke="#8592a6" stroke-dasharray="3 3"/>`;
+  s+=`<text class="lbls" x="52" y="178" text-anchor="end">MC1</text><text class="lbl" x="34" y="212">(정)</text><text class="lbls" x="388" y="178">MC2</text><text class="lbl" x="402" y="212">(역)</text>`;
+  const joinY=[null,null,null];
+  for(let i=0;i<3;i++){
+    const j=map[i],y=226+13*i;
+    if(j==null){seg(XR[i],198,XR[i],214,PC[i]);s+=`<text class="lbl redtx" x="${XR[i]}" y="228">?</text>`;continue;}
+    seg(XR[i],198,XR[i],y,PC[i],fl(st.mcR&&phOn(i)));seg(XR[i],y,X[j],y,PC[i],fl(st.mcR&&phOn(i)));dot(X[j],y);joinY[j]=y;
+  }
+  for(let j=0;j<3;j++){
+    const yj=joinY[j]||226;
+    seg(X[j],198,X[j],yj,PC[j],fl(st.mcF&&phOn(j)));
+    seg(X[j],yj,X[j],300,PC[j],fl(run));
+  }
+  const mapOk=map.every((v,i)=>v===[2,1,0][i]),mapNone=map.every((v,i)=>v===i),hasNull=map.some(v=>v==null);
+  const sw=hasNull?['미결선','redtx']:mapOk?['R↔T 교체 (역상)','oktx']:mapNone?['상 교체 없음 ✗','redtx']:['3상 순환 교체 ✗','redtx'];
+  s+=`<text class="lbl ${sw[1]}" x="330" y="282">${sw[0]}</text>`;
+  s+=`<rect class="dbox" x="50" y="300" width="120" height="40" rx="5"/><text class="lbls" x="178" y="325">THR</text>`;
+  for(let j=0;j<3;j++){const x=X[j];s+=`<path class="heater" d="M${x} 300 v5 l6 3 l-12 6 l12 6 l-12 6 l6 3 v11"/>`;if(run) s+=`<line class="mflow" x1="${x}" y1="300" x2="${x}" y2="340"/>`;
+    seg(x,340,x,372,PC[j],fl(run));s+=`<circle cx="${x}" cy="372" r="4.5" fill="#fff" stroke="#333" stroke-width="1.5"/><text class="lbl" x="${x+(j===0?-12:j===2?12:0)}" y="${j===1?366:376}" style="font-weight:700">${UVW[j]}</text>`;}
+  const mx=110,my=428;
+  seg(70,376,mx-22,my-20,'#555',fl(run));seg(110,377,110,my-30,'#555',fl(run));seg(150,376,mx+22,my-20,'#555',fl(run));
+  s+=`<circle class="motor${run?' on':''}" cx="${mx}" cy="${my}" r="30"/><text class="lblb" x="${mx}" y="${my+5}" style="font-size:14px">IM</text>`;
+  if(run){
+    const cw=o.dir>0,col=cw?'#2b8a3e':'#1971c2';
+    s+=cw?`<path d="M ${mx+28} ${my-28} A 40 40 0 0 1 ${mx+38} ${my+14}" fill="none" stroke="${col}" stroke-width="3"/><path d="M ${mx+38} ${my+22} l -7 -10 l 12 1 z" fill="${col}"/>`
+         :`<path d="M ${mx-28} ${my-28} A 40 40 0 0 0 ${mx-38} ${my+14}" fill="none" stroke="${col}" stroke-width="3"/><path d="M ${mx-38} ${my+22} l 7 -10 l -12 1 z" fill="${col}"/>`;
+    s+=`<text class="lbls" x="${mx+50}" y="${my+6}" style="fill:${col}">${cw?'정회전 ↻':'역회전 ↺'}</text>`;
+  }
+  if(sh) s+=`<text class="lbls redtx" x="230" y="210" style="font-size:15px">⚡ ${sh.map(p=>PH[p]).join('–')} 단락!</text>`;
+  return `<svg viewBox="0 0 440 470" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="주회로도">${s}</svg>`;
+}
+function timingSVG(){
+  const rows=[['PB1',[[60,90]]],['PB2',[[190,220],[400,430]]],['PB0',[[300,330],[560,590]]],['MC1',[[60,300]]],['MC2',[[400,560]]],['전동기',null]];
+  const W0=90,H=36,w=700;let s='';
+  [60,190,300,400,560].forEach(x=>s+=`<line x1="${W0+x}" y1="10" x2="${W0+x}" y2="${10+H*rows.length}" stroke="#d0d7e2" stroke-dasharray="3 3"/>`);
+  rows.forEach(([n,segs],r)=>{
+    const y0=14+r*H,yh=y0+6,yl=y0+26;
+    s+=`<text x="10" y="${y0+22}" font-size="13" font-weight="700" fill="#17202b" font-family="Noto Sans KR">${n}</text>`;
+    if(segs){let d=`M${W0} ${yl}`;segs.forEach(([a,b])=>{d+=` H${W0+a} V${yh} H${W0+b} V${yl}`;});d+=` H${W0+w}`;
+      const col=n.startsWith('MC')?'#e8590c':'#0b63ce';s+=`<path d="${d}" fill="none" stroke="${col}" stroke-width="2.4"/>`;}
+    else{s+=`<line x1="${W0}" y1="${y0+16}" x2="${W0+w}" y2="${y0+16}" stroke="#ccd3de"/>`;
+      s+=`<rect x="${W0+60}" y="${yh}" width="240" height="20" rx="4" fill="#d3f9d8" stroke="#2f9e44"/><text x="${W0+180}" y="${yh+15}" text-anchor="middle" font-size="12" font-weight="700" fill="#2b8a3e">정회전</text>`;
+      s+=`<rect x="${W0+400}" y="${yh}" width="160" height="20" rx="4" fill="#d0ebff" stroke="#1c7ed6"/><text x="${W0+480}" y="${yh+15}" text-anchor="middle" font-size="12" font-weight="700" fill="#1864ab">역회전</text>`;}
+  });
+  s+=`<text x="${W0+205}" y="${14+H*4+20}" text-anchor="middle" font-size="11.5" fill="#d9480f" font-weight="700">인터록으로 무시</text><path d="M${W0+205} ${14+H*1+28} V${14+H*4+8}" stroke="#d9480f" stroke-dasharray="2 3" fill="none"/>`;
+  return `<svg viewBox="0 0 ${W0+w+10} ${20+H*rows.length}" xmlns="http://www.w3.org/2000/svg">${s}</svg>`;
+}
+
+/* ---------- DOM 렌더 ---------- */
+const MISSION_RUN=[['fwd','PB1 → 정회전 운전'],['ilBlock','정회전 중 PB2 → 인터록으로 차단 확인'],['stop','PB0 → 정지'],['rev','PB2 → 역회전 운전'],['thr','THR 과부하 → YL 점등 확인']];
+const MISSION_FAULT=[['short','인터록 누락 + 운전 중 반대 버튼 → 상간 단락'],['noRev','상 교체 미교체 → MC2 투입해도 정회전'],['cycRev','3상 순환 교체 → 역회전 불가 확인']];
+function render(){
+  const o=st.out||{};
+  const stat={
+    mode:[MODENAME[st.mode],'on'],
+    mccb:[`MCCB ${st.tripped?'트립':st.mccb?'ON':'OFF'}`,st.tripped?'bad':st.mccb?'ok':''],
+    mcf:[`MC1 ${st.mcF?'투입':'개방'}`,st.mcF?'on':''],
+    mcr:[`MC2 ${st.mcR?'투입':'개방'}`,st.mcR?'on':''],
+    thr:[`THR ${st.thrTrip?'트립':'정상'}`,st.thrTrip?'bad':''],
+    motor:[st.shortActive?'⚡ 단락':o.running?(o.dir>0?'전동기 정회전 ↻':'전동기 역회전 ↺'):o.single?'결상':'전동기 정지',st.shortActive?'bad':o.running?(o.dir>0?'fwd':'rev'):o.single?'bad':'']
+  };
+  $$('[data-stat]').forEach(el=>{const v=stat[el.dataset.stat];if(!v) return;el.textContent=v[0];el.className='chip'+(v[1]?' '+v[1]:'');});
+  $$('[data-mode]').forEach(b=>b.classList.toggle('on',b.dataset.mode===st.mode));
+  $$('[data-pb]').forEach(b=>b.classList.toggle('down',st.pb[+b.dataset.pb]));
+  $$('[data-mccb]').forEach(b=>{b.classList.remove('on','off','trip');b.classList.add(st.tripped?'trip':st.mccb?'on':'off');const sm=b.querySelector('small');if(sm) sm.textContent=st.tripped?'트립':st.mccb?'ON':'OFF';else b.textContent=`MCCB ${st.tripped?'트립':st.mccb?'ON':'OFF'}`;});
+  $$('[data-act="thrTrip"]').forEach(b=>{b.dataset.state=st.thrTrip?'1':'0';const sm=b.querySelector('small');if(sm) sm.textContent=st.thrTrip?'리셋':'과부하';else b.textContent=st.thrTrip?'THR 리셋':'THR 과부하';});
+  $$('[data-il]').forEach(b=>b.classList.toggle('on',(b.dataset.il==='1')===st.fault.il));
+  $$('[data-sw]').forEach(b=>b.classList.toggle('on',b.dataset.sw===st.fault.sw));
+  $$('[data-act="sound"]').forEach(b=>b.textContent=st.sound?'🔊':'🔇');
+  const m=$('#mainSvg'),c=$('#ctrlSvg');if(m) m.innerHTML=mainSVG();if(c) c.innerHTML=ctrlSVG();
+  // 사이드 패널
+  const pRun=$('#pRun'),pWire=$('#pWire'),pFault=$('#pFault');
+  if(pRun){pRun.hidden=st.mode!=='run';pWire.hidden=st.mode!=='wire';pFault.hidden=st.mode!=='fault';
+    $('#sideTitle').textContent=st.mode==='run'?'운전 미션':st.mode==='wire'?'결선 실습':'오류 체험';
+    $('#missionRun').innerHTML=MISSION_RUN.map(([k,t])=>`<li class="${st.ach[k]?'done':''}">${t}</li>`).join('');
+    $('#missionFault').innerHTML=MISSION_FAULT.map(([k,t])=>`<li class="${st.ach[k]?'done':''}">${t}</li>`).join('');
+    const t=currentTask(),idx=t?TASKS.indexOf(t):TASKS.length;
+    $('#taskProg').innerHTML=TASKS.map((x,i)=>`<span class="${st.wireDone.has(x.wire)?'done':i===idx?'cur':''}"></span>`).join('');
+    $('#taskTitle').textContent=t?`${t.title} (${idx+1}/${TASKS.length})`:'결선 완료 ✔';
+    $('#taskDesc').textContent=t?t.desc:'인터록 4가닥과 상 교체 3가닥을 모두 결선했습니다. PB1·PB2·PB0로 시운전하고, 정회전 중 PB2를 눌러 인터록을 확인하세요.';
+    $('#taskFrom').textContent=t?TERMS[t.from].name:'—';
+    const fb=$('#taskFb');fb.className='fb'+(st.feedback?' '+st.feedback.cls:'');fb.textContent=st.feedback?st.feedback.text:'';
+  }
+  const li=st.log.slice(0,14).map(e=>`<li class="${e.lv}"><time>${e.t}</time>${e.msg}</li>`).join('');
+  ['#log3d','#logTheory'].forEach(s=>{const el=$(s);if(el) el.innerHTML=li;});
+  const lm=$('#lastMsg');if(lm) lm.textContent=st.log[0]?st.log[0].msg:'';
+  emit('render');
+}
+
+/* ---------- 버튼 바인딩 ---------- */
+function bind(){
+  $$('[data-pb]').forEach(b=>{
+    const k=+b.dataset.pb;
+    b.addEventListener('pointerdown',e=>{e.preventDefault();try{b.setPointerCapture(e.pointerId);}catch(_){}press(k);});
+    ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>b.addEventListener(ev,()=>release(k)));
+    b.addEventListener('contextmenu',e=>e.preventDefault());
+    b.addEventListener('keydown',e=>{if(e.key===' '||e.key==='Enter'){e.preventDefault();pulse(k,400);}});
+  });
+  document.addEventListener('click',e=>{
+    const b=e.target.closest('[data-act],[data-mode],[data-il],[data-sw]');if(!b) return;
+    if(b.dataset.mode){setMode(b.dataset.mode);return;}
+    if(b.dataset.il!=null){setFault('il',b.dataset.il==='1');return;}
+    if(b.dataset.sw){setFault('sw',b.dataset.sw);return;}
+    const a=b.dataset.act;
+    if(a==='mccb') toggleMCCB();
+    else if(a==='thrTrip') st.thrTrip?thrReset():thrTrip();
+    else if(a==='reset') resetAll();
+    else if(a==='hint') hint();
+    else if(a==='auto') autoWire();
+    else if(a==='wreset') resetWire();
+    else if(a==='sound'){st.sound=!st.sound;sfx.init();sfx.hum(st.sound&&st.out.running);render();}
+    else if(a==='collapse'){const s=$('#side');s.classList.toggle('collapsed');b.textContent=s.classList.contains('collapsed')?'▸':'▾';}
+  });
+  const tm=$('#timing');if(tm) tm.innerHTML=timingSVG();
+  // 체크리스트
+  const cks=$$('#checklist input');const upd=()=>{const n=cks.filter(c=>c.checked).length;$('#ckScore').textContent=`${n} / ${cks.length} 확인${n===cks.length?' — 결선 준비 완료!':''}`;};
+  cks.forEach(c=>c.addEventListener('change',upd));upd();
+  // 퀴즈
+  const Q=[
+    ['3상 유도전동기의 회전 방향을 바꾸는 올바른 방법은?',['3선 중 임의의 2선을 서로 바꾼다','3선을 한 칸씩 순환하여 바꾼다','전원 전압을 낮춘다','THR 설정값을 바꾼다'],0,'임의의 두 선을 바꾸면 상순이 반대가 되어 회전자계가 반대로 돕니다. 순환 교체는 상순이 그대로입니다.'],
+    ['정회전 MC1 코일 회로에 직렬로 넣는 인터록 접점은?',['MC1의 a접점','MC2의 b접점','MC2의 a접점','PB0의 a접점'],1,'상대 MC(MC2)의 b접점을 넣어 MC2가 투입되면 MC1 코일 회로가 열리게 합니다.'],
+    ['인터록이 누락된 회로에서 정회전 운전 중 PB2를 누르면?',['아무 변화가 없다','즉시 역회전으로 전환된다','MC1·MC2 동시 투입 → R–T 상간 단락, MCCB 트립','THR만 트립된다'],2,'두 MC가 모두 닫히면 U·W 단자를 통해 R상과 T상이 직접 연결되어 선간 단락이 발생합니다.'],
+    ['자기유지 회로의 구성으로 옳은 것은?',['기동 PB와 자기 a접점을 직렬','기동 PB와 자기 a접점을 병렬','정지 PB와 자기 b접점을 병렬','코일과 THR a접점을 병렬'],1,'기동 버튼(a)과 자기 MC의 a접점(13-14)을 병렬로 연결해 버튼을 놓아도 코일 전류가 유지됩니다.'],
+    ['과부하로 THR이 트립되었을 때 YL(경보등)을 점등시키는 접점은?',['95-96','95-98','13-14','21-22'],1,'95-96(b)은 트립 시 열려 MC를 소자시키고, 95-98(a)은 트립 시 닫혀 경보등을 켭니다.'],
+    ['MC2 주회로를 3상 순환 교체(R→V, S→W, T→U)로 결선했다. 결과는?',['역회전한다','상순이 그대로여서 정회전한다','단상 운전이 된다','기동하지 않는다'],1,'순환 교체는 상순 R→S→T를 그대로 유지하므로 회전 방향이 바뀌지 않습니다. 반드시 두 선만 교체합니다.']
+  ];
+  const qz=$('#quiz');let score=0,done=0;
+  if(qz){qz.innerHTML=Q.map(([q,opts,,exp],i)=>`<div class="q" data-q="${i}"><p>Q${i+1}. ${q}</p><div class="opts">${opts.map((o,j)=>`<button data-o="${j}">${String.fromCharCode(9312+j)} ${o}</button>`).join('')}</div><div class="exp">${exp}</div></div>`).join('');
+    qz.addEventListener('click',e=>{const b=e.target.closest('button[data-o]');if(!b) return;const q=b.closest('.q');if(q.classList.contains('done')) return;
+      const i=+q.dataset.q,j=+b.dataset.o,ans=Q[i][2];q.classList.add('done');done++;
+      q.querySelectorAll('button').forEach((x,k)=>{if(k===ans) x.classList.add('right');});if(j===ans) score++;else b.classList.add('wrong');
+      $('#quizScore').textContent=`${score} / ${Q.length}${done===Q.length?(score===Q.length?' 🎉 만점!':' — 오답을 다시 확인하세요'):''}`;});}
+}
+
+window.LAB={state:st,TERMS,W,IE,TASKS,MAPS,UVW,activeIds,get flow(){return flow;},currentTask,
+  press,release,pulse,toggleMCCB,thrTrip,thrReset,reset:resetAll,setMode,setFault,wireAttempt,hint,autoWire,resetWire,on,render,sfx,MODENAME,SWNAME,_solve:solve};
+if(typeof document!=='undefined'&&document.getElementById){bind();log('ok','MCCB ON — PB1(정회전) 또는 PB2(역회전)를 눌러 보세요.');evaluate('init');}
+})();
+</script>
+
+<!-- ================= 3D 디지털 트윈 ================= -->
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const LAB=window.LAB, st=LAB.state;
+const stage=document.getElementById('stage'), canvas=document.getElementById('c3d');
+const tipEl=document.getElementById('tip'), alarmEl=document.getElementById('alarm'), loadingEl=document.getElementById('loading');
+try{await Promise.race([document.fonts.load('700 40px "Noto Sans KR"'),new Promise(r=>setTimeout(r,2500))]);}catch(e){}
+
+/* ---------- 렌더러/씬 ---------- */
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.xr.enabled=true;
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x0f1720);
+scene.fog=new THREE.Fog(0x0f1720,20,46);
+const camera=new THREE.PerspectiveCamera(45,1,0.05,120);
+scene.add(camera);
+const world=new THREE.Group();scene.add(world);
+scene.add(new THREE.HemisphereLight(0xe6eeff,0x1a222c,1.0));
+const sun=new THREE.DirectionalLight(0xffffff,1.7);sun.position.set(4,7,9);scene.add(sun);
+const fill=new THREE.DirectionalLight(0x9cc3ff,0.5);fill.position.set(-6,2,4);scene.add(fill);
+const controls=new OrbitControls(camera,canvas);
+controls.enableDamping=true;controls.dampingFactor=0.08;controls.minDistance=1.6;controls.maxDistance=30;
+controls.maxPolarAngle=Math.PI*0.62;
+
+const V=(x,y,z)=>new THREE.Vector3(x,y,z);
+const mat=(c,o={})=>new THREE.MeshStandardMaterial({color:c,roughness:o.r??0.6,metalness:o.m??0.05,emissive:o.e??0x000000,emissiveIntensity:o.ei??1,transparent:!!o.t,opacity:o.op??1});
+function addBox(w,h,d,c,x,y,z0,o){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(c,o));m.position.set(x,y,z0+d/2);world.add(m);return m;}
+function addCyl(r,len,c,x,y,z0,o,seg=24){const g=new THREE.CylinderGeometry(r,r,len,seg);g.rotateX(Math.PI/2);const m=new THREE.Mesh(g,mat(c,o));m.position.set(x,y,z0+len/2);world.add(m);return m;}
+
+/* ---------- 텍스트 텍스처 ---------- */
+const FONT='"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif';
+function rr(g,x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath();}
+function makeLabel(text,{size=0.12,color='#ffffff',bg='rgba(10,16,26,.78)',weight=700,depthTest=true}={}){
+  const fs=44,pad=14,c=document.createElement('canvas'),g=c.getContext('2d');
+  g.font=`${weight} ${fs}px ${FONT}`;const tw=Math.ceil(g.measureText(text).width);
+  c.width=tw+pad*2;c.height=fs+pad*1.3;
+  g.font=`${weight} ${fs}px ${FONT}`;if(bg){g.fillStyle=bg;rr(g,0,0,c.width,c.height,16);g.fill();}
+  g.fillStyle=color;g.textAlign='center';g.textBaseline='middle';g.fillText(text,c.width/2,c.height/2+2);
+  const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=4;
+  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest,depthWrite:false}));
+  s.scale.set(size*c.width/c.height,size,1);s.renderOrder=depthTest?2:10;return s;
+}
+function addLabel(text,x,y,z,o){const s=makeLabel(text,o);s.position.set(x,y,z);world.add(s);return s;}
+function canvasPlane(w,h,px,draw){
+  const c=document.createElement('canvas');c.width=px;c.height=Math.round(px*h/w);const g=c.getContext('2d');
+  const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=4;
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:tex,transparent:true,toneMapped:false}));
+  const redraw=(...a)=>{g.clearRect(0,0,c.width,c.height);draw(g,c.width,c.height,...a);tex.needsUpdate=true;};
+  redraw();return {mesh:m,redraw,g,c};
+}
+function plate(lines,w,h,x,y,z,{bg='#f8f9fa',fg='#17202b',sub='#5a6676'}={}){
+  const p=canvasPlane(w,h,512,(g,W,H)=>{g.fillStyle=bg;rr(g,0,0,W,H,18);g.fill();g.textAlign='center';g.textBaseline='middle';
+    g.fillStyle=fg;g.font=`900 ${Math.round(H*0.36)}px ${FONT}`;g.fillText(lines[0],W/2,lines[1]?H*0.36:H/2);
+    if(lines[1]){g.fillStyle=sub;g.font=`700 ${Math.round(H*0.24)}px ${FONT}`;g.fillText(lines[1],W/2,H*0.74);}});
+  p.mesh.position.set(x,y,z);world.add(p.mesh);return p;
+}
+
+/* ---------- 바닥·패널 ---------- */
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(40,40),mat(0x18222e,{r:0.95}));floor.rotation.x=-Math.PI/2;floor.position.y=-3.3;world.add(floor);
+const grid=new THREE.GridHelper(40,40,0x2a3a4e,0x1f2b3a);grid.position.y=-3.29;world.add(grid);
+addBox(5.2,6.6,0.1,0xd5dae0,0,0.3,-0.1,{r:0.8});
+[[-2.66,0.3,0.12,6.84],[2.66,0.3,0.12,6.84]].forEach(([x,y,w,h])=>addBox(w,h,0.6,0xa9b1bb,x,y,-0.1,{r:0.5,m:0.2}));
+[[0,3.66],[0,-3.06]].forEach(([x,y])=>addBox(5.44,0.12,0.6,0xa9b1bb,x,y,-0.1,{r:0.5,m:0.2}));
+[3.1,2.0,0.3,-1.05,-2.4].forEach(y=>addBox(4.9,0.34,0.06,0xb7bec6,0,y,0,{m:0.5,r:0.35}));
+addLabel('제어반 (Control Panel)',-1.5,3.92,0.3,{size:0.16,bg:'rgba(11,37,69,.85)'});
+
+/* ---------- 단자 ---------- */
+const P={},TM={},termHits=[],clickables=[];
+const termGeo=new THREE.CylinderGeometry(0.05,0.05,0.035,18);termGeo.rotateX(Math.PI/2);
+const hitGeo=new THREE.SphereGeometry(0.11,10,8);
+const hitMat=new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false});
+const TERM_COL=0xc9a95a;
+function addTerm(id,x,y,z,lab,side){
+  const m=new THREE.Mesh(termGeo,mat(TERM_COL,{m:0.7,r:0.32}));m.position.set(x,y,z+0.0175);world.add(m);
+  const sl=new THREE.Mesh(new THREE.BoxGeometry(0.075,0.012,0.006),mat(0x3a3a3a));sl.position.set(x,y,z+0.037);world.add(sl);
+  const h=new THREE.Mesh(hitGeo,hitMat);h.position.set(x,y,z+0.03);h.userData={act:'term',id};world.add(h);termHits.push(h);
+  if(lab){const off={up:[0,0.125],down:[0,-0.125],left:[-0.13,0],right:[0.13,0]}[side||'up'];addLabel(lab,x+off[0],y+off[1],z+0.06,{size:0.075,bg:'rgba(15,23,32,.7)'});}
+  P[id]=V(x,y,z+0.036);TM[id]=m;
+}
+function info(mesh,text){mesh.userData={act:'info',tip:text};clickables.push(mesh);}
+
+/* 전원 단자대 TB1 */
+info(addBox(1.2,0.4,0.3,0x4a5560,-0.6,3.1,0),'<b>TB1 전원 단자대</b><br>3상 R·S·T 입력');
+['IN_R','IN_S','IN_T'].forEach((id,i)=>addTerm(id,-0.95+0.35*i,3.1,0.3,'RST'[i],'left'));
+addLabel('전원 3φ',-1.6,3.1,0.4,{size:0.1});
+[0x8b4a1c,0x26282c,0x8f959e].forEach((c,i)=>{const x=-0.95+0.35*i;const cur=new THREE.CatmullRomCurve3([V(x,3.1,0.33),V(x,3.35,0.45),V(x,3.7,0.45),V(x,4.3,0.3)]);world.add(new THREE.Mesh(new THREE.TubeGeometry(cur,20,0.035,6),mat(c,{r:0.45})));});
+
+/* MCCB */
+info(addBox(1.1,1.0,0.6,0x2f3338,-0.6,2.0,0,{r:0.5}),'<b>MCCB 배선용 차단기</b><br>클릭(터치)하면 ON/OFF · 단락 시 자동 트립');
+for(let i=0;i<3;i++){addTerm(`MCCB_L${i+1}`,-0.95+0.35*i,2.38,0.6,`L${i+1}`,'up');addTerm(`MCCB_T${i+1}`,-0.95+0.35*i,1.62,0.6,`T${i+1}`,'down');}
+addBox(0.3,0.44,0.03,0x15181c,-0.6,1.98,0.6);
+const lever=addBox(0.22,0.17,0.16,0xf1f3f5,-0.6,2.1,0.6,{r:0.4});lever.userData={act:'mccb',tip:'<b>MCCB 레버</b> — ON/OFF'};clickables.push(lever);
+plate(['MCCB','3P'],0.34,0.2,-0.95,1.98,0.605,{bg:'#2f3338',fg:'#ffffff',sub:'#adb5bd'});
+const mccbLed=addCyl(0.04,0.03,0x2f9e44,-0.25,1.98,0.6,{e:0x000000});
+
+/* 전자접촉기 */
+const MCV={};
+function buildMC(key,cx,cy,name,sub,tip){
+  const body=addBox(1.3,1.2,0.7,0xe9ecef,cx,cy,0,{r:0.55});info(body,tip);
+  addBox(1.32,0.24,0.705,0x3b4048,cx,cy+0.47,0);addBox(1.32,0.24,0.705,0x3b4048,cx,cy-0.47,0);
+  plate([name,sub],0.86,0.3,cx-0.05,cy-0.14,0.705);
+  addBox(0.4,0.22,0.02,0x1f252c,cx-0.05,cy+0.15,0.7);
+  const flag=addBox(0.3,0.15,0.04,0x6c757d,cx-0.05,cy+0.15,0.705,{e:0x000000});
+  const aux=addBox(0.5,1.0,0.6,0xdfe3e8,cx+0.9,cy+0.05,0,{r:0.55});info(aux,`<b>${name} 보조접점</b><br>13-14 : a접점(NO) · 21-22 : b접점(NC)`);
+  plate(['a   b'],0.4,0.14,cx+0.9,cy+0.05,0.605,{bg:'#dfe3e8',fg:'#495057'});
+  addBox(0.08,0.5,0.01,0x1c7ed6,cx+0.78,cy+0.05,0.6);addBox(0.08,0.5,0.01,0xe03131,cx+1.02,cy+0.05,0.6);
+  for(let i=0;i<3;i++){addTerm(`${key}_L${i+1}`,cx-0.3+0.3*i,cy+0.47,0.705,`L${i+1}`,'up');addTerm(`${key}_T${i+1}`,cx-0.3+0.3*i,cy-0.47,0.705,`T${i+1}`,'down');}
+  addTerm(`${key}_A1`,cx-0.56,cy+0.47,0.705,'A1','up');addTerm(`${key}_A2`,cx-0.56,cy-0.47,0.705,'A2','down');
+  addTerm(`${key}_13`,cx+0.78,cy+0.42,0.6,'13','up');addTerm(`${key}_21`,cx+1.02,cy+0.42,0.6,'21','up');
+  addTerm(`${key}_14`,cx+0.78,cy-0.32,0.6,'14','down');addTerm(`${key}_22`,cx+1.02,cy-0.32,0.6,'22','down');
+  addLabel(sub.includes('정')?'MC1 · 정회전':'MC2 · 역회전',cx+0.2,cy+0.92,0.5,{size:0.12,bg:'rgba(11,37,69,.88)'});
+  MCV[key]={flag,body};
+}
+buildMC('MCF',-1.5,0.3,'MC1','정회전 (MC-F)','<b>MC1 정회전 전자접촉기</b><br>R-U · S-V · T-W');
+buildMC('MCR',0.9,0.3,'MC2','역회전 (MC-R)','<b>MC2 역회전 전자접촉기</b><br>R-W · S-V · T-U (R↔T 교체)');
+
+/* THR */
+info(addBox(1.3,0.9,0.6,0x30353c,-1.5,-1.05,0,{r:0.5}),'<b>THR 열동형 과부하 계전기</b><br>TEST: 트립 · RESET: 복귀');
+plate(['THR','열동계전기'],0.62,0.26,-1.78,-1.05,0.605,{bg:'#30353c',fg:'#fff',sub:'#adb5bd'});
+for(let i=0;i<3;i++){addTerm(`THR_I${i+1}`,-1.8+0.3*i,-0.68,0.6,'','up');addTerm(`THR_O${i+1}`,-1.8+0.3*i,-1.42,0.6,`${2*i+2}/T${i+1}`,'down');}
+const thrReset=addCyl(0.085,0.07,0x1c7ed6,-1.1,-0.93,0.6);thrReset.userData={act:'thrReset',tip:'<b>THR RESET</b> — 트립 복귀'};clickables.push(thrReset);
+const thrTest=addCyl(0.07,0.06,0xe03131,-1.1,-1.18,0.6);thrTest.userData={act:'thrTrip',tip:'<b>THR TEST</b> — 과부하 트립 모의'};clickables.push(thrTest);
+addLabel('RESET',-0.92,-0.93,0.7,{size:0.06});addLabel('TEST',-0.94,-1.18,0.7,{size:0.06});
+const thrFlag=addBox(0.16,0.1,0.04,0x495057,-1.38,-1.06,0.6,{e:0x000000});
+info(addBox(0.5,0.9,0.5,0x30353c,-0.6,-1.05,0),'<b>THR 보조접점</b><br>95-96 : b(트립 시 개방) · 95-98 : a(트립 시 폐로)');
+addTerm('THR_95',-0.6,-0.74,0.5,'95','up');addTerm('THR_96',-0.72,-1.36,0.5,'96','down');addTerm('THR_98',-0.48,-1.36,0.5,'98','down');
+
+/* TB2 전동기 단자대 */
+info(addBox(1.2,0.4,0.3,0x4a5560,-1.5,-2.4,0),'<b>TB2 전동기 단자대</b> U·V·W');
+['U','V','W'].forEach((u,i)=>addTerm(`TBM_${u}`,-1.8+0.3*i,-2.4,0.3,u,'up'));
+addLabel('TB2',-2.35,-2.4,0.35,{size:0.09});
+
+/* 조작함 */
+info(addBox(1.4,2.8,0.8,0xc3cad2,3.6,1.0,0,{r:0.5,m:0.15}),'<b>조작함</b> — 푸시버튼·표시등');
+addLabel('조작함',3.6,2.62,0.85,{size:0.13,bg:'rgba(11,37,69,.88)'});
+const LAMPS={};
+[['RL',3.15,0xfa5252,'정회전'],['GL',3.6,0x40c057,'역회전'],['YL',4.05,0xfcc419,'과부하']].forEach(([k,x,c,t])=>{
+  addCyl(0.15,0.06,0x343a40,x,2.05,0.8,{m:0.5});
+  const domeMat=mat(c,{r:0.25,e:c,ei:0.0,t:true,op:0.85});
+  const dome=new THREE.Mesh(new THREE.SphereGeometry(0.115,24,12,0,Math.PI*2,0,Math.PI/2),domeMat);dome.rotation.x=Math.PI/2;dome.position.set(x,2.05,0.86);world.add(dome);
+  const gt=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex(c),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));gt.scale.set(0.75,0.75,1);gt.position.set(x,2.05,0.95);gt.visible=false;world.add(gt);
+  addLabel(`${k} ${t}`,x,2.33,0.9,{size:0.072});
+  addTerm(`${k}_1`,x-0.1,1.76,0.8,'1','down');addTerm(`${k}_2`,x+0.1,1.76,0.8,'2','down');
+  LAMPS[k]={dome,domeMat,glow:gt};info(dome,`<b>${k}</b> ${t} 표시등`);
+});
+const PBS={};
+[[1,3.2,1.0,0x2f9e44,'PB1 정회전',0.15],[2,4.0,1.0,0x2f9e44,'PB2 역회전',0.15],[0,3.6,0.08,0xe03131,'PB0 정지',0.19]].forEach(([k,x,y,c,t,r])=>{
+  addCyl(r+0.05,0.05,0x343a40,x,y,0.8,{m:0.5});
+  const cap=addCyl(r,0.1,c,x,y,0.84,{r:0.35});cap.userData={act:`pb${k}`,tip:`<b>${t}</b> — 누르고 있는 동안 접점 동작`};clickables.push(cap);
+  addLabel(t,x,y+r+0.13,0.9,{size:0.075});
+  const [a,b]=k===0?['PB0_1','PB0_2']:[`PB${k}_3`,`PB${k}_4`];
+  addTerm(a,x-0.12,y-r-0.15,0.8,a.slice(-1),'down');addTerm(b,x+0.12,y-r-0.15,0.8,b.slice(-1),'down');
+  PBS[k]={cap,z:cap.position.z};
+});
+function glowTex(c){const cv=document.createElement('canvas');cv.width=cv.height=128;const g=cv.getContext('2d');const col=new THREE.Color(c);const gr=g.createRadialGradient(64,64,4,64,64,64);
+  gr.addColorStop(0,`rgba(${col.r*255|0},${col.g*255|0},${col.b*255|0},0.9)`);gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.fillRect(0,0,128,128);const t=new THREE.CanvasTexture(cv);t.colorSpace=THREE.SRGBColorSpace;return t;}
+
+/* 전동기 */
+const motor=new THREE.Group();motor.position.set(3.9,-2.62,0);world.add(motor);
+{
+  const bodyG=new THREE.CylinderGeometry(0.5,0.5,1.0,40);bodyG.rotateX(Math.PI/2);
+  const body=new THREE.Mesh(bodyG,mat(0x2b5f8f,{r:0.45,m:0.3}));body.position.z=0.9;motor.add(body);info(body,'<b>3상 유도전동기 (IM)</b><br>부하측(축 방향)에서 본 회전 방향 표시');
+  for(let i=0;i<12;i++){const f=new THREE.Mesh(new THREE.BoxGeometry(0.05,0.08,0.92),mat(0x24527c,{r:0.5,m:0.3}));const a=i/12*Math.PI*2;f.position.set(Math.cos(a)*0.52,Math.sin(a)*0.52,0.9);f.rotation.z=a;if(Math.sin(a)>-0.7) motor.add(f);}
+  const foot=new THREE.Mesh(new THREE.BoxGeometry(1.0,0.14,0.8),mat(0x1d3f60));foot.position.set(0,-0.58,0.9);motor.add(foot);
+  const tb=new THREE.Mesh(new THREE.BoxGeometry(0.55,0.26,0.4),mat(0x24527c));tb.position.set(0,0.6,0.9);motor.add(tb);
+  const shield=new THREE.CylinderGeometry(0.46,0.46,0.06,40);shield.rotateX(Math.PI/2);const sh=new THREE.Mesh(shield,mat(0x1d3f60));sh.position.z=1.42;motor.add(sh);
+  const shaftG=new THREE.CylinderGeometry(0.06,0.06,0.5,16);shaftG.rotateX(Math.PI/2);const shaft=new THREE.Mesh(shaftG,mat(0xadb5bd,{m:0.9,r:0.25}));shaft.position.z=1.68;motor.add(shaft);
+}
+const rotor=new THREE.Group();rotor.position.set(0,0,1.92);motor.add(rotor);
+{
+  const dG=new THREE.CylinderGeometry(0.3,0.3,0.06,32);dG.rotateX(Math.PI/2);rotor.add(new THREE.Mesh(dG,mat(0xdee2e6,{m:0.6,r:0.3})));
+  for(let i=0;i<4;i++){const b=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.26,0.07),mat(i===0?0xff922b:0x495057));b.position.set(Math.cos(i*Math.PI/2)*0.15,Math.sin(i*Math.PI/2)*0.15,0.05);b.rotation.z=i*Math.PI/2-Math.PI/2;rotor.add(b);}
+  const m=new THREE.Mesh(new THREE.CircleGeometry(0.05,16),new THREE.MeshBasicMaterial({color:0xff922b}));m.position.set(0,0.22,0.04);rotor.add(m);
+}
+const ring=new THREE.Group();ring.position.set(0,0,1.98);motor.add(ring);
+const ringMat=new THREE.MeshBasicMaterial({color:0x51cf66,transparent:true,opacity:0.95,toneMapped:false});
+{const tor=new THREE.Mesh(new THREE.TorusGeometry(0.6,0.03,8,64,Math.PI*1.5),ringMat);ring.add(tor);const cone=new THREE.Mesh(new THREE.ConeGeometry(0.08,0.2,16),ringMat);cone.position.set(0.6,0,0);cone.rotation.z=Math.PI;ring.add(cone);}
+ring.visible=false;
+['U','V','W'].forEach((u,i)=>addTerm(`MOT_${u}`,3.9-0.15+0.15*i,-1.98,1.1,u,'up'));
+let motorLabel=null,motorLabelText='';const setMotorLabel=(t,col)=>{if(t===motorLabelText) return;motorLabelText=t;if(motorLabel){world.remove(motorLabel);motorLabel.material.map.dispose();motorLabel.material.dispose();}motorLabel=makeLabel(t,{size:0.14,bg:col});motorLabel.position.set(3.9,-1.55,1.3);world.add(motorLabel);};
+setMotorLabel('IM 정지','rgba(11,37,69,.88)');
+
+/* 상태판·메뉴판 (VR용) */
+const boards=new THREE.Group();boards.position.set(-4.15,0,0.25);boards.rotation.y=0.3;world.add(boards);
+const sb=canvasPlane(2.1,1.75,640,()=>{});sb.mesh.position.set(0,1.85,0);boards.add(sb.mesh);
+function wrap(g,text,x,y,maxW,lh,maxLines){let line='',n=0;for(const ch of text){const t=line+ch;if(g.measureText(t).width>maxW&&line){g.fillText(line,x,y+n*lh);n++;line=ch;if(n>=maxLines) return;}else line=t;}if(line&&n<maxLines) g.fillText(line,x,y+n*lh);}
+function drawStatus(){
+  sb.redraw();const g=sb.g,W=sb.c.width,H=sb.c.height,o=st.out||{};
+  g.fillStyle='rgba(8,14,24,.92)';rr(g,0,0,W,H,26);g.fill();g.strokeStyle='#2d4466';g.lineWidth=4;rr(g,2,2,W-4,H-4,24);g.stroke();
+  g.fillStyle='#ffd38a';g.font=`900 34px ${FONT}`;g.textAlign='left';g.textBaseline='alphabetic';g.fillText(`설비 상태 · ${LAB.MODENAME[st.mode]}`,26,50);
+  const rows=[['MCCB',st.tripped?'트립':st.mccb?'ON':'OFF',st.tripped?'#ff6b6b':st.mccb?'#51cf66':'#868e96'],['MC1 정',st.mcF?'투입':'개방',st.mcF?'#ffd43b':'#868e96'],['MC2 역',st.mcR?'투입':'개방',st.mcR?'#ffd43b':'#868e96'],
+    ['THR',st.thrTrip?'트립':'정상',st.thrTrip?'#ff6b6b':'#868e96'],['전동기',st.shortActive?'단락!':o.running?(o.dir>0?'정회전 ↻':'역회전 ↺'):'정지',st.shortActive?'#ff6b6b':o.running?(o.dir>0?'#51cf66':'#74c0fc'):'#868e96']];
+  rows.forEach(([k,v,c],i)=>{const x=26+(i%3)*200,y=110+Math.floor(i/3)*56;g.fillStyle=c;g.beginPath();g.arc(x+9,y-9,9,0,7);g.fill();g.fillStyle='#9fb0c6';g.font=`700 22px ${FONT}`;g.fillText(k,x+24,y);const kw=g.measureText(k).width;g.fillStyle='#fff';g.font=`900 25px ${FONT}`;g.fillText(v,x+30+kw,y);});
+  g.fillStyle='#24324a';g.fillRect(24,190,W-48,2);
+  g.font=`700 24px ${FONT}`;
+  if(st.mode==='wire'){const t=LAB.currentTask();g.fillStyle='#ffd43b';wrap(g,t?t.title:'결선 완료 ✔',26,232,W-52,32,2);g.fillStyle='#cfd8e6';g.font=`500 22px ${FONT}`;wrap(g,t?`출발: ${LAB.TERMS[t.from].name} → 도착 단자를 응시/터치`:'PB1·PB2로 시운전하세요.',26,300,W-52,30,2);
+    if(st.feedback){g.fillStyle=st.feedback.cls==='ok'?'#8ce99a':st.feedback.cls==='bad'?'#ff8787':'#ffd43b';wrap(g,st.feedback.text,26,372,W-52,30,4);}}
+  else{const L=st.log.slice(0,4);L.forEach((e,i)=>{g.fillStyle=e.lv==='bad'?'#ff8787':e.lv==='warn'?'#ffc078':e.lv==='ok'?'#8ce99a':'#cfd8e6';g.font=`${i===0?700:500} ${i===0?23:20}px ${FONT}`;wrap(g,e.msg,26,232+i*68,W-52,28,2);});}
+  sb.mesh.material.map.needsUpdate=true;
+}
+const MENU=[];
+function menuBtn(act,y){const p=canvasPlane(2.0,0.4,512,(g,W,H,text,hot)=>{g.fillStyle=hot||'rgba(22,35,58,.95)';rr(g,0,0,W,H,22);g.fill();g.strokeStyle='#3b5b8c';g.lineWidth=4;rr(g,2,2,W-4,H-4,20);g.stroke();
+  g.fillStyle='#fff';g.font=`800 ${Math.round(H*0.42)}px ${FONT}`;g.textAlign='center';g.textBaseline='middle';g.fillText(text||'',W/2,H/2+2);});
+  p.mesh.position.set(0,y,0);p.mesh.userData={act,tip:'VR 메뉴'};boards.add(p.mesh);clickables.push(p.mesh);MENU.push(p);p.act=act;return p;}
+menuBtn('menu:mode',0.62);menuBtn('menu:il',0.12);menuBtn('menu:sw',-0.38);menuBtn('menu:hint',-0.88);menuBtn('menu:reset',-1.38);
+function drawMenu(){
+  MENU.forEach(p=>{let t='',hot=null;
+    if(p.act==='menu:mode') t=`모드: ${({run:'운전',wire:'결선 실습',fault:'오류 체험'})[st.mode]} ▸`;
+    if(p.act==='menu:il'){t=`인터록: ${st.fault.il?'누락 ✗':'정상'}`;if(st.mode==='fault'&&st.fault.il) hot='rgba(160,30,30,.95)';}
+    if(p.act==='menu:sw'){t=`상교체: ${LAB.SWNAME[st.fault.sw]}`;if(st.mode==='fault'&&st.fault.sw!=='ok') hot='rgba(160,30,30,.95)';}
+    if(p.act==='menu:hint') t=st.mode==='wire'?'💡 결선 힌트':(st.thrTrip?'THR 리셋':'THR 과부하 시험');
+    if(p.act==='menu:reset') t='↺ 초기화 (MCCB ON)';
+    p.redraw(t,hot);});
+}
+
+/* ---------- 배선 메시 ---------- */
+const WMESH=new Map(),GEOM={},BOXIDX={};
+const PCOL=[0x8b4a1c,0x2a2c30,0x8f959e],CCOL=0xe7b62e,ILCOL=0x22b8cf;
+function liftOf(w){
+  const i=w.phase??0;
+  if(/^m_(in|th|out)/.test(w.id)) return 0.1;
+  if(w.id.startsWith('m_cb')) return 0.22+0.07*i;
+  if(w.id.startsWith('m_jp')) return 0.32+0.11*i;
+  if(w.sw) return 0.5+0.13*i;
+  if(w.il) return 0.42+({il1:0,il2:0.08,il3:0.16,il4:0.24})[w.id];
+  if(w.bad) return 0.35;
+  const h=[...w.id].reduce((a,c)=>a+c.charCodeAt(0),0);return 0.3+(h%7)*0.05;
+}
+function curveOf(w){
+  const a=P[w.a],b=P[w.b];
+  if(w.id.startsWith('m_mot')){const i=w.phase,dx=a.x;return new THREE.CatmullRomCurve3([a,V(dx,a.y-0.05,a.z+0.25),V(dx+0.4,-3.0,0.55+0.07*i),V(2.6,-3.02,0.75+0.07*i),V(b.x,-1.62,1.2+0.04*i),b],false,'centripetal');}
+  const inBox=x=>x>2.8;
+  if(!w.id.startsWith('m_')&&inBox(a.x)!==inBox(b.x)){
+    const [p,q]=inBox(a.x)?[b,a]:[a,b];
+    if(!(w.id in BOXIDX)) BOXIDX[w.id]=Object.keys(BOXIDX).length;
+    const k=BOXIDX[w.id],z=0.84+k*0.03,xd=2.3+k*0.022;
+    const yd=(p.y<-0.5||(p.x>0&&p.y<0.2))?-1.82-k*0.025:1.3+k*0.025;
+    const pts=[p,V(p.x,p.y,p.z+0.12),V(p.x,p.y,z),V(p.x,yd+(yd>0?-0.06:0.06)*0,z),V(p.x,yd,z),V(xd,yd,z),V(xd,q.y,z),V(Math.min(q.x-0.12,xd+0.5),q.y,q.z+0.18),V(q.x,q.y,q.z+0.12),q];
+    if(inBox(a.x)) pts.reverse();
+    return new THREE.CatmullRomCurve3(pts,false,'catmullrom',0.08);
+  }
+  const lift=liftOf(w),d=a.distanceTo(b),top=Math.max(a.z,b.z)+lift+Math.min(0.55,d*0.06);
+  const p1=a.clone();p1.z+=Math.min(lift,0.25);const p3=b.clone();p3.z+=Math.min(lift,0.25);
+  const m=a.clone().lerp(b,0.5);m.z=top;
+  return new THREE.CatmullRomCurve3(d<0.5?[a,p1,p3,b]:[a,p1,m,p3,b],false,'centripetal');
+}
+for(const id in LAB.W){
+  const w=LAB.W[id];if(!P[w.a]||!P[w.b]) continue;
+  const c=curveOf(w);const len=c.getLength();
+  const geo=new THREE.TubeGeometry(c,Math.max(16,Math.min(90,Math.round(len*16))),w.kind==='main'?0.034:0.022,7,false);
+  const col=w.kind==='main'?PCOL[w.phase]:CCOL;
+  const m=new THREE.Mesh(geo,mat(col,{r:0.45}));m.userData={wire:id,base:col};m.visible=false;world.add(m);
+  WMESH.set(id,m);GEOM[id]={lut:c.getSpacedPoints(Math.max(8,Math.round(len*14))),len};
+}
+LAB.IE.forEach(e=>{const a=P[e.a].clone(),b=P[e.b].clone();a.z+=0.03;b.z+=0.03;GEOM[e.id]={lut:[a,b],len:a.distanceTo(b)||0.01};});
+
+/* ---------- 전류 입자 ---------- */
+const MAXP=2600;
+const parts=new THREE.InstancedMesh(new THREE.SphereGeometry(0.03,8,6),new THREE.MeshBasicMaterial({color:0xffffff,toneMapped:false}),MAXP);
+parts.frustumCulled=false;parts.instanceMatrix.setUsage(THREE.DynamicDrawUsage);parts.setColorAt(0,new THREE.Color());parts.count=0;world.add(parts);
+const COLS={ctrl:new THREE.Color(0xffc53d),short:new THREE.Color(0xff2b2b),main:[new THREE.Color(0xff8f3d),new THREE.Color(0xf1f3f5),new THREE.Color(0x74c0fc)]};
+const dummy=new THREE.Object3D(),tmpV=new THREE.Vector3();
+function sample(lut,u,out){const f=u*(lut.length-1);const i=Math.min(lut.length-2,Math.floor(f));return out.lerpVectors(lut[i],lut[i+1],f-i);}
+function updateParticles(t){
+  let n=0;
+  for(const [id,f] of LAB.flow){
+    const g=GEOM[id];if(!g) continue;const wm=WMESH.get(id);if(wm&&!wm.visible) continue;
+    const sp=f.kind==='short'?3.4:f.kind==='main'?1.15:0.8,gap=f.kind==='short'?0.09:f.kind==='main'?0.15:0.22;
+    const cnt=Math.max(2,Math.min(48,Math.round(g.len/gap)));const col=f.kind==='main'?COLS.main[f.phase]:COLS[f.kind];
+    const sc=f.kind==='main'?1.3:f.kind==='short'?1.7:0.85;
+    for(let k=0;k<cnt&&n<MAXP;k++){let u=((t*sp/g.len)+k/cnt)%1;if(f.dir<0) u=1-u;sample(g.lut,u,tmpV);dummy.position.copy(tmpV);dummy.scale.setScalar(sc*(f.kind==='short'?(0.7+Math.random()*0.6):1));dummy.updateMatrix();parts.setMatrixAt(n,dummy.matrix);parts.setColorAt(n,col);n++;}
+  }
+  parts.count=n;parts.instanceMatrix.needsUpdate=true;if(parts.instanceColor) parts.instanceColor.needsUpdate=true;
+}
+
+/* ---------- 단락 효과 ---------- */
+const arcLight=new THREE.PointLight(0xff5a2a,0,8);arcLight.position.set(-0.3,-0.2,1.0);world.add(arcLight);
+const spark=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex(0xffe066),transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));spark.position.set(-0.3,-0.17,0.95);spark.scale.set(1.4,1.4,1);spark.visible=false;world.add(spark);
+let shortT=0;
+LAB.on('short',()=>{shortT=1.5;alarmEl.classList.remove('on');void alarmEl.offsetWidth;alarmEl.classList.add('on');setTimeout(()=>alarmEl.classList.remove('on'),1700);});
+
+/* ---------- 결선 애니메이션 ---------- */
+const grows=[];let hintId=null,hintUntil=0;const wrongFx=new Map();
+LAB.on('wire',id=>{const m=WMESH.get(id);if(!m) return;m.geometry.setDrawRange(0,0);grows.push({m,t:0,total:m.geometry.index.count});});
+LAB.on('hint',id=>{hintId=id;hintUntil=performance.now()+5000;});
+LAB.on('wrong',id=>{wrongFx.set(id,performance.now()+700);});
+LAB.on('mode',m=>{if(m==='wire') goView('mc');});
+
+/* ---------- 상태 동기화 ---------- */
+let ilHighlight=false;
+function sync(){
+  const act=new Set(LAB.activeIds()),fl=LAB.flow;
+  for(const [id,m] of WMESH){
+    const vis=act.has(id);m.visible=vis;
+    if(vis&&!grows.some(g=>g.m===m)) m.geometry.setDrawRange(0,Infinity);
+    const w=LAB.W[id];
+    const base=(ilHighlight&&(w.il||w.bad))?(w.bad?0xff6b6b:ILCOL):m.userData.base;m.material.color.setHex(base);
+    const f=fl.get(id);
+    if(f){const c=f.kind==='main'?COLS.main[f.phase]:COLS[f.kind];m.material.emissive.copy(c);m.material.emissiveIntensity=f.kind==='short'?0.9:0.45;}
+    else{m.material.emissive.setHex((ilHighlight&&(w.il||w.bad))?base:0x000000);m.material.emissiveIntensity=0.35;}
+  }
+  [['MCF',st.mcF],['MCR',st.mcR]].forEach(([k,on])=>{const f=MCV[k].flag;f.material.color.setHex(on?0x40c057:0x6c757d);f.material.emissive.setHex(on?0x2b8a3e:0);f.position.z=on?0.705+0.02-0.035:0.725;});
+  lever.position.y=st.tripped?1.98:st.mccb?2.1:1.86;lever.material.color.setHex(st.tripped?0xffa94d:0xf1f3f5);
+  mccbLed.material.color.setHex(st.mccb?0x51cf66:st.tripped?0xff6b6b:0x495057);mccbLed.material.emissive.setHex(st.mccb?0x2b8a3e:st.tripped?0xc92a2a:0);
+  thrFlag.material.color.setHex(st.thrTrip?0xff922b:0x495057);thrFlag.material.emissive.setHex(st.thrTrip?0xd9480f:0);
+  const o=st.out||{};
+  [['RL',o.rl],['GL',o.gl],['YL',o.yl]].forEach(([k,on])=>{const L=LAMPS[k];L.domeMat.emissiveIntensity=on?1.6:0.0;L.domeMat.opacity=on?1:0.55;L.glow.visible=!!on;});
+  [0,1,2].forEach(k=>{PBS[k].cap.position.z=PBS[k].z-(st.pb[k]?0.05:0);});
+  if(o.running){setMotorLabel(o.dir>0?'정회전 ↻ (CW)':'역회전 ↺ (CCW)',o.dir>0?'rgba(43,138,62,.92)':'rgba(25,113,194,.92)');}
+  else setMotorLabel(o.single?'결상 — 기동 불가':st.shortActive?'⚡ 단락':'IM 정지',o.single||st.shortActive?'rgba(201,42,42,.92)':'rgba(11,37,69,.88)');
+  drawStatus();drawMenu();
+  document.querySelectorAll('[data-act="ilhl"]').forEach(b=>b.classList.toggle('act',ilHighlight));
+}
+LAB.on('update',sync);LAB.on('render',()=>{drawStatus();drawMenu();});
+
+/* ---------- 카메라 프리셋 ---------- */
+function presetPose(name){
+  const portrait=camera.aspect<0.9;
+  const PR={all:{t:portrait?V(0.4,0.2,0.3):V(-0.3,0.25,0.3),w:portrait?6.4:10.6,h:7.8,d:V(0.05,0.1,1)},
+    mc:{t:V(-0.4,0.1,0.3),w:6.2,h:4.4,d:V(0,0.15,1)},
+    box:{t:V(3.6,1.0,0.8),w:2.0,h:3.2,d:V(-0.3,0.05,1)},
+    motor:{t:V(3.85,-2.45,1.2),w:2.8,h:2.4,d:V(0.45,0.3,1)}};
+  const p=PR[name]||PR.all;const vf=THREE.MathUtils.degToRad(camera.fov)/2;
+  const dist=Math.max((p.h/2)/Math.tan(vf),(p.w/2)/(Math.tan(vf)*camera.aspect))*1.04+0.4;
+  return {target:p.t.clone(),pos:p.t.clone().add(p.d.clone().normalize().multiplyScalar(dist))};
+}
+let tw=null;
+function goView(name,instant){const {pos,target}=presetPose(name);if(instant){camera.position.copy(pos);controls.target.copy(target);controls.update();return;}
+  tw={t:0,p0:camera.position.clone(),t0:controls.target.clone(),p1:pos,t1:target};}
+controls.addEventListener('start',()=>{tw=null;});
+document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>goView(b.dataset.view)));
+
+/* ---------- 리사이즈 ---------- */
+function resize(){if(renderer.xr.isPresenting) return;const w=stage.clientWidth,h=stage.clientHeight;if(!w||!h) return;renderer.setSize(w,h,false);camera.aspect=cb.active?(w/2)/h:w/h;camera.updateProjectionMatrix();}
+const cb={active:false,alpha0:null,o:null,gotOrient:false,yaw:0,pitch:0,saved:null};
+new ResizeObserver(resize).observe(stage);resize();goView('all',true);
+if(window.innerWidth<760){const sd=document.getElementById('side');sd.classList.add('collapsed');const cb2=sd.querySelector('[data-act="collapse"]');if(cb2) cb2.textContent='▸';}
+
+/* ---------- 포인터 상호작용 ---------- */
+const ray=new THREE.Raycaster(),ndc=new THREE.Vector2();
+const targets=(withTerms)=>withTerms?clickables.concat(termHits):clickables;
+function pickAt(x,y,withTerms){const r=canvas.getBoundingClientRect();ndc.set(((x-r.left)/r.width)*2-1,-((y-r.top)/r.height)*2+1);ray.setFromCamera(ndc,camera);const h=ray.intersectObjects(targets(withTerms),false);return h.length?h[0].object:null;}
+function activate(o,down,src){
+  const a=o.userData.act;if(!a||a==='info') return;
+  if(a.startsWith('pb')){const k=+a[2];if(src==='gaze'){if(down) LAB.pulse(k,700);}else down?LAB.press(k):LAB.release(k);return;}
+  if(!down) return;
+  switch(a){
+    case 'mccb':LAB.toggleMCCB();break;
+    case 'thrTrip':LAB.thrTrip();break;
+    case 'thrReset':LAB.thrReset();break;
+    case 'term':LAB.wireAttempt(o.userData.id);break;
+    case 'menu:mode':LAB.setMode(({run:'wire',wire:'fault',fault:'run'})[st.mode]);break;
+    case 'menu:il':LAB.setFault('il',st.mode==='fault'?!st.fault.il:true);break;
+    case 'menu:sw':LAB.setFault('sw',st.mode!=='fault'?'none':({ok:'none',none:'cyc',cyc:'ok'})[st.fault.sw]);break;
+    case 'menu:hint':if(st.mode==='wire') LAB.hint();else st.thrTrip?LAB.thrReset():LAB.thrTrip();break;
+    case 'menu:reset':LAB.reset();break;
+  }
+}
+let downObj=null;
+stage.addEventListener('pointerdown',e=>{
+  if(e.target!==canvas) return;
+  if(cb.active){cb.drag={x:e.clientX,y:e.clientY};return;}
+  LAB.sfx.init();
+  const o=pickAt(e.clientX,e.clientY,st.mode==='wire');
+  if(o&&o.userData.act&&o.userData.act!=='info'){e.stopPropagation();e.preventDefault();downObj=o;activate(o,true,'ptr');}
+},true);
+window.addEventListener('pointerup',()=>{if(downObj){activate(downObj,false,'ptr');downObj=null;}if(cb.drag) cb.drag=null;});
+window.addEventListener('pointercancel',()=>{if(downObj){activate(downObj,false,'ptr');downObj=null;}});
+canvas.addEventListener('pointermove',e=>{
+  if(cb.active){if(cb.drag&&!cb.gotOrient){cb.yaw-=(e.clientX-cb.drag.x)*0.005;cb.pitch=THREE.MathUtils.clamp(cb.pitch-(e.clientY-cb.drag.y)*0.005,-1.2,1.2);cb.drag={x:e.clientX,y:e.clientY};}return;}
+  if(e.pointerType!=='mouse'||e.buttons){tipEl.style.display='none';return;}
+  const o=pickAt(e.clientX,e.clientY,true);
+  canvas.style.cursor=o&&o.userData.act&&o.userData.act!=='info'&&(o.userData.act!=='term'||st.mode==='wire')?'pointer':'grab';
+  let html='';
+  if(o){if(o.userData.act==='term'){const T=LAB.TERMS[o.userData.id];html=`<b>${T.name}</b><br>${T.desc}${st.mode==='wire'?'<br><span style="color:#8ce99a">클릭하여 결선</span>':''}`;}else if(o.userData.tip) html=o.userData.tip;}
+  if(html){const r=stage.getBoundingClientRect();tipEl.innerHTML=html;tipEl.style.display='block';tipEl.style.left=Math.min(e.clientX-r.left+14,r.width-250)+'px';tipEl.style.top=(e.clientY-r.top+14)+'px';}else tipEl.style.display='none';
+});
+canvas.addEventListener('pointerleave',()=>{tipEl.style.display='none';});
+
+/* ---------- 상단 버튼 ---------- */
+document.querySelector('[data-act="ilhl"]').addEventListener('click',()=>{ilHighlight=!ilHighlight;sync();});
+document.querySelector('[data-act="full"]').addEventListener('click',async()=>{try{if(document.fullscreenElement) await document.exitFullscreen();else await (stage.requestFullscreen?stage.requestFullscreen():stage.webkitRequestFullscreen());}catch(e){}});
+
+/* ---------- 응시(gaze) 선택: 카드보드·XR ---------- */
+const reticle=new THREE.Group();
+{const r1=new THREE.Mesh(new THREE.RingGeometry(0.75,1,32),new THREE.MeshBasicMaterial({color:0xffffff,depthTest:false,transparent:true,opacity:0.9}));r1.renderOrder=999;reticle.add(r1);
+ const r2=new THREE.Mesh(new THREE.CircleGeometry(0.62,32),new THREE.MeshBasicMaterial({color:0xffb703,depthTest:false,transparent:true,opacity:0.95}));r2.renderOrder=1000;reticle.add(r2);reticle.userData.fill=r2;}
+reticle.visible=false;scene.add(reticle);
+const gz={obj:null,t:0,cool:0},go=new THREE.Vector3(),gd=new THREE.Vector3();
+function updateGaze(dt){
+  const xr=renderer.xr.isPresenting;
+  if(!(cb.active||xr)){reticle.visible=false;return;}
+  const cam=xr?renderer.xr.getCamera():camera;cam.getWorldPosition(go);cam.getWorldDirection(gd);ray.set(go,gd);
+  const hits=ray.intersectObjects(targets(st.mode==='wire'),false).filter(h=>h.object.userData.act&&h.object.userData.act!=='info');
+  const h=hits[0],obj=h?h.object:null,dist=h?h.distance*0.97:(xr?1.5:6);
+  reticle.visible=true;reticle.position.copy(go).addScaledVector(gd,dist);reticle.quaternion.copy(cam.getWorldQuaternion(new THREE.Quaternion()));
+  reticle.scale.setScalar(dist*(obj?0.016:0.01));
+  if(obj!==gz.obj){gz.obj=obj;gz.t=0;}
+  gz.cool=Math.max(0,gz.cool-dt);
+  if(obj&&gz.cool<=0){gz.t+=dt;if(gz.t>=1.1){activate(obj,true,'gaze');gz.t=0;gz.cool=1.5;}}
+  reticle.userData.fill.scale.setScalar(obj?Math.max(0.08,gz.t/1.1):0.08);
+}
+
+/* ---------- 모바일 카드보드 VR ---------- */
+const stereo=new THREE.StereoCamera();stereo.eyeSep=0.4;
+const q1=new THREE.Quaternion(-Math.sqrt(0.5),0,0,Math.sqrt(0.5)),zee=new THREE.Vector3(0,0,1),eul=new THREE.Euler(),q0=new THREE.Quaternion();
+function onOrient(e){if(e.alpha==null&&e.beta==null) return;cb.gotOrient=true;cb.o=e;if(cb.alpha0==null) cb.alpha0=e.alpha||0;}
+function applyOrient(){
+  if(cb.gotOrient&&cb.o){
+    const D=THREE.MathUtils.degToRad;const a=D((cb.o.alpha||0)-cb.alpha0),b=D(cb.o.beta||0),g=D(cb.o.gamma||0);
+    const orient=D((screen.orientation&&screen.orientation.angle)||window.orientation||0);
+    eul.set(b,a,-g,'YXZ');camera.quaternion.setFromEuler(eul);camera.quaternion.multiply(q1);camera.quaternion.multiply(q0.setFromAxisAngle(zee,-orient));
+  } else camera.rotation.set(cb.pitch,cb.yaw,0,'YXZ');
+}
+async function enterCardboard(){
+  try{if(window.DeviceOrientationEvent&&typeof DeviceOrientationEvent.requestPermission==='function') await DeviceOrientationEvent.requestPermission();}catch(e){}
+  try{if(stage.requestFullscreen) await stage.requestFullscreen({navigationUI:'hide'});else if(stage.webkitRequestFullscreen) stage.webkitRequestFullscreen();}catch(e){}
+  try{await screen.orientation.lock('landscape');}catch(e){}
+  cb.saved={p:camera.position.clone(),q:camera.quaternion.clone(),t:controls.target.clone()};
+  cb.active=true;cb.alpha0=null;cb.gotOrient=false;cb.yaw=0;cb.pitch=0;controls.enabled=false;tw=null;
+  stage.classList.add('cardboard');camera.position.set(-0.2,0.4,7.6);
+  window.addEventListener('deviceorientation',onOrient);LAB.sfx.init();resize();
+}
+function exitCardboard(){
+  if(!cb.active) return;cb.active=false;window.removeEventListener('deviceorientation',onOrient);stage.classList.remove('cardboard');
+  try{if(document.fullscreenElement) document.exitFullscreen();}catch(e){}try{screen.orientation.unlock();}catch(e){}
+  controls.enabled=true;if(cb.saved){camera.position.copy(cb.saved.p);camera.quaternion.copy(cb.saved.q);controls.target.copy(cb.saved.t);}resize();controls.update();
+}
+document.getElementById('btnCB').addEventListener('click',enterCardboard);
+document.getElementById('vrExit').addEventListener('click',exitCardboard);
+document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&cb.active) setTimeout(()=>{if(!document.fullscreenElement) exitCardboard();},300);resize();});
+
+/* ---------- WebXR ---------- */
+const btnXR=document.getElementById('btnXR');let xrSession=null;
+if(navigator.xr&&navigator.xr.isSessionSupported){navigator.xr.isSessionSupported('immersive-vr').then(ok=>{if(ok) btnXR.hidden=false;}).catch(()=>{});}
+const tmpM=new THREE.Matrix4();
+for(let i=0;i<2;i++){
+  const c=renderer.xr.getController(i);
+  const lg=new THREE.BufferGeometry().setFromPoints([V(0,0,0),V(0,0,-1)]);const line=new THREE.Line(lg,new THREE.LineBasicMaterial({color:0xffd43b}));line.scale.z=4;c.add(line);
+  let held=null;
+  const cast=()=>{tmpM.identity().extractRotation(c.matrixWorld);ray.ray.origin.setFromMatrixPosition(c.matrixWorld);ray.ray.direction.set(0,0,-1).applyMatrix4(tmpM);
+    const h=ray.intersectObjects(targets(st.mode==='wire'),false).find(x=>x.object.userData.act&&x.object.userData.act!=='info');return h?h.object:null;};
+  c.addEventListener('selectstart',()=>{held=cast();if(held) activate(held,true,'xr');});
+  c.addEventListener('selectend',()=>{if(held) activate(held,false,'xr');held=null;});
+  scene.add(c);
+}
+btnXR.addEventListener('click',async()=>{
+  if(xrSession){xrSession.end();return;}
+  try{
+    const s=await navigator.xr.requestSession('immersive-vr',{optionalFeatures:['local-floor']});
+    let floorOk=true;try{await s.requestReferenceSpace('local-floor');}catch(e){floorOk=false;}
+    renderer.xr.setReferenceSpaceType(floorOk?'local-floor':'local');
+    await renderer.xr.setSession(s);xrSession=s;LAB.sfx.init();
+    world.scale.setScalar(0.16);world.position.set(0.05,floorOk?1.05:-0.3,-1.5);
+    s.addEventListener('end',()=>{xrSession=null;world.scale.setScalar(1);world.position.set(0,0,0);resize();});
+  }catch(e){alert('WebXR VR 세션을 시작할 수 없습니다: '+e.message);}
+});
+
+/* ---------- 애니메이션 루프 ---------- */
+const clock=new THREE.Clock();let motorSpeed=0;
+renderer.setAnimationLoop(()=>{
+  const dt=Math.min(clock.getDelta(),0.05),t=clock.elapsedTime,now=performance.now();
+  if(tw){tw.t+=dt/0.9;const k=1-Math.pow(1-Math.min(1,tw.t),3);camera.position.lerpVectors(tw.p0,tw.p1,k);controls.target.lerpVectors(tw.t0,tw.t1,k);if(tw.t>=1) tw=null;}
+  if(cb.active) applyOrient(); else if(!renderer.xr.isPresenting) controls.update();
+  updateParticles(t);
+  const o=st.out||{};const target=o.running?o.dir*9:0;
+  motorSpeed+=(target-motorSpeed)*Math.min(1,dt*(o.running?1.4:0.7));
+  rotor.rotation.z-=motorSpeed*dt;
+  ring.visible=Math.abs(motorSpeed)>0.6;ring.scale.x=motorSpeed>=0?1:-1;ringMat.color.setHex(motorSpeed>=0?0x51cf66:0x4dabf7);ring.rotation.z=(motorSpeed>=0?-1:1)*t*1.2;
+  // 단자 강조
+  const task=st.mode==='wire'?LAB.currentTask():null;
+  for(const id in TM){
+    const m=TM[id];let s=1,em=0x000000;
+    if(task&&id===task.from){s=1.25+0.25*Math.sin(t*7);em=0xffc400;}
+    if(hintId===id&&now<hintUntil&&st.mode==='wire'){s=1.3+0.3*Math.sin(t*9);em=0x2fdc5a;}
+    const wf=wrongFx.get(id);if(wf&&now<wf){s=1.4;em=0xff2222;}
+    m.scale.set(s,s,1);m.material.emissive.setHex(em);m.material.emissiveIntensity=em?1.2:0;
+  }
+  // 결선 성장
+  for(let i=grows.length-1;i>=0;i--){const g=grows[i];g.t+=dt/0.7;const k=Math.min(1,g.t);g.m.geometry.setDrawRange(0,Math.floor(g.total*k/3)*3);if(k>=1){g.m.geometry.setDrawRange(0,Infinity);grows.splice(i,1);}}
+  // 단락 섬광
+  if(shortT>0){shortT-=dt;arcLight.intensity=8+Math.random()*30;spark.visible=Math.random()>0.3;spark.scale.setScalar(0.8+Math.random()*1.4);
+    if(!cb.active&&!renderer.xr.isPresenting){camera.position.x+=(Math.random()-0.5)*0.04;camera.position.y+=(Math.random()-0.5)*0.04;}}
+  else{arcLight.intensity=0;spark.visible=false;}
+  updateGaze(dt);
+  if(cb.active&&!renderer.xr.isPresenting){
+    const w=stage.clientWidth,h=stage.clientHeight;camera.updateMatrixWorld();stereo.update(camera);
+    renderer.setScissorTest(true);
+    renderer.setScissor(0,0,w/2,h);renderer.setViewport(0,0,w/2,h);renderer.render(scene,stereo.cameraL);
+    renderer.setScissor(w/2,0,w/2,h);renderer.setViewport(w/2,0,w/2,h);renderer.render(scene,stereo.cameraR);
+    renderer.setScissorTest(false);renderer.setViewport(0,0,w,h);
+  } else renderer.render(scene,camera);
+});
+
+sync();
+loadingEl.style.display='none';
+window.__lab3d=true;
+</script>
+<script>
+setTimeout(function(){if(!window.__lab3d){var l=document.getElementById('loading');if(l) l.innerHTML='<div>3D 라이브러리(three.js)를 불러오지 못했습니다.<br>인터넷 연결을 확인한 뒤 새로고침하세요.<br><span style="font-size:12px;opacity:.7">위쪽 회로도와 조작 버튼은 그대로 사용할 수 있습니다.</span></div>';}},9000);
+</script>
+</body>
+</html>
