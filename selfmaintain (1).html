@@ -1,0 +1,890 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>자기유지 기동·정지 회로</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f3f5f8; --surface:#ffffff; --surface2:#eef2f6; --ink:#15202b; --muted:#5a6a7a; --line:#d6dde5;
+  --accent:#0d6ad1; --accent-soft:#e2eefc; --ok:#15803d;
+  --wire:#8a97a6; --volt:#d97706; --flow:#ea580c;
+  --red:#e3342f; --green:#16a34a; --yellow:#e0a800;
+  --lamp-off:#cfd5dc; --panel:#2d343e; --panel-ink:#e8edf2;
+  --shadow:0 1px 2px rgba(16,24,40,.06),0 4px 16px rgba(16,24,40,.06);
+  --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1319; --surface:#161d25; --surface2:#1c2530; --ink:#e5ecf3; --muted:#94a3b2; --line:#2a3542;
+    --accent:#5aa9ff; --accent-soft:#15304e; --ok:#4ade80;
+    --wire:#5e6c7b; --volt:#f59e0b; --flow:#fb923c;
+    --lamp-off:#2b343f; --panel:#1f262f; --panel-ink:#e8edf2;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.25);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1319; --surface:#161d25; --surface2:#1c2530; --ink:#e5ecf3; --muted:#94a3b2; --line:#2a3542;
+  --accent:#5aa9ff; --accent-soft:#15304e; --ok:#4ade80;
+  --wire:#5e6c7b; --volt:#f59e0b; --flow:#fb923c;
+  --lamp-off:#2b343f; --panel:#1f262f; --panel-ink:#e8edf2;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.25);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Noto Sans KR',system-ui,-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;line-height:1.65;font-size:15.5px;-webkit-text-size-adjust:100%}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px}
+header.hero{background:linear-gradient(135deg,#0b2a4a,#0d4a86 60%,#0d6ad1);color:#fff;padding:40px 0 30px}
+.hero .kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;opacity:.8;text-transform:uppercase}
+.hero h1{margin:6px 0 8px;font-size:clamp(26px,4.6vw,40px);font-weight:900;letter-spacing:-.02em;line-height:1.25}
+.hero p{margin:0;max-width:760px;opacity:.92}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+nav.toc a{color:#fff;text-decoration:none;font-size:13.5px;padding:6px 12px;border:1px solid rgba(255,255,255,.35);border-radius:999px;background:rgba(255,255,255,.08)}
+nav.toc a:hover{background:rgba(255,255,255,.2)}
+section{padding:34px 0 8px}
+h2{font-size:clamp(21px,3vw,26px);margin:0 0 6px;letter-spacing:-.01em}
+h2 .no{font-family:var(--mono);color:var(--accent);font-size:.8em;margin-right:8px}
+.lead{color:var(--muted);margin:0 0 18px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+.pad{padding:18px 20px}
+.grid{display:grid;gap:14px}
+.g5{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.point{padding:16px 18px}
+.point b{display:block;font-size:15.5px;margin-bottom:4px}
+.point p{margin:0;color:var(--muted);font-size:14px}
+.point .ic{font-family:var(--mono);font-size:12px;color:var(--accent);font-weight:700}
+code,.mono{font-family:var(--mono);font-size:.92em}
+.tag{display:inline-block;font-family:var(--mono);font-size:12px;font-weight:700;padding:1px 7px;border-radius:6px;background:var(--surface2);border:1px solid var(--line)}
+
+/* ---------- simulator ---------- */
+.sim{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:980px){.sim{grid-template-columns:1fr}}
+.svgwrap svg{width:100%;height:auto;display:block}
+.cardhead{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 18px 0;flex-wrap:wrap}
+.cardhead h3{margin:0;font-size:16px}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.legend i{display:inline-block;width:22px;height:4px;border-radius:2px;vertical-align:middle;margin-right:5px}
+.lg-w{background:var(--wire)} .lg-v{background:var(--volt)} .lg-f{background:repeating-linear-gradient(90deg,var(--flow) 0 6px,transparent 6px 10px)}
+
+.w{fill:none;stroke:var(--wire);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;transition:stroke .15s}
+.w.live{stroke:var(--volt)}
+.w.flow{stroke:var(--flow);stroke-width:3.4;stroke-dasharray:7 6;animation:flow .5s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-13}}
+.bar{stroke:var(--ink);stroke-width:2.6}
+.slash{stroke:var(--ink);stroke-width:1.8}
+.ct:not(.closed) .bridge{opacity:0}
+.act{transition:transform .08s}
+.act line{stroke:var(--ink);stroke-width:2.2}
+.ct.pressed .act{transform:translateY(6px)}
+.hit{fill:transparent;cursor:pointer}
+.hit:hover{fill:var(--accent-soft);opacity:.5}
+.hit:focus-visible{outline:none;stroke:var(--accent);stroke-width:2;stroke-dasharray:4 3}
+svg text{font-family:'Noto Sans KR',system-ui,sans-serif}
+.lbl{font-size:13px;font-weight:700;fill:var(--ink)}
+.num{font-size:11px;fill:var(--muted);font-family:var(--mono)}
+.c{text-anchor:middle} .e{text-anchor:end}
+.mut{font-size:12px;fill:var(--muted)}
+.ann{font-size:12px;fill:var(--muted);font-weight:500}
+.zone{fill:var(--accent-soft);stroke:var(--accent);stroke-dasharray:5 4;stroke-width:1.4;opacity:.7}
+.zoneT{font-size:12.5px;font-weight:800;fill:var(--accent)}
+.coil circle{fill:var(--surface);stroke:var(--ink);stroke-width:2.4;transition:fill .15s}
+.coil.on circle{fill:var(--accent);stroke:var(--accent)}
+.coilT{font-size:13px;font-weight:900;fill:var(--ink)}
+.coil.on .coilT{fill:#fff}
+.lampS circle{fill:var(--surface);stroke:var(--ink);stroke-width:2.2;transition:fill .15s}
+.lampS line{stroke:var(--ink);stroke-width:1.6}
+.lampS.on line{stroke:#fff}
+.lampS.on.red circle{fill:var(--red);stroke:var(--red);filter:drop-shadow(0 0 6px var(--red))}
+.lampS.on.green circle{fill:var(--green);stroke:var(--green);filter:drop-shadow(0 0 6px var(--green))}
+.lampS.on.yellow circle{fill:var(--yellow);stroke:var(--yellow);filter:drop-shadow(0 0 6px var(--yellow))}
+.fuse{fill:var(--surface);stroke:var(--ink);stroke-width:2}
+.dot{fill:var(--ink)}
+.link{stroke:var(--muted);stroke-dasharray:4 4;stroke-width:1.3}
+.sym{stroke:var(--ink);stroke-width:2}
+.heater{fill:var(--surface);stroke:var(--ink);stroke-width:1.6}
+.thr-trip .heater{fill:rgba(227,52,47,.18);stroke:var(--red)}
+.motor{fill:var(--surface);stroke:var(--ink);stroke-width:2.4}
+.rotor line{stroke:var(--accent);stroke-width:3;stroke-linecap:round;opacity:.45}
+.running .rotor{animation:spin .9s linear infinite;transform-box:fill-box;transform-origin:center}
+@keyframes spin{to{transform:rotate(360deg)}}
+.mc-on .mcrel .lbl{fill:var(--accent)}
+
+/* panel */
+.panel{background:var(--panel);color:var(--panel-ink);border-radius:14px;padding:18px;box-shadow:var(--shadow);border:1px solid rgba(255,255,255,.06)}
+.panel h3{margin:0 0 12px;font-size:15px;display:flex;justify-content:space-between;align-items:center}
+.panel h3 small{font-family:var(--mono);font-weight:500;opacity:.6;font-size:11.5px}
+.prow{display:flex;justify-content:space-around;align-items:flex-start;gap:10px;padding:12px 4px;border-top:1px solid rgba(255,255,255,.08)}
+.prow:first-of-type{border-top:0}
+.pl{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;text-align:center}
+.bulb{width:46px;height:46px;border-radius:50%;border:5px solid #9aa2ad;background:#3a424d;box-shadow:inset 0 -6px 10px rgba(0,0,0,.35);transition:background .15s,box-shadow .15s}
+.bulb.red.on{background:radial-gradient(circle at 40% 35%,#ffd2cf,#ff4136 45%,#b3130e);box-shadow:0 0 22px 4px rgba(255,65,54,.65)}
+.bulb.green.on{background:radial-gradient(circle at 40% 35%,#d7ffe1,#22d35d 45%,#0b7a31);box-shadow:0 0 22px 4px rgba(34,211,93,.6)}
+.bulb.yellow.on{background:radial-gradient(circle at 40% 35%,#fff6c8,#ffcc00 45%,#a68100);box-shadow:0 0 22px 4px rgba(255,204,0,.6)}
+.bulb.red{background:#4a2b2c}.bulb.green{background:#22402c}.bulb.yellow{background:#4a4224}
+.pbtn{appearance:none;border:0;cursor:pointer;width:84px;height:84px;border-radius:50%;padding:0;position:relative;background:#a3abb5;box-shadow:0 4px 0 #6c747e,0 6px 12px rgba(0,0,0,.4);transition:transform .06s,box-shadow .06s;touch-action:none;user-select:none;-webkit-user-select:none}
+.pbtn span{position:absolute;inset:9px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:15px;line-height:1.1}
+.pbtn span small{font-family:var(--mono);font-size:10px;font-weight:700;opacity:.9;margin-top:3px}
+.pbtn.green span{background:radial-gradient(circle at 40% 30%,#4ee37f,#15a34a 60%,#0e7536)}
+.pbtn.red span{background:radial-gradient(circle at 40% 30%,#ff7b74,#e3342f 60%,#a51a16)}
+.pbtn.down{transform:translateY(4px);box-shadow:0 0 0 #6c747e,0 2px 4px rgba(0,0,0,.4)}
+.pbtn:focus-visible{outline:3px solid #8ec5ff;outline-offset:4px}
+.pcap{font-size:11.5px;opacity:.75;margin-top:4px}
+.mccb{appearance:none;cursor:pointer;border:0;background:#3c4450;color:#fff;border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px;font:inherit;font-size:13px}
+.mccb .lever{width:22px;height:40px;border-radius:5px;background:#1b2027;position:relative}
+.mccb .lever::after{content:"";position:absolute;left:3px;right:3px;height:18px;border-radius:3px;background:#e9edf1;top:3px;transition:top .15s}
+.mccb[aria-pressed="false"] .lever::after{top:19px;background:#9aa2ad}
+.mccb b{font-family:var(--mono)}
+.sbtn{appearance:none;cursor:pointer;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06);color:inherit;font:inherit;font-size:12.5px;padding:8px 11px;border-radius:8px}
+.sbtn:hover:not(:disabled){background:rgba(255,255,255,.14)}
+.sbtn:disabled{opacity:.4;cursor:not-allowed}
+.sbtn.warn{border-color:rgba(255,204,0,.5)}
+.pmotor{display:flex;align-items:center;gap:12px}
+.pmotor svg{width:58px;height:58px}
+.pmotor .t{font-size:13px}
+.pmotor .t b{display:block;font-size:15px}
+.msg{margin-top:14px;padding:14px 16px;border-radius:12px;background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);font-size:14.5px}
+.msg b{color:var(--accent)}
+table.st{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:12px}
+table.st td{padding:7px 10px;border-top:1px solid var(--line)}
+table.st td:first-child{color:var(--muted);white-space:nowrap;width:42%}
+.on-t{color:var(--ok);font-weight:700}.off-t{color:var(--muted)}
+.chart-card{margin-top:16px}
+.chart-tools{display:flex;gap:8px}
+.tbtn{appearance:none;cursor:pointer;border:1px solid var(--line);background:var(--surface2);color:var(--ink);font:inherit;font-size:12.5px;padding:5px 11px;border-radius:8px}
+.tbtn:hover{border-color:var(--accent)}
+.chart .gl{stroke:var(--line);stroke-width:1}
+.chart .rl{font-size:12px;font-weight:700;fill:var(--ink)}
+.chart .tk{font-size:10.5px;fill:var(--muted);font-family:var(--mono)}
+
+/* steps */
+.steps{counter-reset:s;display:grid;gap:12px}
+.step{display:grid;grid-template-columns:44px minmax(0,1fr);gap:14px;padding:16px 18px;min-width:0}
+.step>div{min-width:0}
+.grid>*,.two>*,.sim>*{min-width:0}
+.step .n{width:44px;height:44px;border-radius:12px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-family:var(--mono);font-size:18px}
+.step h3{margin:0 0 4px;font-size:16px}
+.step p{margin:0 0 6px}
+.path{font-family:var(--mono);font-size:12.5px;background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;overflow-x:auto;white-space:nowrap}
+.try{font-size:13px;color:var(--muted)}
+.try::before{content:"▶ 시뮬레이터: ";color:var(--accent);font-weight:700}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.two.mcrow{grid-template-columns:minmax(0,360px) minmax(0,1fr)}
+#mainSvg{max-width:340px;margin:0 auto}
+@media (max-width:860px){.two,.two.mcrow{grid-template-columns:1fr}}
+
+/* modules */
+.mods{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.mod{margin:0;overflow:hidden;display:flex;flex-direction:column}
+.mod .ill{background:linear-gradient(180deg,var(--surface2),var(--surface));border-bottom:1px solid var(--line);padding:10px;display:flex;justify-content:center}
+.mod .ill svg{width:100%;max-width:220px;height:140px}
+.mod figcaption{padding:14px 16px 16px;display:flex;flex-direction:column;gap:6px;flex:1}
+.mod h3{margin:0;font-size:17px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.mod h3 .ab{font-family:var(--mono);color:var(--accent)}
+.mod .full{font-size:13px;color:var(--muted);font-family:var(--mono)}
+.mod p{margin:0;font-size:14px}
+.mod ul{margin:2px 0 0;padding-left:18px;font-size:13.5px;color:var(--muted)}
+.mod a{margin-top:auto;padding-top:6px;font-size:13px;color:var(--accent);text-decoration:none;font-weight:700}
+.mod a:hover{text-decoration:underline}
+
+/* tables & key points */
+.tablewrap{overflow-x:auto}
+table.full{width:100%;border-collapse:collapse;font-size:14px;min-width:760px}
+table.full th,table.full td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.full th{background:var(--surface2);font-size:13px;color:var(--muted);font-weight:700}
+table.full td:first-child{font-family:var(--mono);font-weight:700;color:var(--accent);white-space:nowrap}
+table.full td:nth-child(2){font-family:var(--mono);font-size:13px}
+.keys{display:grid;gap:10px;counter-reset:k;margin:0;padding:0;list-style:none}
+.keys li{counter-increment:k;position:relative;padding:14px 16px 14px 56px}
+.keys li::before{content:counter(k,decimal-leading-zero);position:absolute;left:16px;top:14px;font-family:var(--mono);font-weight:700;color:var(--accent);font-size:17px}
+.keys li b{display:block;margin-bottom:2px}
+.keys li span{color:var(--muted);font-size:14px}
+.warnbox{border-left:4px solid var(--red)}
+.warnbox ul{margin:6px 0 0;padding-left:18px}
+.warnbox li{margin:4px 0}
+.okbox{border-left:4px solid var(--ok)}
+.okbox ol{margin:6px 0 0;padding-left:20px}
+.okbox li{margin:4px 0}
+details.q{padding:0}
+details.q summary{cursor:pointer;padding:14px 18px;font-weight:700;list-style:none}
+details.q summary::-webkit-details-marker{display:none}
+details.q summary::before{content:"Q. ";color:var(--accent);font-family:var(--mono)}
+details.q[open] summary{border-bottom:1px solid var(--line)}
+details.q .a{padding:12px 18px 16px;color:var(--ink);font-size:14.5px}
+details.q .a::before{content:"A. ";color:var(--ok);font-weight:900;font-family:var(--mono)}
+footer{padding:30px 0 50px;color:var(--muted);font-size:13px}
+@media (prefers-reduced-motion: reduce){
+  .w.flow{animation:none;stroke-dasharray:none}
+  .running .rotor{animation:none}
+}
+@media (max-width:520px){
+  .pbtn{width:74px;height:74px}
+  .bulb{width:40px;height:40px}
+  .step{grid-template-columns:minmax(0,1fr)}
+}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker">Sequence Control · Self-Holding Circuit</div>
+    <h1>자기유지 기동·정지 회로와 표시등</h1>
+    <p>누름버튼 스위치(Push Button Switch)와 전자접촉기(Magnetic Contactor)로 “한 번 누르면 계속 돌고, 정지를 누르면 멈추는” 회로를 구성하고, 운전·정지·과부하 상태를 표시등으로 나타냅니다. 아래 시뮬레이터의 버튼을 직접 눌러 전류 경로를 확인해 보세요.</p>
+    <nav class="toc" aria-label="목차">
+      <a href="#points">학습 포인트</a>
+      <a href="#sim">회로 시뮬레이터</a>
+      <a href="#principle">동작 원리</a>
+      <a href="#modules">구성 요소·실물 모듈</a>
+      <a href="#keys">핵심 포인트 정리</a>
+      <a href="#quiz">확인 문제</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- 1. 학습 포인트 -->
+<section id="points">
+  <h2><span class="no">01</span>학습 포인트</h2>
+  <p class="lead">이 단원을 마치면 다음 다섯 가지를 설명하고 직접 결선할 수 있어야 합니다.</p>
+  <div class="grid g5">
+    <div class="card point"><span class="ic">CIRCUIT</span><b>회로 구성</b><p>제어회로(래더 다이어그램)와 주회로를 구분해 읽고, 각 접점이 왜 직렬·병렬인지 설명한다.</p></div>
+    <div class="card point"><span class="ic">PRINCIPLE</span><b>동작 원리</b><p>기동 → 자기유지 → 정지 → 과부하 트립의 전류 흐름을 순서대로 추적한다.</p></div>
+    <div class="card point"><span class="ic">CONTACT</span><b>a접점 · b접점</b><p>PB·MC·THR의 접점 종류와 단자번호(13-14, 21-22, 95-96, 97-98)를 구분한다.</p></div>
+    <div class="card point"><span class="ic">LAMP</span><b>표시등 회로</b><p>MC 보조접점으로 RL(운전)·GL(정지)을, THR 접점으로 YL(과부하)을 점등한다.</p></div>
+    <div class="card point"><span class="ic">SAFETY</span><b>안전 기능</b><p>정지 우선 구조와 정전 후 복전 시 자동 재기동이 되지 않는 이유를 이해한다.</p></div>
+  </div>
+</section>
+
+<!-- 2. 시뮬레이터 -->
+<section id="sim">
+  <h2><span class="no">02</span>회로 시뮬레이터</h2>
+  <p class="lead">오른쪽 조작반의 버튼(또는 도면 속 PB 기호)을 누르고 있으면 닫히고, 손을 떼면 다시 열립니다. 주황색 점선이 지금 전류가 흐르는 경로입니다.</p>
+
+  <div class="sim">
+    <div>
+      <div class="card">
+        <div class="cardhead">
+          <h3>제어회로 (래더 다이어그램)</h3>
+          <div class="legend"><span><i class="lg-w"></i>무전압</span><span><i class="lg-v"></i>전압 인가</span><span><i class="lg-f"></i>전류 흐름</span></div>
+        </div>
+        <div class="svgwrap pad"><svg id="ladder" viewBox="0 0 760 440" role="img" aria-label="자기유지 기동 정지 제어회로 래더 다이어그램"></svg></div>
+      </div>
+      <div class="msg" id="msg" aria-live="polite"></div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <h3>조작반 <small>CONTROL PANEL</small></h3>
+        <div class="prow">
+          <button class="mccb" id="mccb" aria-pressed="true"><span class="lever"></span><span>MCCB<br><b id="mccbTxt">ON</b></span></button>
+          <div class="pmotor" id="pMotorWrap">
+            <svg viewBox="0 0 60 60" aria-hidden="true"><circle cx="30" cy="30" r="26" fill="#3a424d" stroke="#9aa2ad" stroke-width="3"/><g class="rotor"><line x1="30" y1="30" x2="30" y2="9"/><line x1="30" y1="30" x2="48" y2="40"/><line x1="30" y1="30" x2="12" y2="40"/></g><circle cx="30" cy="30" r="4" fill="#9aa2ad"/></svg>
+            <div class="t">전동기 M<b id="pMotorTxt">정지</b></div>
+          </div>
+        </div>
+        <div class="prow">
+          <div class="pl"><span class="bulb red" id="pRL"></span>RL<br>운전</div>
+          <div class="pl"><span class="bulb green" id="pGL"></span>GL<br>정지</div>
+          <div class="pl"><span class="bulb yellow" id="pYL"></span>YL<br>과부하</div>
+        </div>
+        <div class="prow">
+          <div class="pl"><button class="pbtn green" id="pOn" aria-label="기동 버튼 PB-ON (누르고 있는 동안 닫힘)"><span>기동<small>PB-ON</small></span></button><div class="pcap">a접점 (NO)</div></div>
+          <div class="pl"><button class="pbtn red" id="pOff" aria-label="정지 버튼 PB-OFF (누르고 있는 동안 열림)"><span>정지<small>PB-OFF</small></span></button><div class="pcap">b접점 (NC)</div></div>
+        </div>
+        <div class="prow">
+          <button class="sbtn warn" id="thrTrip">⚠ 과부하 발생 (THR 트립)</button>
+          <button class="sbtn" id="thrReset" disabled>THR 리셋</button>
+        </div>
+      </div>
+      <div class="card pad" style="margin-top:14px">
+        <h3 style="margin:0;font-size:15px">현재 상태</h3>
+        <table class="st">
+          <tr><td>MC 코일 (A1-A2)</td><td id="stCoil"></td></tr>
+          <tr><td>자기유지 접점 MC-a (13-14)</td><td id="stHold"></td></tr>
+          <tr><td>RL 운전 표시등</td><td id="stRL"></td></tr>
+          <tr><td>GL 정지 표시등</td><td id="stGL"></td></tr>
+          <tr><td>YL 과부하 표시등</td><td id="stYL"></td></tr>
+          <tr><td>전동기 M</td><td id="stM"></td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="two mcrow" style="margin-top:16px">
+    <div class="card">
+      <div class="cardhead"><h3>주회로 (3상 전동기 회로)</h3></div>
+      <div class="svgwrap pad"><svg id="mainSvg" viewBox="0 0 320 424" role="img" aria-label="MCCB, MC 주접점, THR, 3상 유도전동기로 이루어진 주회로"></svg></div>
+      <p class="pad" style="padding-top:0;margin:0;font-size:13.5px;color:var(--muted)">MCCB 2차측 R상·T상에서 퓨즈 F1·F2를 거쳐 제어회로 전원을 인출합니다. 제어회로의 MC 코일이 여자되면 주접점(1-2, 3-4, 5-6)이 동시에 닫혀 전동기가 회전합니다.</p>
+    </div>
+    <div class="card chart-card" style="margin-top:0">
+      <div class="cardhead"><h3>실시간 타임차트 (최근 15초)</h3>
+        <div class="chart-tools"><button class="tbtn" id="chPause">일시정지</button><button class="tbtn" id="chClear">지우기</button></div>
+      </div>
+      <div class="svgwrap pad"><svg id="chart" class="chart" viewBox="0 0 760 236" role="img" aria-label="입력과 출력의 시간에 따른 ON/OFF 변화"></svg></div>
+      <p class="pad" style="padding-top:0;margin:0;font-size:13.5px;color:var(--muted)">확인해 볼 것: PB-ON 펄스가 짧게 끝나도 MC·RL은 계속 ON — 이것이 자기유지입니다. PB-OFF 펄스가 들어오는 순간 MC가 OFF되고, PB-OFF를 놓아도 다시 ON되지 않습니다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 3. 동작 원리 -->
+<section id="principle">
+  <h2><span class="no">03</span>회로 구성과 동작 원리</h2>
+  <p class="lead">“자기유지(Self-holding)”란 전자접촉기가 <b>자기 자신의 보조 a접점</b>으로 자기 코일의 전류 경로를 만들어, 기동 신호가 사라져도 동작 상태를 계속 유지하는 것입니다.</p>
+
+  <div class="steps">
+    <div class="card step"><div class="n">1</div><div>
+      <h3>전원 투입 — MCCB ON</h3>
+      <p>제어회로에 전압이 걸리지만 PB-ON(a접점)이 열려 있어 MC 코일은 무여자입니다. MC의 보조 b접점(21-22)은 평상시 닫혀 있으므로 <b>GL(정지 표시등)</b>이 점등됩니다.</p>
+      <div class="path">R → F1 → MC-b(21-22) → GL → F2 → T</div>
+      <div class="try">MCCB를 OFF/ON 해 보고 GL만 켜지는지 확인</div>
+    </div></div>
+    <div class="card step"><div class="n">2</div><div>
+      <h3>기동 — PB-ON을 누름</h3>
+      <p>PB-ON이 닫혀 코일에 전류가 흐르고 MC가 여자됩니다. 주접점이 닫혀 전동기가 돌고, 보조 a접점(13-14, 43-44)은 닫히고 b접점(21-22)은 열립니다. 결과적으로 <b>RL 점등, GL 소등</b>.</p>
+      <div class="path">R → F1 → THR(95-96) → PB-OFF(1-2) → PB-ON(3-4) → MC 코일(A1-A2) → F2 → T</div>
+      <div class="try">PB-ON을 누른 채로 두 갈래(PB-ON, MC-a) 모두에 전류가 흐르는지 보기</div>
+    </div></div>
+    <div class="card step"><div class="n">3</div><div>
+      <h3>자기유지 — PB-ON에서 손을 뗌</h3>
+      <p>PB-ON 경로는 끊기지만, 이미 닫힌 <b>MC-a(13-14)가 PB-ON과 병렬</b>로 연결되어 있어 우회 경로로 코일 전류가 계속 흐릅니다. MC가 스스로를 붙잡고 있는 상태입니다.</p>
+      <div class="path">R → F1 → THR(95-96) → PB-OFF(1-2) → <b>MC-a(13-14)</b> → MC 코일(A1-A2) → F2 → T</div>
+      <div class="try">버튼을 놓은 뒤 전류가 아래쪽 MC-a 경로로만 흐르는지 확인</div>
+    </div></div>
+    <div class="card step"><div class="n">4</div><div>
+      <h3>정지 — PB-OFF를 누름</h3>
+      <p>직렬로 들어 있는 PB-OFF(b접점)가 열려 코일 전류가 끊깁니다. MC가 소자되면서 MC-a(13-14)도 열리므로 <b>자기유지가 해제</b>되고, PB-OFF에서 손을 떼도 다시 켜지지 않습니다. RL 소등, GL 점등.</p>
+      <div class="path">PB-OFF 개방 → 코일 소자 → MC-a 개방(유지 해제) · MC-b 복귀 → GL 점등</div>
+      <div class="try">운전 중 PB-OFF를 짧게 눌렀다 떼기</div>
+    </div></div>
+    <div class="card step"><div class="n">5</div><div>
+      <h3>과부하 — THR 트립</h3>
+      <p>전동기에 과전류가 계속 흐르면 열동형 과부하 계전기의 바이메탈이 휘어 <b>95-96(b)이 열리고 97-98(a)이 닫힙니다.</b> PB-OFF를 누른 것과 같이 MC가 정지하고 <b>YL(과부하 표시등)</b>이 켜집니다. 원인을 제거하고 THR을 리셋한 뒤 PB-ON을 다시 눌러야 재기동됩니다.</p>
+      <div class="path">THR 95-96 개방 → 코일 소자 → 전동기 정지 │ THR 97-98 폐로 → YL 점등</div>
+      <div class="try">운전 중 “과부하 발생” → “THR 리셋” → 자동으로 다시 돌지 않는지 확인</div>
+    </div></div>
+  </div>
+
+  <div class="two" style="margin-top:14px">
+    <div class="card pad">
+      <h3 style="margin:0 0 6px;font-size:16px">정지 우선 회로 <span class="tag">이 회로</span></h3>
+      <p style="margin:0;font-size:14.5px">PB-OFF가 자기유지 병렬부의 <b>바깥(앞단)</b>에 직렬로 있습니다. 기동과 정지를 동시에 눌러도 PB-OFF가 회로 전체를 끊기 때문에 <b>정지가 이깁니다.</b> 전동기 제어의 기본 원칙입니다.</p>
+    </div>
+    <div class="card pad">
+      <h3 style="margin:0 0 6px;font-size:16px">기동 우선 회로 <span class="tag">비교</span></h3>
+      <p style="margin:0;font-size:14.5px">PB-OFF를 MC-a와 직렬로 묶고 그 묶음을 PB-ON에 병렬로 연결한 구조입니다. PB-ON을 누르고 있는 동안에는 PB-OFF를 눌러도 꺼지지 않아, 일반 설비에서는 쓰지 않는 것이 원칙입니다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4. 구성 요소 -->
+<section id="modules">
+  <h2><span class="no">04</span>필요 요소와 실제 사용 모듈</h2>
+  <p class="lead">실습 패널에서 흔히 쓰는 부품을 형태 위주로 단순화한 그림입니다. 각 카드의 링크로 실물 사진을 검색해 볼 수 있습니다. 단자번호는 일반적인 표기이며, 실제로는 부품 명판과 제조사 결선도를 우선합니다.</p>
+
+  <div class="mods">
+
+    <figure class="card mod">
+      <div class="ill"><svg viewBox="0 0 160 130" aria-hidden="true">
+        <rect x="40" y="8" width="80" height="114" rx="7" fill="#3b4250"/>
+        <g fill="#cfd4da" stroke="#868e99"><circle cx="58" cy="20" r="5"/><circle cx="80" cy="20" r="5"/><circle cx="102" cy="20" r="5"/><circle cx="58" cy="110" r="5"/><circle cx="80" cy="110" r="5"/><circle cx="102" cy="110" r="5"/></g>
+        <rect x="54" y="36" width="52" height="58" rx="4" fill="#232931"/>
+        <rect x="70" y="42" width="20" height="28" rx="3" fill="#eef1f4"/>
+        <text x="80" y="88" font-size="8" fill="#cfd4da" text-anchor="middle" font-family="monospace">ON ▲ OFF ▼</text>
+      </svg></div>
+      <figcaption>
+        <h3><span class="ab">MCCB</span>배선용 차단기</h3>
+        <div class="full">Molded Case Circuit Breaker</div>
+        <p>주회로 전원을 개폐하고 단락·과전류 시 자동 차단합니다. 2차측에서 제어회로 전원을 인출합니다.</p>
+        <ul><li>3극(3P), 1차 R·S·T → 2차 부하측</li><li>레버 위 = ON, 아래 = OFF, 중간 = 트립</li></ul>
+        <a href="https://www.google.com/search?tbm=isch&q=%EB%B0%B0%EC%84%A0%EC%9A%A9%EC%B0%A8%EB%8B%A8%EA%B8%B0+MCCB+3P" target="_blank" rel="noopener">실물 사진 검색 ↗</a>
+      </figcaption>
+    </figure>
+
+    <figure class="card mod">
+      <div class="ill"><svg viewBox="0 0 160 130" aria-hidden="true">
+        <rect x="40" y="16" width="56" height="58" rx="6" fill="#262c35"/>
+        <rect x="52" y="46" width="32" height="20" rx="3" fill="#e9edf1"/>
+        <path d="M68 50 L58 61 H78 Z" fill="none" stroke="#262c35" stroke-width="1.6"/>
+        <rect x="40" y="76" width="56" height="12" rx="2" fill="#b8bfc8"/>
+        <rect x="20" y="96" width="122" height="18" rx="4" fill="#d9dee4" stroke="#9aa2ad"/>
+        <text x="81" y="108" font-size="8" fill="#3b4250" text-anchor="middle" font-family="monospace">95 ─ 96 (NC)   97 ─ 98 (NO)</text>
+        <circle cx="68" cy="30" r="9" fill="#e9edf1"/><line x1="68" y1="30" x2="73" y2="24" stroke="#262c35" stroke-width="1.8"/>
+        <rect x="102" y="20" width="36" height="66" rx="5" fill="#cfd4da"/>
+        <rect x="111" y="30" width="18" height="16" rx="3" fill="#2563eb"/><text x="120" y="42" font-size="9" fill="#fff" text-anchor="middle" font-weight="700">R</text>
+        <text x="120" y="66" font-size="8" fill="#3b4250" text-anchor="middle">RESET</text>
+        <g stroke="#c08a3e" stroke-width="4" stroke-linecap="round"><line x1="50" y1="4" x2="50" y2="16"/><line x1="68" y1="4" x2="68" y2="16"/><line x1="86" y1="4" x2="86" y2="16"/></g>
+      </svg></div>
+      <figcaption>
+        <h3><span class="ab">THR</span>열동형 과부하 계전기</h3>
+        <div class="full">Thermal Overload Relay</div>
+        <p>전동기 과부하 전류가 지속되면 바이메탈이 휘어 접점을 전환합니다. MC 하단에 직결해 사용합니다.</p>
+        <ul><li>95-96 (b접점): 코일 회로에 직렬 → 트립 시 정지</li><li>97-98 (a접점): YL 과부하 표시등</li><li>다이얼로 전동기 정격전류에 맞게 설정, 트립 후 리셋 버튼</li></ul>
+        <a href="https://www.google.com/search?tbm=isch&q=%EC%97%B4%EB%8F%99%ED%98%95+%EA%B3%BC%EB%B6%80%ED%95%98+%EA%B3%84%EC%A0%84%EA%B8%B0+THR" target="_blank" rel="noopener">실물 사진 검색 ↗</a>
+      </figcaption>
+    </figure>
+
+    <figure class="card mod">
+      <div class="ill"><svg viewBox="0 0 160 130" aria-hidden="true">
+        <rect x="34" y="10" width="84" height="112" rx="7" fill="#e3e6ea" stroke="#9aa2ad"/>
+        <rect x="34" y="10" width="84" height="24" rx="7" fill="#c9ced5"/>
+        <rect x="34" y="98" width="84" height="24" rx="7" fill="#c9ced5"/>
+        <g fill="#f5f6f8" stroke="#7b838e"><circle cx="48" cy="22" r="5"/><circle cx="66" cy="22" r="5"/><circle cx="84" cy="22" r="5"/><circle cx="104" cy="22" r="5"/><circle cx="48" cy="110" r="5"/><circle cx="66" cy="110" r="5"/><circle cx="84" cy="110" r="5"/><circle cx="104" cy="110" r="5"/></g>
+        <text x="104" y="40" font-size="7" fill="#3b4250" text-anchor="middle" font-family="monospace">A1</text>
+        <text x="104" y="96" font-size="7" fill="#3b4250" text-anchor="middle" font-family="monospace">A2</text>
+        <rect x="46" y="44" width="46" height="44" rx="4" fill="#f7f8fa" stroke="#9aa2ad"/>
+        <text x="69" y="66" font-size="14" font-weight="900" fill="#1f2937" text-anchor="middle">MC</text>
+        <text x="69" y="80" font-size="7" fill="#5a6a7a" text-anchor="middle" font-family="monospace">AC220V</text>
+        <rect x="120" y="28" width="26" height="76" rx="4" fill="#d6dade" stroke="#9aa2ad"/>
+        <g font-size="7" fill="#1f2937" text-anchor="middle" font-family="monospace"><text x="133" y="42">13</text><text x="133" y="54">14</text><text x="133" y="80">21</text><text x="133" y="92">22</text></g>
+        <text x="133" y="67" font-size="6" fill="#5a6a7a" text-anchor="middle">aux</text>
+      </svg></div>
+      <figcaption>
+        <h3><span class="ab">MC</span>전자접촉기</h3>
+        <div class="full">Magnetic Contactor</div>
+        <p>코일(A1-A2)에 전압이 걸리면 전자석이 가동철심을 당겨 주접점과 보조접점이 <b>동시에</b> 전환됩니다.</p>
+        <ul><li>주접점 1-2 · 3-4 · 5-6 (L1·L2·L3 → T1·T2·T3)</li><li>보조 a접점 13-14, 43-44 / 보조 b접점 21-22, 31-32</li><li>기본 1a1b 모델이 많아, 접점이 부족하면 보조접점 블록 추가</li><li>코일 정격전압(AC220V/380V)을 제어전원과 일치</li></ul>
+        <a href="https://www.google.com/search?tbm=isch&q=%EC%A0%84%EC%9E%90%EC%A0%91%EC%B4%89%EA%B8%B0+MC" target="_blank" rel="noopener">실물 사진 검색 ↗</a>
+      </figcaption>
+    </figure>
+
+    <figure class="card mod">
+      <div class="ill"><svg viewBox="0 0 160 130" aria-hidden="true">
+        <defs>
+          <radialGradient id="gG" cx=".4" cy=".35"><stop offset="0" stop-color="#7af0a0"/><stop offset=".6" stop-color="#16a34a"/><stop offset="1" stop-color="#0d6b31"/></radialGradient>
+          <radialGradient id="gR" cx=".4" cy=".35"><stop offset="0" stop-color="#ff9a94"/><stop offset=".6" stop-color="#e3342f"/><stop offset="1" stop-color="#9c1612"/></radialGradient>
+        </defs>
+        <circle cx="48" cy="50" r="30" fill="#b9bfc7" stroke="#8a929c" stroke-width="2"/><circle cx="48" cy="50" r="21" fill="url(#gG)"/>
+        <circle cx="112" cy="50" r="30" fill="#b9bfc7" stroke="#8a929c" stroke-width="2"/><circle cx="112" cy="50" r="21" fill="url(#gR)"/>
+        <text x="48" y="100" font-size="9" text-anchor="middle" fill="currentColor" font-weight="700">기동 PB-ON</text>
+        <text x="48" y="113" font-size="8" text-anchor="middle" fill="#6b7785" font-family="monospace">NO 3-4</text>
+        <text x="112" y="100" font-size="9" text-anchor="middle" fill="currentColor" font-weight="700">정지 PB-OFF</text>
+        <text x="112" y="113" font-size="8" text-anchor="middle" fill="#6b7785" font-family="monospace">NC 1-2</text>
+      </svg></div>
+      <figcaption>
+        <h3><span class="ab">PB</span>누름버튼 스위치</h3>
+        <div class="full">Push Button Switch</div>
+        <p>누르는 동안만 접점이 전환되고 손을 떼면 스프링으로 복귀하는 <b>순시(복귀)형</b> 스위치입니다.</p>
+        <ul><li>PB-ON(PB1): a접점 = NO, Normally Open → 기동</li><li>PB-OFF(PB0): b접점 = NC, Normally Closed → 정지</li><li>패널 구멍 22mm(φ22) 규격이 일반적, 뒤쪽 접점 블록으로 NO/NC 선택</li></ul>
+        <a href="https://www.google.com/search?tbm=isch&q=%ED%91%B8%EC%8B%9C%EB%B2%84%ED%8A%BC+%EC%8A%A4%EC%9C%84%EC%B9%98+22%ED%8C%8C%EC%9D%B4" target="_blank" rel="noopener">실물 사진 검색 ↗</a>
+      </figcaption>
+    </figure>
+
+    <figure class="card mod">
+      <div class="ill"><svg viewBox="0 0 160 130" aria-hidden="true">
+        <defs>
+          <radialGradient id="lR" cx=".4" cy=".35"><stop offset="0" stop-color="#ffd6d2"/><stop offset=".55" stop-color="#ff4136"/><stop offset="1" stop-color="#a1130e"/></radialGradient>
+          <radialGradient id="lG" cx=".4" cy=".35"><stop offset="0" stop-color="#d7ffe1"/><stop offset=".55" stop-color="#22c55e"/><stop offset="1" stop-color="#0b6b2c"/></radialGradient>
+          <radialGradient id="lY" cx=".4" cy=".35"><stop offset="0" stop-color="#fff7cf"/><stop offset=".55" stop-color="#facc15"/><stop offset="1" stop-color="#9a7a00"/></radialGradient>
+        </defs>
+        <g stroke="#8a929c" stroke-width="2" fill="#b9bfc7"><circle cx="34" cy="52" r="22"/><circle cx="80" cy="52" r="22"/><circle cx="126" cy="52" r="22"/></g>
+        <circle cx="34" cy="52" r="15" fill="url(#lR)"/><circle cx="80" cy="52" r="15" fill="url(#lG)"/><circle cx="126" cy="52" r="15" fill="url(#lY)"/>
+        <g font-size="9" text-anchor="middle" font-weight="700" fill="currentColor"><text x="34" y="98">RL</text><text x="80" y="98">GL</text><text x="126" y="98">YL</text></g>
+        <g font-size="8" text-anchor="middle" fill="#6b7785"><text x="34" y="111">운전</text><text x="80" y="111">정지</text><text x="126" y="111">과부하</text></g>
+      </svg></div>
+      <figcaption>
+        <h3><span class="ab">PL</span>표시등 (파일럿 램프)</h3>
+        <div class="full">Pilot Lamp · RL / GL / YL = Red / Green / Yellow Lamp</div>
+        <p>운전 상태를 눈으로 확인하게 해 줍니다. 요즘은 수명이 긴 LED 램프를 주로 씁니다.</p>
+        <ul><li>RL: MC-a(43-44)와 직렬 → 운전 중 점등</li><li>GL: MC-b(21-22)와 직렬 → 정지 중 점등</li><li>YL: THR-a(97-98)와 직렬 → 과부하 시 점등</li><li>램프 정격전압 = 제어전원 전압</li></ul>
+        <a href="https://www.google.com/search?tbm=isch&q=%ED%8C%8C%EC%9D%BC%EB%9F%BF%EB%9E%A8%ED%94%84+%ED%91%9C%EC%8B%9C%EB%93%B1+22%ED%8C%8C%EC%9D%B4" target="_blank" rel="noopener">실물 사진 검색 ↗</a>
+      </figcaption>
+    </figure>
+
+    <figure class="card mod">
+      <div class="ill"><svg viewBox="0 0 160 130" aria-hidden="true">
+        <rect x="26" y="34" width="108" height="62" rx="7" fill="#2f3540"/>
+        <rect x="40" y="48" width="80" height="34" rx="16" fill="#efe4c8" stroke="#b39c66" stroke-width="2"/>
+        <rect x="40" y="48" width="14" height="34" rx="5" fill="#c7cdd4"/><rect x="106" y="48" width="14" height="34" rx="5" fill="#c7cdd4"/>
+        <text x="80" y="70" font-size="9" text-anchor="middle" fill="#5b4a23" font-family="monospace">2A</text>
+        <g font-size="9" text-anchor="middle" font-weight="700" fill="currentColor"><text x="80" y="116">F1 · F2</text></g>
+      </svg></div>
+      <figcaption>
+        <h3><span class="ab">F</span>퓨즈 (퓨즈 홀더)</h3>
+        <div class="full">Fuse</div>
+        <p>제어회로의 단락 사고 시 용단되어 MC 코일·배선·램프를 보호합니다.</p>
+        <ul><li>제어전원 인출선 양쪽(R·T)에 F1·F2</li><li>통형 퓨즈를 홀더에 끼워 DIN 레일에 장착</li></ul>
+        <a href="https://www.google.com/search?tbm=isch&q=%ED%93%A8%EC%A6%88%ED%99%80%EB%8D%94+%EC%A0%9C%EC%96%B4%ED%9A%8C%EB%A1%9C" target="_blank" rel="noopener">실물 사진 검색 ↗</a>
+      </figcaption>
+    </figure>
+
+    <figure class="card mod">
+      <div class="ill"><svg viewBox="0 0 160 130" aria-hidden="true">
+        <rect x="10" y="84" width="140" height="10" fill="#b9bfc7"/>
+        <g fill="#8e98a4" stroke="#6b7480">
+          <rect x="22" y="22" width="18" height="66" rx="2"/><rect x="42" y="22" width="18" height="66" rx="2"/><rect x="62" y="22" width="18" height="66" rx="2"/><rect x="82" y="22" width="18" height="66" rx="2"/><rect x="102" y="22" width="18" height="66" rx="2"/><rect x="122" y="22" width="18" height="66" rx="2"/>
+        </g>
+        <g fill="#e6e9ed" stroke="#6b7480"><circle cx="31" cy="34" r="4"/><circle cx="51" cy="34" r="4"/><circle cx="71" cy="34" r="4"/><circle cx="91" cy="34" r="4"/><circle cx="111" cy="34" r="4"/><circle cx="131" cy="34" r="4"/><circle cx="31" cy="74" r="4"/><circle cx="51" cy="74" r="4"/><circle cx="71" cy="74" r="4"/><circle cx="91" cy="74" r="4"/><circle cx="111" cy="74" r="4"/><circle cx="131" cy="74" r="4"/></g>
+        <g font-size="8" fill="#fff" text-anchor="middle" font-family="monospace"><text x="31" y="57">1</text><text x="51" y="57">2</text><text x="71" y="57">3</text><text x="91" y="57">4</text><text x="111" y="57">5</text><text x="131" y="57">6</text></g>
+      </svg></div>
+      <figcaption>
+        <h3><span class="ab">TB</span>단자대</h3>
+        <div class="full">Terminal Block</div>
+        <p>패널 내부 기기와 외부 기기(전원, 전동기, 문짝의 PB·램프)를 연결하는 중계 단자입니다.</p>
+        <ul><li>번호를 붙여 도면과 대조하며 결선</li><li>전원측 TB와 부하측 TB를 구분</li></ul>
+        <a href="https://www.google.com/search?tbm=isch&q=%EB%8B%A8%EC%9E%90%EB%8C%80+terminal+block+DIN" target="_blank" rel="noopener">실물 사진 검색 ↗</a>
+      </figcaption>
+    </figure>
+
+    <figure class="card mod">
+      <div class="ill"><svg viewBox="0 0 160 130" aria-hidden="true">
+        <rect x="30" y="34" width="84" height="64" rx="10" fill="#5b6675"/>
+        <g stroke="#475260" stroke-width="3"><line x1="40" y1="40" x2="40" y2="92"/><line x1="52" y1="40" x2="52" y2="92"/><line x1="64" y1="40" x2="64" y2="92"/><line x1="76" y1="40" x2="76" y2="92"/><line x1="88" y1="40" x2="88" y2="92"/><line x1="100" y1="40" x2="100" y2="92"/></g>
+        <rect x="114" y="58" width="26" height="14" rx="3" fill="#aab2bc"/>
+        <rect x="56" y="20" width="32" height="16" rx="3" fill="#6b7685"/>
+        <rect x="34" y="98" width="20" height="10" fill="#475260"/><rect x="90" y="98" width="20" height="10" fill="#475260"/>
+        <text x="72" y="31" font-size="8" fill="#fff" text-anchor="middle" font-family="monospace">U V W</text>
+      </svg></div>
+      <figcaption>
+        <h3><span class="ab">M</span>3상 유도전동기</h3>
+        <div class="full">3-Phase Induction Motor</div>
+        <p>MC 주접점과 THR을 거쳐 U·V·W 단자로 3상 전원을 받아 회전합니다. 실습에서는 전동기 대신 램프로 부하를 대신하기도 합니다.</p>
+        <ul><li>두 상을 바꾸면 회전 방향이 반대 (정·역 회로의 기초)</li></ul>
+        <a href="https://www.google.com/search?tbm=isch&q=3%EC%83%81+%EC%9C%A0%EB%8F%84%EC%A0%84%EB%8F%99%EA%B8%B0" target="_blank" rel="noopener">실물 사진 검색 ↗</a>
+      </figcaption>
+    </figure>
+
+  </div>
+</section>
+
+<!-- 5. 핵심 포인트 -->
+<section id="keys">
+  <h2><span class="no">05</span>핵심 포인트 정리</h2>
+  <p class="lead">약어는 반드시 풀네임과 함께 기억하세요. 도면 기호 → 풀네임 → 역할 → 단자번호 순서로 정리했습니다.</p>
+
+  <div class="card tablewrap">
+    <table class="full">
+      <thead><tr><th>기호</th><th>풀네임 (Full Name)</th><th>한글 명칭</th><th>이 회로에서의 역할</th><th>접점·단자</th></tr></thead>
+      <tbody>
+        <tr><td>MCCB</td><td>Molded Case Circuit Breaker</td><td>배선용 차단기</td><td>주전원 개폐, 단락·과전류 보호</td><td>1차 R·S·T / 2차 부하측</td></tr>
+        <tr><td>F</td><td>Fuse</td><td>퓨즈</td><td>제어회로 단락 보호</td><td>F1(R상), F2(T상)</td></tr>
+        <tr><td>PB-ON</td><td>Push Button Switch (ON) · Normally Open</td><td>기동용 누름버튼 스위치 (a접점)</td><td>누르는 동안 코일에 기동 신호</td><td>3-4</td></tr>
+        <tr><td>PB-OFF</td><td>Push Button Switch (OFF) · Normally Closed</td><td>정지용 누름버튼 스위치 (b접점)</td><td>누르는 순간 회로 차단 → 자기유지 해제</td><td>1-2</td></tr>
+        <tr><td>MC</td><td>Magnetic Contactor</td><td>전자접촉기</td><td>코일 여자로 주접점·보조접점 동시 전환</td><td>코일 A1-A2</td></tr>
+        <tr><td>MC-a</td><td>MC Auxiliary Contact (Normally Open)</td><td>MC 보조 a접점</td><td>13-14: 자기유지 / 43-44: RL 점등</td><td>13-14, 43-44</td></tr>
+        <tr><td>MC-b</td><td>MC Auxiliary Contact (Normally Closed)</td><td>MC 보조 b접점</td><td>정지 중 GL 점등</td><td>21-22 (31-32)</td></tr>
+        <tr><td>THR</td><td>Thermal Overload Relay</td><td>열동형 과부하 계전기</td><td>과부하 시 코일 회로 차단, 과부하 표시</td><td>95-96 (b), 97-98 (a)</td></tr>
+        <tr><td>MS</td><td>Magnetic Switch</td><td>전자개폐기</td><td>MC + THR을 합친 명칭</td><td>—</td></tr>
+        <tr><td>EOCR</td><td>Electronic Over Current Relay</td><td>전자식 과전류 계전기</td><td>THR 대신 쓰는 전자식 보호 계전기</td><td>제조사 결선도 확인</td></tr>
+        <tr><td>RL</td><td>Red Lamp (Pilot Lamp)</td><td>적색 표시등</td><td>운전 표시</td><td>MC-a 43-44 경유</td></tr>
+        <tr><td>GL</td><td>Green Lamp (Pilot Lamp)</td><td>녹색 표시등</td><td>정지 표시</td><td>MC-b 21-22 경유</td></tr>
+        <tr><td>YL</td><td>Yellow Lamp (Pilot Lamp)</td><td>황색 표시등</td><td>과부하(고장) 표시</td><td>THR 97-98 경유</td></tr>
+        <tr><td>M</td><td>3-Phase Induction Motor</td><td>3상 유도전동기</td><td>부하</td><td>U · V · W</td></tr>
+        <tr><td>TB</td><td>Terminal Block</td><td>단자대</td><td>패널 내·외부 배선 중계</td><td>번호 표기</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="font-size:13.5px;color:var(--muted);margin:10px 2px 0">접점 용어: <b>a접점</b> = arbeit contact(Make contact, NO: Normally Open, 평상시 열림) · <b>b접점</b> = break contact(NC: Normally Closed, 평상시 닫힘) · <b>c접점</b> = change-over contact(전환 접점). 자기유지는 영어로 Self-holding, Latching 또는 Seal-in circuit이라고 합니다.</p>
+
+  <h3 style="margin:26px 0 10px;font-size:18px">꼭 기억할 7가지</h3>
+  <ol class="keys">
+    <li class="card"><b>자기유지 = PB-ON(a) ∥ MC-a(13-14)</b><span>기동 버튼과 MC 보조 a접점을 병렬로 연결해야 버튼을 놓아도 코일이 계속 여자됩니다.</span></li>
+    <li class="card"><b>정지 버튼(b접점)은 직렬, 병렬부 앞단</b><span>PB-OFF가 회로 전체를 끊을 수 있는 위치에 있어야 정지 우선이 됩니다.</span></li>
+    <li class="card"><b>THR 95-96(b)도 코일 회로에 직렬</b><span>과부하 시 자동으로 MC를 떨어뜨리고 자기유지를 해제합니다. 97-98(a)은 YL 표시에 씁니다.</span></li>
+    <li class="card"><b>표시등은 MC 보조접점으로</b><span>a접점(43-44) → RL 운전, b접점(21-22) → GL 정지. 자기유지용 13-14와 다른 접점을 쓰면 회로가 명확해집니다.</span></li>
+    <li class="card"><b>정전 후 복전 시 자동 재기동 없음</b><span>정전으로 MC가 떨어지면 MC-a도 열리므로, 전원이 돌아와도 PB-ON을 다시 눌러야 기동합니다. (무전압·저전압 보호 효과)</span></li>
+    <li class="card"><b>코일·램프 정격전압 = 제어전원 전압</b><span>AC220V 코일에 380V를 걸면 소손, 반대로 낮으면 흡인 불량·떨림(험)이 생깁니다.</span></li>
+    <li class="card"><b>MC 하나가 주접점·보조접점을 동시에 움직인다</b><span>코일 여자 한 번으로 전동기 운전, 자기유지, RL 점등, GL 소등이 한꺼번에 일어납니다.</span></li>
+  </ol>
+
+  <div class="two" style="margin-top:14px">
+    <div class="card pad warnbox">
+      <h3 style="margin:0;font-size:16px">자주 하는 실수</h3>
+      <ul>
+        <li>자기유지 선을 <b>21-22(b접점)</b>에 연결 → 전원 투입과 동시에 코일이 붙었다 떨어지기를 반복(채터링)</li>
+        <li>MC-a를 <b>PB-OFF까지 감싸서</b> 병렬 연결 → 정지 버튼이 듣지 않음</li>
+        <li>PB 접점 블록 NO/NC 혼동 → 정지 버튼으로 기동되거나 기동이 안 됨</li>
+        <li>RL·GL 접점을 바꿔 연결 → 운전·정지 표시가 반대로 점등</li>
+        <li>THR 95-96 대신 97-98을 코일 회로에 연결 → 평상시 기동 불가</li>
+      </ul>
+    </div>
+    <div class="card pad okbox">
+      <h3 style="margin:0;font-size:16px">결선·점검 순서 (실습 팁)</h3>
+      <ol>
+        <li>주회로 결선: MCCB → MC 주접점 → THR → 단자대(전동기)</li>
+        <li>제어회로 공통선: F1 → THR 95-96 → PB-OFF</li>
+        <li>코일 회로: PB-OFF → PB-ON → A1, A2 → F2</li>
+        <li>자기유지: PB-ON 양단을 MC 13-14에 병렬로</li>
+        <li>표시등: 43-44 → RL, 21-22 → GL, 97-98 → YL</li>
+        <li>전원 투입 전 회로시험기로 도통 확인 (PB-ON 누름 / MC 가동부를 손으로 눌러 자기유지 경로 확인), 이후 통전 시험</li>
+      </ol>
+    </div>
+  </div>
+  <p style="font-size:13px;color:var(--muted);margin:12px 2px 0">표시등 색은 국내 시퀀스 실습 관례(RL 운전 · GL 정지)를 따랐습니다. 현장이나 적용 규격에 따라 색의 의미가 다를 수 있으므로, 실제 작업에서는 도면 범례를 먼저 확인하세요.</p>
+</section>
+
+<!-- 6. 확인 문제 -->
+<section id="quiz">
+  <h2><span class="no">06</span>확인 문제</h2>
+  <p class="lead">답을 떠올린 뒤 펼쳐서 확인하세요. 시뮬레이터로 직접 검증해 보면 더 좋습니다.</p>
+  <div class="grid">
+    <details class="card q"><summary>PB-ON에서 손을 떼도 MC가 계속 동작하는 이유는?</summary><div class="a">MC가 여자되면서 닫힌 보조 a접점 MC-a(13-14)가 PB-ON과 병렬로 연결되어 있어, PB-ON이 열려도 그 우회 경로로 코일 전류가 계속 흐르기 때문입니다.</div></details>
+    <details class="card q"><summary>운전 중 정전이 되었다가 전기가 다시 들어오면 전동기는?</summary><div class="a">정지 상태를 유지합니다. 정전 순간 코일이 소자되어 MC-a가 열렸으므로 복전되어도 코일 경로가 없습니다. 다시 PB-ON을 눌러야 기동합니다.</div></details>
+    <details class="card q"><summary>기동 버튼과 정지 버튼을 동시에 누르면?</summary><div class="a">MC는 동작하지 않습니다(정지 우선). PB-OFF가 PB-ON·MC-a 병렬부보다 앞단에 직렬로 있어 회로 전체를 끊기 때문입니다.</div></details>
+    <details class="card q"><summary>운전 중 THR이 트립되면 RL·GL·YL은 각각 어떻게 되나?</summary><div class="a">RL 소등, GL 점등, YL 점등. THR 95-96이 열려 MC가 소자(→ MC-a 43-44 열림, MC-b 21-22 닫힘)되고, THR 97-98이 닫혀 YL이 켜집니다.</div></details>
+    <details class="card q"><summary>자기유지 접점을 MC-b(21-22)에 잘못 연결하면?</summary><div class="a">전원을 넣자마자 b접점을 통해 코일이 여자되고, 여자되는 순간 b접점이 열려 코일이 떨어지는 동작을 반복합니다(채터링). 접점 손상과 소음의 원인이 됩니다.</div></details>
+  </div>
+</section>
+
+</main>
+
+<footer class="wrap">
+  부품 그림은 형태를 단순화한 일러스트입니다. 단자번호는 일반적인 표기이며 제조사·모델에 따라 다를 수 있으므로 실제 결선 전 부품 명판과 결선도를 확인하세요. 실습 시 반드시 전원을 차단한 상태에서 결선하고, 지도자의 확인 후 통전합니다.
+</footer>
+
+<script>
+(function(){
+'use strict';
+const NS='http://www.w3.org/2000/svg';
+function E(tag,a,p){const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e;}
+function T(p,x,y,txt,cls){const t=E('text',{x:x,y:y,class:cls||'lbl'},p);t.textContent=txt;return t;}
+function W(p,pts,g){const a={points:pts.map(q=>q.join(',')).join(' '),class:'w'};if(g)a['data-g']=g;return E('polyline',a,p);}
+
+/* ---------- state ---------- */
+const S={power:true,pbOn:false,pbOff:false,thr:false,mc:false};
+function solve(){
+  for(let i=0;i<5;i++){
+    const coil=S.power&&!S.thr&&!S.pbOff&&(S.pbOn||S.mc);
+    if(coil===S.mc)break;
+    S.mc=coil;
+  }
+}
+
+/* ---------- ladder ---------- */
+const lad=document.getElementById('ladder');
+const L=70,R=650,Y1=120,YH=190,Y2=270,Y3=340,Y4=410;
+
+function contact(p,o){
+  const cx=o.cx,cy=o.cy,g=o.g;
+  const grp=E('g',{id:o.id,class:'ct'+(o.pb?' pb':'')+(o.mc?' mcrel':'')},p);
+  W(grp,[[cx-20,cy],[cx-8,cy]],g);W(grp,[[cx+8,cy],[cx+20,cy]],g);
+  E('line',{x1:cx-8,y1:cy-13,x2:cx-8,y2:cy+13,class:'bar'},grp);
+  E('line',{x1:cx+8,y1:cy-13,x2:cx+8,y2:cy+13,class:'bar'},grp);
+  E('line',{x1:cx-8,y1:cy,x2:cx+8,y2:cy,class:'w bridge','data-g':g},grp);
+  if(o.nc)E('line',{x1:cx-14,y1:cy+14,x2:cx+14,y2:cy-14,class:'slash'},grp);
+  if(o.pb){
+    const a=E('g',{class:'act'},grp);
+    E('line',{x1:cx,y1:cy-15,x2:cx,y2:cy-30},a);
+    E('line',{x1:cx-10,y1:cy-30,x2:cx+10,y2:cy-30},a);
+    o.hit=E('rect',{x:cx-27,y:cy-46,width:54,height:66,rx:6,class:'hit',tabindex:'0',role:'button','aria-label':o.label+' 누르기'},grp);
+  }
+  T(grp,cx,cy-(o.pb?38:21),o.label,'lbl c');
+  if(o.num)T(grp,cx,cy+29,o.num,'num c');
+  return {g:grp,hit:o.hit};
+}
+function lampSym(p,id,cx,cy,color,label){
+  const g=E('g',{id:id,class:'lampS '+color},p);
+  E('circle',{cx:cx,cy:cy,r:17},g);const d=12;
+  E('line',{x1:cx-d,y1:cy-d,x2:cx+d,y2:cy+d},g);E('line',{x1:cx-d,y1:cy+d,x2:cx+d,y2:cy-d},g);
+  T(g,cx,cy-25,label,'lbl c');
+  return g;
+}
+function dot(p,x,y){E('circle',{cx:x,cy:y,r:4,class:'dot'},p);}
+
+// zone highlight
+E('rect',{x:284,y:62,width:152,height:166,rx:10,class:'zone'},lad);
+T(lad,360,55,'자기유지 회로 (병렬)','zoneT c');
+// top labels
+T(lad,L,30,'R상','lbl c');T(lad,R,30,'T상','lbl c');
+T(lad,500,30,'제어전원 (MCCB 2차측 인출)','mut c');
+// rails
+W(lad,[[L,40],[L,Y4]],'railL');W(lad,[[R,Y4],[R,40]],'railR');
+E('rect',{x:L-6,y:48,width:12,height:26,class:'fuse'},lad);E('line',{x1:L,y1:48,x2:L,y2:74,class:'sym'},lad);
+E('rect',{x:R-6,y:48,width:12,height:26,class:'fuse'},lad);E('line',{x1:R,y1:48,x2:R,y2:74,class:'sym'},lad);
+T(lad,L+12,66,'F1','num');T(lad,R-12,66,'F2','num e');
+
+// rung 1
+W(lad,[[L,Y1],[125,Y1]],'r1');
+const cTHRb=contact(lad,{id:'c-thrb',cx:145,cy:Y1,nc:true,label:'THR',num:'95-96',g:'r1'});
+W(lad,[[165,Y1],[210,Y1]],'r1');
+const cOFF=contact(lad,{id:'c-pboff',cx:230,cy:Y1,nc:true,pb:true,label:'PB-OFF',num:'1-2',g:'r1'});
+W(lad,[[250,Y1],[300,Y1]],'r1');
+W(lad,[[300,Y1],[340,Y1]],'r1on');
+const cON=contact(lad,{id:'c-pbon',cx:360,cy:Y1,pb:true,label:'PB-ON',num:'3-4',g:'r1on'});
+W(lad,[[380,Y1],[420,Y1]],'r1on');
+W(lad,[[300,Y1],[300,YH],[340,YH]],'r1hold');
+contact(lad,{id:'c-mca1',cx:360,cy:YH,label:'MC-a',num:'13-14',g:'r1hold',mc:true});
+W(lad,[[380,YH],[420,YH],[420,Y1]],'r1hold');
+W(lad,[[420,Y1],[523,Y1]],'r1');
+const coilG=E('g',{id:'coil',class:'coil mcrel'},lad);
+E('circle',{cx:545,cy:Y1,r:22},coilG);T(coilG,545,Y1+5,'MC','coilT c');
+T(lad,512,Y1-9,'A1','num c');T(lad,578,Y1-9,'A2','num c');
+W(lad,[[567,Y1],[R,Y1]],'r1');
+// rung 2-4
+W(lad,[[L,Y2],[340,Y2]],'r2');contact(lad,{id:'c-mca2',cx:360,cy:Y2,label:'MC-a',num:'43-44',g:'r2',mc:true});W(lad,[[380,Y2],[528,Y2]],'r2');
+const lRL=lampSym(lad,'l-rl',545,Y2,'red','RL');W(lad,[[562,Y2],[R,Y2]],'r2');
+W(lad,[[L,Y3],[340,Y3]],'r3');contact(lad,{id:'c-mcb1',cx:360,cy:Y3,nc:true,label:'MC-b',num:'21-22',g:'r3',mc:true});W(lad,[[380,Y3],[528,Y3]],'r3');
+const lGL=lampSym(lad,'l-gl',545,Y3,'green','GL');W(lad,[[562,Y3],[R,Y3]],'r3');
+W(lad,[[L,Y4],[340,Y4]],'r4');contact(lad,{id:'c-thra',cx:360,cy:Y4,label:'THR',num:'97-98',g:'r4'});W(lad,[[380,Y4],[528,Y4]],'r4');
+const lYL=lampSym(lad,'l-yl',545,Y4,'yellow','YL');W(lad,[[562,Y4],[R,Y4]],'r4');
+// junctions
+[[300,Y1],[420,Y1],[L,Y1],[R,Y1],[L,Y2],[R,Y2],[L,Y3],[R,Y3]].forEach(p=>dot(lad,p[0],p[1]));
+// annotations
+T(lad,662,Y1+4,'코일 회로','ann');T(lad,662,Y2+4,'운전 표시','ann');T(lad,662,Y3+4,'정지 표시','ann');T(lad,662,Y4+4,'과부하 표시','ann');
+
+/* ---------- main circuit ---------- */
+const ms=document.getElementById('mainSvg');
+const X=[90,150,210];
+['R','S','T'].forEach((n,i)=>T(ms,X[i],20,n,'lbl c'));
+E('line',{x1:62,y1:100,x2:224,y2:100,class:'link'},ms);
+E('line',{x1:62,y1:190,x2:224,y2:190,class:'link'},ms);
+E('line',{x1:70,y1:266,x2:224,y2:266,class:'link'},ms);
+X.forEach(x=>{
+  E('line',{x1:x,y1:28,x2:x,y2:80,class:'w','data-m':'sup'},ms);
+  E('line',{x1:x-4,y1:76,x2:x+4,y2:84,class:'sym'},ms);E('line',{x1:x-4,y1:84,x2:x+4,y2:76,class:'sym'},ms);
+  E('line',{x1:x,y1:80,x2:x,y2:118,class:'w mcbC','data-m':'pow'},ms);
+  E('line',{x1:x,y1:118,x2:x-16,y2:84,class:'w mcbO'},ms);
+  E('line',{x1:x,y1:118,x2:x,y2:170,class:'w','data-m':'pow'},ms);
+  E('line',{x1:x,y1:170,x2:x,y2:208,class:'w mcC','data-m':'run'},ms);
+  E('line',{x1:x,y1:208,x2:x-16,y2:174,class:'w mcO'},ms);
+  E('line',{x1:x,y1:208,x2:x,y2:250,class:'w','data-m':'run'},ms);
+  E('rect',{x:x-8,y:250,width:16,height:32,class:'heater'},ms);
+  E('path',{d:'M'+x+' 250 L'+(x-5)+' 256 L'+(x+5)+' 262 L'+(x-5)+' 268 L'+(x+5)+' 274 L'+x+' 282',class:'w','data-m':'run'},ms);
+  E('line',{x1:x,y1:282,x2:x,y2:316,class:'w','data-m':'run'},ms);
+});
+E('polyline',{points:'90,316 90,330 121,340',class:'w','data-m':'run'},ms);
+E('polyline',{points:'150,316 150,324',class:'w','data-m':'run'},ms);
+E('polyline',{points:'210,316 210,330 179,340',class:'w','data-m':'run'},ms);
+E('line',{x1:90,y1:140,x2:46,y2:140,class:'w','data-m':'tap'},ms);dot(ms,90,140);T(ms,42,144,'F1','num e');
+E('line',{x1:210,y1:140,x2:254,y2:140,class:'w','data-m':'tap'},ms);dot(ms,210,140);T(ms,258,144,'F2','num');
+T(ms,28,160,'제어회로','mut');
+E('circle',{cx:150,cy:360,r:36,class:'motor'},ms);
+const rot=E('g',{class:'rotor'},ms);
+E('line',{x1:150,y1:360,x2:150,y2:332},rot);E('line',{x1:150,y1:360,x2:174,y2:374},rot);E('line',{x1:150,y1:360,x2:126,y2:374},rot);
+T(ms,150,362,'M','lbl c');T(ms,150,378,'3~','num c');
+T(ms,232,104,'MCCB','lbl');T(ms,232,194,'MC 주접점','lbl');T(ms,232,210,'1-2·3-4·5-6','num');T(ms,232,270,'THR','lbl');T(ms,232,286,'히터','num');
+T(ms,150,414,'3상 유도전동기','lbl c');
+
+/* ---------- panel refs ---------- */
+const $=id=>document.getElementById(id);
+const pOn=$('pOn'),pOff=$('pOff'),mccb=$('mccb');
+
+/* ---------- render ---------- */
+function setClosed(id,v){$(id).classList.toggle('closed',!!v);}
+function setGroup(name,flow,live){
+  lad.querySelectorAll('[data-g="'+name+'"]').forEach(e=>{e.classList.toggle('flow',!!flow);e.classList.toggle('live',!flow&&!!live);});
+}
+function onoff(v,on,off){return '<span class="'+(v?'on-t':'off-t')+'">'+(v?on:off)+'</span>';}
+
+function render(){
+  const run=S.power&&S.mc;
+  setClosed('c-thrb',!S.thr);setClosed('c-pboff',!S.pbOff);setClosed('c-pbon',S.pbOn);
+  setClosed('c-mca1',S.mc);setClosed('c-mca2',S.mc);setClosed('c-mcb1',!S.mc);setClosed('c-thra',S.thr);
+  $('c-pbon').classList.toggle('pressed',S.pbOn);$('c-pboff').classList.toggle('pressed',S.pbOff);
+  const r1=S.mc, r2=S.power&&S.mc, r3=S.power&&!S.mc, r4=S.power&&S.thr;
+  setGroup('r1',r1);setGroup('r1on',r1&&S.pbOn);setGroup('r1hold',r1);
+  setGroup('r2',r2);setGroup('r3',r3);setGroup('r4',r4);
+  const any=r1||r2||r3||r4;
+  setGroup('railL',any,S.power);setGroup('railR',any,S.power);
+  coilG.classList.toggle('on',S.mc);
+  lRL.classList.toggle('on',r2);lGL.classList.toggle('on',r3);lYL.classList.toggle('on',r4);
+  lad.classList.toggle('mc-on',S.mc);
+
+  // main circuit
+  ms.querySelectorAll('[data-m]').forEach(e=>{
+    const m=e.dataset.m;let flow=false,live=false;
+    if(m==='sup'){flow=run;live=true;}
+    else if(m==='pow'){flow=run;live=S.power;}
+    else if(m==='run'){flow=run;}
+    else if(m==='tap'){flow=S.power;}
+    e.classList.toggle('flow',flow);e.classList.toggle('live',!flow&&live);
+  });
+  ms.querySelectorAll('.mcbC').forEach(e=>e.style.display=S.power?'':'none');
+  ms.querySelectorAll('.mcbO').forEach(e=>e.style.display=S.power?'none':'');
+  ms.querySelectorAll('.mcC').forEach(e=>e.style.display=S.mc?'':'none');
+  ms.querySelectorAll('.mcO').forEach(e=>e.style.display=S.mc?'none':'');
+  ms.classList.toggle('running',run);ms.classList.toggle('thr-trip',S.thr);
+
+  // panel
+  $('pRL').classList.toggle('on',r2);$('pGL').classList.toggle('on',r3);$('pYL').classList.toggle('on',r4);
+  pOn.classList.toggle('down',S.pbOn);pOff.classList.toggle('down',S.pbOff);
+  mccb.setAttribute('aria-pressed',S.power?'true':'false');$('mccbTxt').textContent=S.power?'ON':'OFF';
+  $('pMotorWrap').classList.toggle('running',run);$('pMotorTxt').textContent=run?'운전 중':'정지';
+  $('thrTrip').disabled=S.thr;$('thrReset').disabled=!S.thr;
+
+  // status
+  $('stCoil').innerHTML=onoff(S.mc,'여자 (ON)','무여자 (OFF)');
+  $('stHold').innerHTML=S.mc?(S.pbOn?'<span class="on-t">닫힘 · PB-ON과 함께 통전</span>':'<span class="on-t">닫힘 · 자기유지 중</span>'):'<span class="off-t">열림 · 유지 해제</span>';
+  $('stRL').innerHTML=onoff(r2,'점등','소등');$('stGL').innerHTML=onoff(r3,'점등','소등');$('stYL').innerHTML=onoff(r4,'점등','소등');
+  $('stM').innerHTML=onoff(run,'회전','정지');
+
+  // message
+  let m;
+  if(!S.power) m='<b>전원 OFF</b> — MCCB가 꺼져 제어회로에 전압이 없습니다. 모든 표시등이 꺼지고, 어떤 버튼을 눌러도 동작하지 않습니다. 다시 켜도 MC는 자동으로 붙지 않습니다.';
+  else if(S.thr) m='<b>과부하 트립</b> — THR 95-96(b)이 열려 코일 전류가 끊기고 자기유지가 해제되었습니다. 97-98(a)이 닫혀 YL이 켜졌습니다. THR 리셋 후 PB-ON을 다시 눌러야 재기동합니다.';
+  else if(S.pbOff&&S.pbOn) m='<b>동시 누름 = 정지 우선</b> — PB-OFF가 병렬부 앞단에 직렬로 있어 PB-ON이 닫혀 있어도 코일에 전류가 갈 수 없습니다.';
+  else if(S.pbOff) m='<b>정지</b> — 직렬 b접점 PB-OFF가 열려 코일이 소자되었고, 그 결과 MC-a(13-14)도 열렸습니다. 이제 PB-OFF를 놓아도 다시 켜지지 않습니다.';
+  else if(S.pbOn&&S.mc) m='<b>기동</b> — PB-ON(3-4)을 통해 코일(A1-A2)에 전류가 흘러 MC가 여자되었습니다. 동시에 MC-a(13-14)가 닫혀 아래쪽 우회 경로도 생겼습니다. 이제 손을 떼 보세요.';
+  else if(S.mc) m='<b>자기유지 중</b> — PB-ON은 열렸지만 MC 자신의 보조 a접점 MC-a(13-14)를 통해 코일 전류가 계속 흐릅니다. MC-a(43-44)로 RL 운전 표시등이 켜져 있습니다.';
+  else m='<b>정지 상태</b> — 코일 무여자. 평상시 닫혀 있는 MC-b(21-22)를 통해 GL 정지 표시등이 켜져 있습니다. PB-ON을 눌러 기동해 보세요.';
+  $('msg').innerHTML=m;
+}
+function update(){solve();render();}
+
+/* ---------- input binding ---------- */
+function bindMomentary(el,key){
+  const down=e=>{if(e.button!==undefined&&e.button!==0)return;e.preventDefault();S[key]=true;update();try{el.setPointerCapture(e.pointerId);}catch(_){}};
+  const up=()=>{if(S[key]){S[key]=false;update();}};
+  el.addEventListener('pointerdown',down);
+  el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);el.addEventListener('lostpointercapture',up);
+  el.addEventListener('keydown',e=>{if((e.key===' '||e.key==='Enter')&&!e.repeat){e.preventDefault();S[key]=true;update();}});
+  el.addEventListener('keyup',e=>{if(e.key===' '||e.key==='Enter'){e.preventDefault();up();}});
+  el.addEventListener('blur',up);
+  el.addEventListener('contextmenu',e=>e.preventDefault());
+}
+bindMomentary(pOn,'pbOn');bindMomentary(pOff,'pbOff');
+bindMomentary(cON.hit,'pbOn');bindMomentary(cOFF.hit,'pbOff');
+mccb.addEventListener('click',()=>{S.power=!S.power;if(!S.power)S.mc=false;update();});
+$('thrTrip').addEventListener('click',()=>{S.thr=true;update();});
+$('thrReset').addEventListener('click',()=>{S.thr=false;update();});
+
+/* ---------- timing chart ---------- */
+const ch=$('chart');
+const rows=[
+  {k:'pbOn',n:'PB-ON',c:'var(--green)'},
+  {k:'pbOff',n:'PB-OFF',c:'var(--red)'},
+  {k:'mc',n:'MC 코일',c:'var(--accent)'},
+  {k:'rl',n:'RL 운전',c:'var(--red)'},
+  {k:'gl',n:'GL 정지',c:'var(--green)'},
+  {k:'yl',n:'YL 과부하',c:'var(--yellow)'}
+];
+const N=150,X0=100,X1=744,RH=34,TOP=6;
+const dx=(X1-X0)/(N-1);
+for(let s=0;s<=15;s++){const x=X0+(s*10)*dx;E('line',{x1:x,y1:TOP,x2:x,y2:TOP+rows.length*RH,class:'gl',opacity:s%5===0?1:.45},ch);}
+T(ch,X0,TOP+rows.length*RH+16,'-15s','tk c');T(ch,X0+50*dx,TOP+rows.length*RH+16,'-10s','tk c');T(ch,X0+100*dx,TOP+rows.length*RH+16,'-5s','tk c');T(ch,X1,TOP+rows.length*RH+16,'지금','tk c');
+const paths=rows.map((r,i)=>{
+  const top=TOP+i*RH;
+  E('line',{x1:X0,y1:top+RH,x2:X1,y2:top+RH,class:'gl'},ch);
+  T(ch,8,top+21,r.n,'rl');
+  const fill=E('path',{d:'',fill:r.c,opacity:.14},ch);
+  const line=E('path',{d:'',fill:'none',stroke:r.c,'stroke-width':2.4,'stroke-linejoin':'round'},ch);
+  return {fill:fill,line:line,hi:top+7,lo:top+RH-5};
+});
+function snap(){return {pbOn:S.pbOn,pbOff:S.pbOff,mc:S.mc,rl:S.power&&S.mc,gl:S.power&&!S.mc,yl:S.power&&S.thr};}
+let samples=[];let paused=false;
+function fillSamples(){samples=[];const s=snap();for(let i=0;i<N;i++)samples.push(s);}
+function drawChart(){
+  rows.forEach((r,i)=>{
+    const P=paths[i];let d='',prev=null;
+    samples.forEach((s,j)=>{
+      const x=(X0+j*dx).toFixed(1),y=s[r.k]?P.hi:P.lo;
+      if(j===0)d='M'+x+' '+y;else if(y!==prev)d+=' H'+x+' V'+y;
+      prev=y;
+    });
+    d+=' H'+X1;
+    P.line.setAttribute('d',d);
+    P.fill.setAttribute('d',d+' V'+P.lo+' H'+X0+' Z');
+  });
+}
+fillSamples();
+setInterval(()=>{if(paused)return;samples.push(snap());if(samples.length>N)samples.shift();drawChart();},100);
+$('chPause').addEventListener('click',e=>{paused=!paused;e.currentTarget.textContent=paused?'계속':'일시정지';});
+$('chClear').addEventListener('click',()=>{fillSamples();drawChart();});
+
+update();drawChart();
+})();
+</script>
+</body>
+</html>

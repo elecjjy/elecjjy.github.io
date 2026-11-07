@@ -1,0 +1,2373 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>자기유지회로 디지털 트윈 실습실</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#16202b; --muted:#5b6876; --line:#d5dbe2; --panel:rgba(255,255,255,.95);
+  --accent:#0a7d78; --accent-soft:#e0f2f1; --warn:#f5a400; --danger:#e0362c; --ok:#2e7d32;
+  --hot:#e53935; --low:#1e6fd9; --mid:#f08c00; --dead:#c5ccd4;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;font-family:'Noto Sans KR',system-ui,sans-serif;color:var(--ink);background:#d9e0e6}
+button{font:inherit;cursor:pointer}
+#c3d{position:fixed;inset:0}
+#c3d canvas{display:block;touch-action:none}
+.l2d{position:absolute;inset:0;pointer-events:none}
+
+/* ---------- top bar ---------- */
+#topbar{position:fixed;top:0;left:0;right:0;height:56px;z-index:30;display:flex;align-items:center;gap:14px;padding:0 12px 0 14px;
+  background:rgba(255,255,255,.93);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+#topbar::after{content:"";position:absolute;left:0;right:0;bottom:-4px;height:3px;
+  background:repeating-linear-gradient(-45deg,#f5c400 0 10px,#2b2f33 10px 20px);opacity:.85}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand .logo{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:#16202b;color:#ffd42a;font-size:19px;flex:none}
+.brand b{display:block;font-size:15px;font-weight:900;letter-spacing:-.02em;white-space:nowrap}
+.brand small{display:block;font-size:11px;color:var(--muted);white-space:nowrap}
+#roomTabs{display:flex;gap:4px;padding:4px;background:#eef1f4;border-radius:11px;margin:0 auto}
+#roomTabs button{border:0;background:transparent;padding:7px 13px;border-radius:8px;font-size:13px;font-weight:700;color:var(--muted);white-space:nowrap}
+#roomTabs button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+#statusPill{font-size:12px;font-weight:700;padding:6px 11px;border-radius:99px;background:#eceff1;color:#455a64;white-space:nowrap;font-family:var(--mono)}
+#statusPill.run{background:#e3f6e8;color:#1b6e2e}
+#statusPill.trip{background:#fff3cd;color:#8a5a00}
+#statusPill.fault{background:#fde3e1;color:#b3241b;animation:blink .5s steps(2) infinite}
+@keyframes blink{50%{opacity:.45}}
+#theoryBtn{flex:none;display:inline-flex;align-items:center;gap:7px;text-decoration:none;font-weight:700;font-size:13.5px;
+  color:#fff;background:linear-gradient(180deg,#0f8e88,#0a6d68);padding:9px 15px;border-radius:10px;box-shadow:0 2px 6px rgba(10,109,104,.35)}
+#theoryBtn:hover{filter:brightness(1.08)}
+
+/* ---------- right panel ---------- */
+#panel{position:fixed;top:68px;right:12px;bottom:12px;width:430px;z-index:20;display:flex;flex-direction:column;
+  background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 30px rgba(20,30,40,.14);transition:transform .3s}
+#panel.hide{transform:translateX(calc(100% + 20px))}
+#panelToggle{position:fixed;top:76px;right:452px;z-index:21;width:30px;height:44px;border:1px solid var(--line);border-radius:9px 0 0 9px;background:#fff;font-weight:900;color:var(--muted);transition:right .3s}
+#panelToggle.hide{right:12px;border-radius:9px}
+.tabs{display:flex;gap:2px;padding:8px 8px 0;border-bottom:1px solid var(--line)}
+.tabs button{flex:1;border:0;background:none;padding:9px 4px 10px;font-size:13px;font-weight:700;color:var(--muted);border-bottom:2.5px solid transparent}
+.tabs button.on{color:var(--accent);border-bottom-color:var(--accent)}
+.pane{display:none;overflow:auto;padding:12px 14px 16px;flex:1}
+.pane.on{display:block}
+.pane h4{margin:14px 0 6px;font-size:12.5px;color:var(--muted);font-weight:700;letter-spacing:.02em;display:flex;align-items:center;gap:6px}
+.pane h4:first-child{margin-top:2px}
+.legend{display:flex;flex-wrap:wrap;gap:10px;font-size:11.5px;color:var(--muted)}
+.legend i{display:inline-block;width:18px;height:3px;border-radius:2px;vertical-align:middle;margin-right:4px}
+.svgbox{background:#fbfcfd;border:1px solid var(--line);border-radius:10px;padding:4px}
+.svgbox svg{width:100%;height:auto;display:block}
+#devStates{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.dstate{font-size:11.5px;border:1px solid var(--line);border-radius:8px;padding:6px 7px;background:#fff}
+.dstate b{display:block;font-family:var(--mono);font-size:12px}
+.dstate.on{border-color:#7cc68b;background:#eefaf0}
+.dstate.bad{border-color:#f0a19b;background:#fdeeed}
+
+/* schematic */
+.sch line,.sch polyline,.sch path{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.sch .w{stroke:var(--dead);stroke-width:2.3}
+.sch .w.hot{stroke:var(--hot)} .sch .w.low{stroke:var(--low)} .sch .w.mid{stroke:var(--mid)}
+.sch .w.p1{stroke:#8d5524} .sch .w.p2{stroke:#1d1d1f} .sch .w.p3{stroke:#8a8f96} .sch .w.pn{stroke:var(--low)} .sch .w.pe{stroke:#4caf50}
+.sch .w.flow{stroke-dasharray:7 5;animation:flow .55s linear infinite}
+.sch .w.fast{animation-duration:.18s}
+@keyframes flow{to{stroke-dashoffset:-12}}
+.sch .sym{stroke:#2f3d4b;stroke-width:1.7;fill:none}
+.sch .blade{stroke:#2f3d4b;stroke-width:2;transition:all .15s}
+.sch .act{stroke:#2f3d4b;stroke-width:1.2;stroke-dasharray:3 2;fill:none}
+.sch .coil rect{fill:#fff;stroke:#2f3d4b;stroke-width:1.7}
+.sch .coil.on rect{fill:#ffd54f;stroke:#e65100}
+.sch .lamp circle{fill:#fff;stroke:#2f3d4b;stroke-width:1.7}
+.sch .lamp.on circle{fill:var(--lc)}
+.sch .dot{fill:#2f3d4b}
+.sch text{font-family:var(--mono);font-size:9.5px;fill:#33414f}
+.sch text.lbl{font-weight:700;font-size:10px}
+.sch text.t{font-size:8px;fill:#7a8794}
+.sch .closed .blade{stroke:#0a7d78}
+
+/* wiring pane */
+.seg{display:flex;gap:4px;background:#eef1f4;padding:4px;border-radius:10px}
+.seg button{flex:1;border:0;background:none;padding:8px 6px;border-radius:7px;font-size:12.5px;font-weight:700;color:var(--muted)}
+.seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.13)}
+.palette{display:flex;flex-wrap:wrap;gap:6px}
+.palette button{width:30px;height:30px;border-radius:8px;border:2px solid #fff;box-shadow:0 0 0 1px var(--line);position:relative}
+.palette button.on{box-shadow:0 0 0 2px var(--accent)}
+.palette button.auto{width:auto;padding:0 10px;font-size:12px;font-weight:700;background:#fff}
+.palette button span{position:absolute;bottom:-15px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--muted);white-space:nowrap}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 11px;font-size:12.5px;font-weight:700;color:var(--ink)}
+.btn:hover{border-color:#aab4bf}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.dan{background:#fff;border-color:#f0b2ad;color:#b3241b}
+.btn.sm{padding:6px 9px;font-size:12px}
+.progress{height:8px;border-radius:9px;background:#e6eaee;overflow:hidden}
+.progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,#0a7d78,#26a69a);transition:width .3s}
+#nextHint{font-size:12.5px;padding:9px 11px;border-radius:9px;background:#fff8e1;border:1px solid #ffe08a;margin-top:8px}
+#nextHint code{font-family:var(--mono);font-weight:700}
+table.wl{width:100%;border-collapse:collapse;font-size:11.5px;font-family:var(--mono)}
+table.wl td,table.wl th{padding:4px 5px;border-bottom:1px solid #edf0f3;text-align:left}
+table.wl th{font-family:'Noto Sans KR';color:var(--muted);font-weight:700;font-size:11px;position:sticky;top:0;background:#fff}
+table.wl tr{cursor:pointer}
+table.wl tr:hover td{background:#f4f8f8}
+table.wl .sw{display:inline-block;width:14px;height:6px;border-radius:3px;vertical-align:middle}
+table.wl .st-ok{color:var(--ok);font-weight:700} table.wl .st-no{color:#9aa5b1} table.wl .st-bad{color:var(--danger);font-weight:700}
+#checkOut{font-size:12.5px;margin-top:8px}
+#checkOut .res{padding:10px 11px;border-radius:9px;border:1px solid var(--line);background:#fff}
+#checkOut .res.pass{border-color:#9ad3a5;background:#eefaf0}
+#checkOut .res.fail{border-color:#f0b2ad;background:#fdf0ef}
+#checkOut ul{margin:6px 0 0;padding-left:18px}
+
+/* safety + fault */
+.steps{list-style:none;margin:0;padding:0;counter-reset:s}
+.steps li{counter-increment:s;display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px dashed #e1e6eb;font-size:13px}
+.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:12px;background:#eceff1;color:#607080}
+.steps li.done::before{content:"✓";background:#2e7d32;color:#fff}
+.steps li.cur::before{background:#f5a400;color:#fff}
+.steps li small{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
+.steps li .btn{margin-top:6px}
+.fault{border:1px solid var(--line);border-radius:10px;padding:10px 11px;margin-bottom:8px;background:#fff}
+.fault b{font-size:13px}
+.fault p{margin:3px 0 7px;font-size:12px;color:var(--muted)}
+
+/* ---------- bottom dock (조작반) ---------- */
+#dock{position:fixed;left:12px;bottom:12px;z-index:20;width:min(560px,calc(100vw - 470px));min-width:340px;border-radius:14px;overflow:hidden;
+  background:linear-gradient(180deg,#3a4148,#262b30);color:#e9edf1;box-shadow:0 10px 26px rgba(0,0,0,.28);border:1px solid #1c2024}
+#dock .hd{display:flex;align-items:center;justify-content:space-between;padding:7px 12px;font-size:11.5px;letter-spacing:.06em;color:#aeb8c2;background:rgba(0,0,0,.18)}
+#dock .hd b{color:#ffd42a;letter-spacing:0}
+.dk{display:flex;align-items:center;gap:12px;padding:10px 12px;flex-wrap:wrap}
+.elb{display:flex;align-items:center;gap:8px}
+.elb .sw{width:58px;height:30px;border-radius:7px;border:0;background:#1a1d20;position:relative;box-shadow:inset 0 2px 5px rgba(0,0,0,.6)}
+.elb .sw::after{content:"OFF";position:absolute;left:4px;top:4px;width:30px;height:22px;border-radius:5px;background:#55606b;color:#fff;font-size:10px;font-weight:900;display:grid;place-items:center;transition:left .18s,background .18s}
+.elb .sw.on::after{content:"ON";left:24px;background:#d32f2f}
+.elb .sw.trip::after{content:"TRIP";left:14px;background:#f5a400;color:#222}
+.elb label{font-size:11px;color:#aeb8c2;line-height:1.2}
+.pbs{display:flex;gap:10px}
+.pb{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;color:#cfd6dc;font-weight:700}
+.pb button{width:44px;height:44px;border-radius:50%;border:3px solid #9aa3ab;box-shadow:0 3px 0 #11151a,inset 0 -4px 8px rgba(0,0,0,.35),inset 0 3px 6px rgba(255,255,255,.35);transition:transform .06s}
+.pb button:active,.pb button.down{transform:translateY(3px);box-shadow:0 0 0 #11151a,inset 0 -2px 5px rgba(0,0,0,.35)}
+.lamps{display:flex;gap:9px}
+.lp{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;color:#aeb8c2}
+.lp i{width:18px;height:18px;border-radius:50%;background:#3b3f44;border:2px solid #6b737b}
+.lp i.on{background:var(--c);box-shadow:0 0 12px 3px var(--c)}
+.meters{display:flex;gap:6px;font-family:var(--mono)}
+.meters div{background:#11161a;border:1px solid #3d464e;border-radius:7px;padding:4px 8px;min-width:68px;text-align:right}
+.meters small{display:block;font-size:9px;color:#8996a3;text-align:left}
+.meters b{font-size:15px;color:#7dffb0}
+.dk .btn{background:#444c54;border-color:#5a646d;color:#eef1f4}
+.dk .btn:hover{background:#4e5760}
+.dk .btn.warn{background:#f5a400;border-color:#f5a400;color:#222}
+.opts{display:flex;gap:10px;align-items:center;font-size:11.5px;color:#c4ccd4;border-top:1px solid rgba(255,255,255,.07)}
+.opts label{display:flex;align-items:center;gap:5px;white-space:nowrap}
+.opts input[type=range]{width:90px;accent-color:#ffd42a}
+#timerBox{display:none}
+
+/* ---------- guidance ---------- */
+#guide{position:fixed;left:12px;top:72px;z-index:19;width:min(390px,calc(100vw - 480px));min-width:290px;pointer-events:none}
+#guide .card{pointer-events:auto;background:rgba(255,255,255,.93);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:12px;padding:8px 10px;box-shadow:0 6px 18px rgba(0,0,0,.1)}
+#guide .ttl{display:flex;justify-content:space-between;font-size:11.5px;font-weight:700;color:var(--muted);margin-bottom:4px}
+#log{list-style:none;margin:0;padding:0;max-height:124px;overflow:auto}
+#log li{font-size:12px;line-height:1.4;padding:5px 7px 5px 9px;border-left:3px solid #b0bec5;margin:3px 0;border-radius:4px;background:#f7f9fa;animation:inl .3s}
+#log li.ok{border-color:#2e7d32;background:#f0f9f1}
+#log li.warn{border-color:#f5a400;background:#fff8e6}
+#log li.danger{border-color:#e0362c;background:#fdeeed;font-weight:700}
+#log li.info{border-color:#0a7d78}
+#log li time{font-family:var(--mono);font-size:10px;color:#90a0ae;margin-right:6px}
+@keyframes inl{from{transform:translateX(-6px)}}
+
+/* 3D badges / callouts */
+.badge{font:700 10.5px 'Noto Sans KR';padding:2px 7px;border-radius:99px;white-space:nowrap;background:#1b2833;color:#fff;box-shadow:0 2px 6px rgba(0,0,0,.25);transform:translateY(-6px);opacity:0;transition:opacity .2s}
+.badge.show{opacity:1}
+.badge.on{background:#1f9d55} .badge.hold{background:#1565c0} .badge.trip{background:#f5a400;color:#222} .badge.bad{background:#d32f2f}
+.callout{font:700 12.5px 'Noto Sans KR';padding:6px 10px;border-radius:9px;background:rgba(18,26,34,.9);color:#fff;white-space:nowrap;border-left:4px solid #ffd42a;animation:pop .25s}
+.callout.danger{background:rgba(190,30,20,.94);border-color:#fff;font-size:14px}
+.callout.ok{border-color:#4cd964}
+@keyframes pop{from{transform:scale(.7);opacity:0}}
+.sign3d{font:900 13px 'Noto Sans KR';padding:6px 12px;border-radius:8px;background:#0a7d78;color:#fff;cursor:pointer;pointer-events:auto;box-shadow:0 3px 10px rgba(0,0,0,.25)}
+
+#tooltip{position:fixed;z-index:40;pointer-events:none;background:#16202b;color:#fff;font-size:12px;padding:6px 9px;border-radius:8px;display:none;max-width:260px;line-height:1.4}
+#tooltip code{font-family:var(--mono);color:#ffd42a;font-weight:700}
+#flash{position:fixed;inset:0;z-index:25;pointer-events:none;background:radial-gradient(circle at 50% 50%,rgba(255,250,235,.6),rgba(255,120,40,.25) 40%,rgba(255,0,0,0) 75%);opacity:0}
+#toast{position:fixed;left:50%;top:84px;transform:translateX(-50%);z-index:35;background:#b3241b;color:#fff;font-weight:900;padding:12px 18px;border-radius:12px;font-size:15px;box-shadow:0 8px 24px rgba(179,36,27,.45);display:none;max-width:80vw;text-align:center}
+#toast small{display:block;font-weight:500;font-size:12.5px;opacity:.9;margin-top:2px}
+#modeChip{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:22;background:#16202b;color:#fff;font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:99px;display:none}
+#modeChip.wire{display:block;background:#0a7d78}
+#modeChip.del{display:block;background:#b3241b}
+#loading{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:#e8edf1;transition:opacity .5s}
+#loading .box{text-align:center}
+#loading .spin{width:44px;height:44px;border-radius:50%;border:4px solid #c9d3dc;border-top-color:#0a7d78;animation:sp 1s linear infinite;margin:0 auto 12px}
+@keyframes sp{to{transform:rotate(360deg)}}
+#loading p{margin:0;color:var(--muted);font-size:13px}
+
+@media (min-width:1440px){
+  #guide{top:auto;bottom:12px;left:584px;width:calc(100vw - 584px - 466px);min-width:0}
+  #guide .card{display:flex;flex-direction:column}
+  #log{max-height:98px}
+}
+@media (max-width:980px){
+  #panel{top:auto;left:8px;right:8px;width:auto;height:44vh;bottom:8px}
+  #panel.hide{transform:translateY(calc(100% + 20px))}
+  #panelToggle{display:none}
+  #dock{bottom:calc(44vh + 16px);width:calc(100vw - 16px);left:8px;min-width:0}
+  #guide{width:calc(100vw - 16px);left:8px}
+  #log{max-height:90px}
+  .brand small,#statusPill{display:none}
+  #roomTabs button{padding:6px 8px;font-size:11.5px}
+}
+</style>
+<script type="importmap">
+{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}
+</script>
+</head>
+<body>
+<div id="c3d"></div>
+
+<header id="topbar">
+  <div class="brand"><div class="logo">⚡</div><div><b>자기유지회로 디지털 트윈</b><small>3D 모델링 · 실습 · 회로연결 — KEC 전선색 기준</small></div></div>
+  <nav id="roomTabs">
+    <button data-room="interlock">◀ 인터록 실습실</button>
+    <button data-room="selfhold" class="on">자기유지 실습실</button>
+    <button data-room="auto">자동기동 실습장 ▶</button>
+  </nav>
+  <div id="statusPill">정지</div>
+  <a id="theoryBtn" href="selfmaintain.html" title="자기유지회로 이론설명 페이지로 이동">📘 이론설명</a>
+</header>
+
+<section id="guide"><div class="card">
+  <div class="ttl"><span>📢 실시간 안내</span><span id="roomName">자기유지 실습실</span></div>
+  <ul id="log"></ul>
+</div></section>
+
+<button id="panelToggle" title="패널 접기/펴기">›</button>
+<aside id="panel">
+  <div class="tabs">
+    <button data-tab="circuit" class="on">회로도</button>
+    <button data-tab="wire">회로연결</button>
+    <button data-tab="safety">안전절차</button>
+    <button data-tab="fault">고장체험</button>
+  </div>
+  <div class="pane on" id="pane-circuit">
+    <div class="legend">
+      <span><i style="background:var(--hot)"></i>L1 전위(220V)</span>
+      <span><i style="background:var(--low)"></i>N 전위</span>
+      <span><i style="background:var(--mid)"></i>중간전위</span>
+      <span><i style="background:var(--dead)"></i>무전압</span>
+      <span>╌ 흐르는 점선 = 전류</span>
+    </div>
+    <h4>주회로 (3상 380V) — 상 색: <span style="color:#8d5524">L1</span>·<span>L2</span>·<span style="color:#8a8f96">L3</span></h4>
+    <div class="svgbox" id="svgMain"></div>
+    <h4>제어회로 (L1–N 220V)</h4>
+    <div class="svgbox" id="svgCtrl"></div>
+    <h4>기기 상태</h4>
+    <div id="devStates"></div>
+  </div>
+  <div class="pane" id="pane-wire">
+    <h4>작업 모드</h4>
+    <div class="seg" id="modeSeg">
+      <button data-mode="view" class="on">🖐 조작</button>
+      <button data-mode="wire">🔌 결선</button>
+      <button data-mode="del">✂ 전선 제거</button>
+    </div>
+    <h4>전선 색 (KEC: L1 갈 · L2 흑 · L3 회 · N 청 · PE 녹황)</h4>
+    <div class="palette" id="palette"></div>
+    <h4 style="margin-top:22px">배선 경로</h4>
+    <div class="seg" id="routeSeg"><button data-route="duct" class="on">덕트 배선</button><button data-route="free">자유 배선(추적용)</button></div>
+    <h4>결선 진행</h4>
+    <div class="progress"><i id="progBar"></i></div>
+    <div class="row" style="justify-content:space-between;margin-top:6px;font-size:12px;color:var(--muted)"><span id="progTxt">0 / 0</span><span id="wrongTxt"></span></div>
+    <div id="nextHint"></div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn pri" id="btnAuto">정답 자동결선</button>
+      <button class="btn" id="btnCheck">결선 검사(도통·절연)</button>
+      <button class="btn dan" id="btnClear">전체 삭제</button>
+    </div>
+    <div id="checkOut"></div>
+    <h4>결선표 (배선도 ↔ 회로도 1:1)</h4>
+    <table class="wl"><thead><tr><th>#</th><th>From</th><th>To</th><th>색</th><th>상태</th></tr></thead><tbody id="wireTable"></tbody></table>
+  </div>
+  <div class="pane" id="pane-safety">
+    <h4>LOTO 기반 실습 절차 — 각 단계는 실습 상태에서 자동 체크됩니다</h4>
+    <ol class="steps" id="steps"></ol>
+  </div>
+  <div class="pane" id="pane-fault">
+    <h4>오결선 · 고장 재현 (불꽃 · 트립 · 실시간 안내)</h4>
+    <div id="faults"></div>
+  </div>
+</aside>
+
+<section id="dock">
+  <div class="hd"><span>조 작 반 &nbsp;CONTROL PANEL</span><b id="dockRoom">자기유지</b></div>
+  <div class="dk">
+    <div class="elb"><button class="sw" id="elbBtn" title="누전차단기 ON/OFF"></button><label>ELB<br>4P 30mA</label></div>
+    <div class="pbs" id="pbArea"></div>
+    <div class="lamps" id="lampArea"></div>
+    <div class="meters"><div><small>VOLT</small><b id="mV">0</b></div><div><small>AMP</small><b id="mA">0.0</b></div><div><small>RPM</small><b id="mR">0</b></div></div>
+  </div>
+  <div class="dk opts">
+    <button class="btn sm" id="thrReset">THR 리셋</button>
+    <button class="btn sm" id="fuseBtn">퓨즈 교체</button>
+    <label id="timerBox">타이머 <input type="range" id="timerSet" min="1" max="10" step="1" value="5"><b id="timerVal">5s</b></label>
+    <label><input type="checkbox" id="optLoad"> 과부하</label>
+    <label><input type="checkbox" id="optFlow" checked> 전류흐름</label>
+    <label><input type="checkbox" id="optSound" checked> 소리</label>
+  </div>
+</section>
+
+<div id="modeChip"></div>
+<div id="tooltip"></div>
+<div id="flash"></div>
+<div id="toast"></div>
+<div id="loading"><div class="box"><div class="spin"></div><p id="loadMsg">실습실을 준비하는 중…</p></div></div>
+
+<script>
+window.addEventListener('error',e=>{const m=document.getElementById('loadMsg'); if(m&&document.getElementById('loading').style.display!=='none') m.textContent='로딩 오류: '+(e.message||'')+' — 인터넷 연결(three.js CDN)을 확인하세요.';});
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+/* =====================================================================
+   1. 렌더러 · 장면 · 카메라 · 조명 (밝은 실습실 시인성)
+   ===================================================================== */
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+const host = $('#c3d');
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.12;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+host.appendChild(renderer.domElement);
+
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(innerWidth, innerHeight);
+labelRenderer.domElement.className = 'l2d';
+host.appendChild(labelRenderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#e4e9ee');
+scene.fog = new THREE.Fog('#e4e9ee', 26, 60);
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+const camera = new THREE.PerspectiveCamera(48, innerWidth / innerHeight, 0.03, 120);
+camera.position.set(0, 2.1, 1.2);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.09;
+controls.minDistance = 0.45;
+controls.maxDistance = 8;
+controls.maxPolarAngle = Math.PI * 0.53;
+controls.target.set(0, 1.85, -2.7);
+controls.screenSpacePanning = true;
+controls.zoomToCursor = true;
+
+const hemi = new THREE.HemisphereLight(0xffffff, 0xc9c2b4, 1.25);
+scene.add(hemi);
+scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+const sun = new THREE.DirectionalLight(0xfffaf0, 1.55);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -4.5, right: 4.5, top: 4, bottom: -2, near: 0.5, far: 16 });
+sun.shadow.bias = -0.0004;
+sun.shadow.normalBias = 0.02;
+scene.add(sun, sun.target);
+const fill = new THREE.DirectionalLight(0xeef6ff, 0.55);
+scene.add(fill, fill.target);
+function aimLights(cx) {
+  sun.position.set(cx + 1.6, 6.2, 3.2); sun.target.position.set(cx, 1.2, -2.4);
+  fill.position.set(cx - 3, 3, 4); fill.target.position.set(cx, 1.8, -2.7);
+}
+aimLights(0);
+
+/* =====================================================================
+   2. 텍스처 (캔버스 생성 : PBR 거칠기/사용감, 라벨, 타공판, 바닥)
+   ===================================================================== */
+function canvasTex(w, h, draw, { srgb = true, repeat = null } = {}) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d'); draw(g, w, h);
+  const t = new THREE.CanvasTexture(c);
+  if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  if (repeat) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(repeat[0], repeat[1]); }
+  return t;
+}
+function rnd(a, b) { return a + Math.random() * (b - a); }
+
+// 사용감(긁힘·손때) 거칠기맵
+const grungeTex = canvasTex(256, 256, (g, w, h) => {
+  g.fillStyle = '#8a8a8a'; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 2600; i++) { const v = rnd(110, 175) | 0; g.fillStyle = `rgb(${v},${v},${v})`; g.fillRect(rnd(0, w), rnd(0, h), rnd(1, 3), rnd(1, 3)); }
+  g.lineWidth = 0.7;
+  for (let i = 0; i < 70; i++) { const v = rnd(40, 90) | 0; g.strokeStyle = `rgba(${v},${v},${v},.7)`; g.beginPath(); const x = rnd(0, w), y = rnd(0, h); g.moveTo(x, y); g.lineTo(x + rnd(-30, 30), y + rnd(-8, 8)); g.stroke(); }
+  for (let i = 0; i < 14; i++) { const r = rnd(8, 26); const gr = g.createRadialGradient(0, 0, 0, 0, 0, r); gr.addColorStop(0, 'rgba(200,200,200,.35)'); gr.addColorStop(1, 'rgba(200,200,200,0)'); g.save(); g.translate(rnd(0, w), rnd(0, h)); g.fillStyle = gr; g.fillRect(-r, -r, 2 * r, 2 * r); g.restore(); }
+}, { srgb: false, repeat: [2, 2] });
+
+const _texCache = new Map();
+function textTex(text, { fg = '#111', bg = null, w = 256, h = 64, font = 700, size = null, border = null, align = 'center', family = '"Noto Sans KR",sans-serif', radius = 0 } = {}) {
+  const key = [text, fg, bg, w, h, font, size, border, align, family, radius].join('|');
+  if (_texCache.has(key)) return _texCache.get(key);
+  const t = canvasTex(w, h, (g) => {
+    if (bg) { g.fillStyle = bg; if (radius) { g.beginPath(); g.roundRect(0, 0, w, h, radius); g.fill(); } else g.fillRect(0, 0, w, h); }
+    if (border) { g.strokeStyle = border; g.lineWidth = Math.max(2, h * .05); g.strokeRect(g.lineWidth / 2, g.lineWidth / 2, w - g.lineWidth, h - g.lineWidth); }
+    const lines = String(text).split('\n');
+    const fs = size || Math.min(h * .78 / lines.length, w * 1.6 / Math.max(...lines.map(l => l.length || 1)));
+    g.font = `${font} ${fs}px ${family}`; g.fillStyle = fg; g.textBaseline = 'middle';
+    g.textAlign = align; const x = align === 'left' ? h * .15 : align === 'right' ? w - h * .15 : w / 2;
+    lines.forEach((l, i) => g.fillText(l, x, h / 2 + (i - (lines.length - 1) / 2) * fs * 1.12));
+  });
+  _texCache.set(key, t); return t;
+}
+function labelMesh(text, w, h, opts = {}) {
+  const px = opts.px || 256;
+  const tex = textTex(text, { w: px, h: Math.round(px * h / w), ...opts });
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h),
+    new THREE.MeshStandardMaterial({ map: tex, transparent: !opts.bg, roughness: .55, metalness: 0, depthWrite: !!opts.bg }));
+  if (!opts.bg) m.renderOrder = 2;
+  return m;
+}
+
+// 타공 금속판
+const perfTex = canvasTex(256, 256, (g, w, h) => {
+  g.fillStyle = '#d9dde1'; g.fillRect(0, 0, w, h);
+  for (let y = 8; y < h; y += 16) for (let x = (y / 16 % 2 ? 16 : 8); x < w; x += 16) {
+    g.fillStyle = '#5f666d'; g.beginPath(); g.arc(x, y, 3.2, 0, 7); g.fill();
+    g.fillStyle = 'rgba(255,255,255,.55)'; g.beginPath(); g.arc(x + .8, y + 1.2, 3.2, 0.2, 2.6); g.fill();
+  }
+}, { repeat: [12, 8] });
+const perfBump = canvasTex(256, 256, (g, w, h) => {
+  g.fillStyle = '#fff'; g.fillRect(0, 0, w, h);
+  for (let y = 8; y < h; y += 16) for (let x = (y / 16 % 2 ? 16 : 8); x < w; x += 16) { g.fillStyle = '#000'; g.beginPath(); g.arc(x, y, 3.2, 0, 7); g.fill(); }
+}, { srgb: false, repeat: [12, 8] });
+
+// 에폭시 바닥
+const floorTex = canvasTex(1024, 1024, (g, w, h) => {
+  g.fillStyle = '#c3ccd1'; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 26000; i++) { const v = rnd(170, 225) | 0; g.fillStyle = `rgba(${v},${v + 4},${v + 6},.5)`; g.fillRect(rnd(0, w), rnd(0, h), 1.5, 1.5); }
+  g.strokeStyle = 'rgba(120,135,145,.45)'; g.lineWidth = 2;
+  for (let i = 0; i <= 8; i++) { g.beginPath(); g.moveTo(i * w / 8, 0); g.lineTo(i * w / 8, h); g.stroke(); g.beginPath(); g.moveTo(0, i * h / 8); g.lineTo(w, i * h / 8); g.stroke(); }
+}, { repeat: [5, 4] });
+
+const glowTex = canvasTex(128, 128, (g, w) => {
+  const gr = g.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2);
+  gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(.25, 'rgba(255,255,255,.55)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, w, w);
+});
+const smokeTex = canvasTex(128, 128, (g, w) => {
+  for (let i = 0; i < 14; i++) { const x = rnd(35, 93), y = rnd(35, 93), r = rnd(18, 38); const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, 'rgba(90,90,90,.35)'); gr.addColorStop(1, 'rgba(90,90,90,0)'); g.fillStyle = gr; g.fillRect(0, 0, w, w); }
+});
+const scorchTex = canvasTex(128, 128, (g, w) => {
+  const gr = g.createRadialGradient(w / 2, w / 2, 2, w / 2, w / 2, w / 2);
+  gr.addColorStop(0, 'rgba(10,8,6,.95)'); gr.addColorStop(.45, 'rgba(40,28,18,.6)'); gr.addColorStop(1, 'rgba(40,28,18,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, w, w);
+});
+// 녹황 줄무늬 (PE)
+const peTex = canvasTex(64, 64, (g, w, h) => {
+  g.fillStyle = '#2e9e3e'; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#f2d21b';
+  for (let i = -2; i < 4; i++) { g.beginPath(); g.moveTo(i * 22, 0); g.lineTo(i * 22 + 11, 0); g.lineTo(i * 22 + 11 + 32, h); g.lineTo(i * 22 + 32, h); g.fill(); }
+}, { repeat: [1, 40] });
+
+/* =====================================================================
+   3. 재질 라이브러리 (금속 · 플라스틱 · 구리)
+   ===================================================================== */
+const std = (o) => new THREE.MeshStandardMaterial(o);
+const phys = (o) => new THREE.MeshPhysicalMaterial(o);
+const MAT = {
+  chrome: std({ color: '#e3e6ea', metalness: 1, roughness: .16, roughnessMap: grungeTex }),
+  steel: std({ color: '#b9bfc6', metalness: .92, roughness: .34, roughnessMap: grungeTex }),
+  galv: std({ color: '#c9ced3', metalness: .85, roughness: .42, roughnessMap: grungeTex }),
+  alu: std({ color: '#d8dde2', metalness: .9, roughness: .27, roughnessMap: grungeTex }),
+  paintBlue: std({ color: '#3f5b78', metalness: .55, roughness: .42, roughnessMap: grungeTex }),
+  paintGray: std({ color: '#8e989f', metalness: .6, roughness: .45, roughnessMap: grungeTex }),
+  paintBeige: std({ color: '#d7d3c8', metalness: .5, roughness: .48 }),
+  motorBlue: std({ color: '#2f6f9f', metalness: .7, roughness: .38, roughnessMap: grungeTex }),
+  copper: std({ color: '#d0844c', metalness: 1, roughness: .3 }),
+  brass: std({ color: '#cfa64e', metalness: 1, roughness: .32 }),
+  zinc: std({ color: '#d6dade', metalness: .95, roughness: .25 }),
+  plW: phys({ color: '#ececea', roughness: .38, clearcoat: .3, clearcoatRoughness: .4 }),
+  plG: phys({ color: '#a5abb1', roughness: .45, clearcoat: .2 }),
+  plD: phys({ color: '#33383d', roughness: .42, clearcoat: .35, clearcoatRoughness: .35 }),
+  plK: phys({ color: '#1d2023', roughness: .38, clearcoat: .5 }),
+  plBlue: phys({ color: '#1f63c6', roughness: .3, clearcoat: .6 }),
+  plYellow: phys({ color: '#f2c200', roughness: .35, clearcoat: .5 }),
+  plOrange: phys({ color: '#ef7d1a', roughness: .35, clearcoat: .5 }),
+  plGreenGY: std({ map: peTex, roughness: .5 }),
+  rubber: std({ color: '#25292c', roughness: .92 }),
+  glass: phys({ color: '#e8f3ff', roughness: .04, metalness: 0, transparent: true, opacity: .22, depthWrite: false }),
+  clear: phys({ color: '#f4fbff', roughness: .1, transparent: true, opacity: .35, depthWrite: false }),
+  slot: std({ color: '#2a2a2a', roughness: .8 }),
+  ductG: phys({ color: '#9ca3a9', roughness: .55, clearcoat: .1 }),
+  wood: std({ color: '#cbbf9f', roughness: .6 }),
+  laminate: phys({ color: '#e3ded0', roughness: .4, clearcoat: .25 }),
+  mat: std({ color: '#3f5a52', roughness: .85 }),
+  wall: std({ color: '#eef0ee', roughness: .9 }),
+  wall2: std({ color: '#cfe1de', roughness: .85 }),
+  ceil: std({ color: '#f6f7f6', roughness: .95 }),
+  floor: std({ map: floorTex, roughness: .32, metalness: .05 }),
+  ledPanel: std({ color: '#ffffff', emissive: '#ffffff', emissiveIntensity: 1.6, roughness: 1 }),
+  safetyY: std({ color: '#f3c900', roughness: .5 }),
+  red: phys({ color: '#d0281f', roughness: .3, clearcoat: .6 }),
+};
+const geoCache = new Map();
+function rbox(w, h, d, r = .006) {
+  const k = `rb${w}|${h}|${d}|${r}`;
+  if (!geoCache.has(k)) geoCache.set(k, new RoundedBoxGeometry(w, h, d, 3, Math.min(r, w / 2 - .0005, h / 2 - .0005, d / 2 - .0005)));
+  return geoCache.get(k);
+}
+function box(w, h, d) { const k = `b${w}|${h}|${d}`; if (!geoCache.has(k)) geoCache.set(k, new THREE.BoxGeometry(w, h, d)); return geoCache.get(k); }
+function cyl(rt, rb, h, s = 24) { const k = `c${rt}|${rb}|${h}|${s}`; if (!geoCache.has(k)) geoCache.set(k, new THREE.CylinderGeometry(rt, rb, h, s)); return geoCache.get(k); }
+function mesh(geo, mat, x = 0, y = 0, z = 0, parent = null, shadow = true) {
+  const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z);
+  if (shadow) { m.castShadow = true; m.receiveShadow = true; }
+  if (parent) parent.add(m); return m;
+}
+
+/* =====================================================================
+   4. 실습실 건물 (중앙: 자기유지 / 왼쪽문: 인터록 / 오른쪽문: 자동기동)
+   ===================================================================== */
+const ROOM_CX = { interlock: -14, selfhold: 0, auto: 14 };
+const H = 3.4, ZB = -4.6, ZF = 5.6, DOOR_Z0 = 0.5, DOOR_Z1 = 2.4, DOOR_H = 2.45;
+const shell = new THREE.Group(); scene.add(shell);
+const DOORS = {};
+
+function buildShell() {
+  const floor = mesh(new THREE.PlaneGeometry(42, ZF - ZB), MAT.floor, 0, 0, (ZB + ZF) / 2, shell);
+  floor.rotation.x = -Math.PI / 2; floor.castShadow = false;
+  const ceil = mesh(new THREE.PlaneGeometry(42, ZF - ZB), MAT.ceil, 0, H, (ZB + ZF) / 2, shell, false);
+  ceil.rotation.x = Math.PI / 2;
+  const T = 0.2;
+  const wall = (x0, x1, z0, z1, y0 = 0, y1 = H, mat = MAT.wall) => {
+    const w = Math.max(T, x1 - x0), d = Math.max(T, z1 - z0);
+    const m = mesh(box(w, y1 - y0, d), mat, (x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2, shell); m.castShadow = false; return m;
+  };
+  wall(-21, 21, ZB - T, ZB); wall(-21, 21, ZF, ZF + T);
+  wall(-21 - T, -21, ZB, ZF); wall(21, 21 + T, ZB, ZF);
+  // 하단 걸레받이/징두리 (청록 띠)
+  for (const [x0, x1] of [[-21, -7], [-7, 7], [7, 21]]) {
+    const b = mesh(box(x1 - x0 - .2, .9, .02), MAT.wall2, (x0 + x1) / 2, .45, ZB + .011, shell); b.castShadow = false;
+  }
+  // 칸막이 벽 (문 개구부 포함)
+  for (const x of [-7, 7]) {
+    wall(x - T / 2, x + T / 2, ZB, DOOR_Z0);
+    wall(x - T / 2, x + T / 2, DOOR_Z1, ZF);
+    wall(x - T / 2, x + T / 2, DOOR_Z0, DOOR_Z1, DOOR_H, H);
+    buildDoor(x, x < 0 ? 'left' : 'right');
+  }
+  // 천장 LED 패널
+  for (const cx of [-14, 0, 14]) for (const dx of [-3.5, 0, 3.5]) for (const dz of [-2.4, 0.6, 3.6]) {
+    const p = mesh(box(1.2, .03, .6), MAT.ledPanel, cx + dx, H - .02, dz, shell, false);
+    const fr = mesh(box(1.26, .02, .66), MAT.alu, cx + dx, H - .005, dz, shell, false);
+  }
+  // 안전 구획선 (노란 테이프)
+  for (const cx of [-14, 0, 14]) {
+    const g = new THREE.Group(); g.position.set(cx, .003, -2.3); shell.add(g);
+    for (const [w, d, x, z] of [[5.2, .07, 0, -1.9], [5.2, .07, 0, 1.6], [.07, 3.5, -2.6, -.15], [.07, 3.5, 2.6, -.15]]) {
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), MAT.safetyY); m.rotation.x = -Math.PI / 2; m.position.set(x, 0, z); g.add(m);
+    }
+  }
+}
+function buildDoor(x, side) {
+  const g = new THREE.Group(); g.position.set(x, 0, (DOOR_Z0 + DOOR_Z1) / 2); shell.add(g);
+  const W = DOOR_Z1 - DOOR_Z0;
+  // 문틀(금속)
+  mesh(box(.26, .08, W + .16), MAT.steel, 0, DOOR_H + .04, 0, g);
+  mesh(box(.26, DOOR_H, .08), MAT.steel, 0, DOOR_H / 2, -W / 2 - .04, g);
+  mesh(box(.26, DOOR_H, .08), MAT.steel, 0, DOOR_H / 2, W / 2 + .04, g);
+  const leaves = [];
+  for (const s of [-1, 1]) {
+    const leaf = new THREE.Group(); leaf.position.set(0, 0, s * W / 4); g.add(leaf);
+    mesh(rbox(.05, DOOR_H - .04, W / 2 - .02, .01), MAT.paintGray, 0, DOOR_H / 2, 0, leaf);
+    const win = mesh(box(.056, .7, W / 2 - .3), MAT.glass, 0, 1.55, 0, leaf, false);
+    mesh(box(.06, .03, .24), MAT.chrome, 0, 1.05, -s * (W / 4 - .18), leaf);
+    leaf.userData = { s, base: s * W / 4, W };
+    leaf.traverse(o => { if (o.isMesh) o.userData.door = side; });
+    leaves.push(leaf);
+  }
+  // 문 위 안내판 (양면)
+  const toName = side === 'left' ? '인터록 실습실' : '자동기동 실습장';
+  const signIn = labelMesh(side === 'left' ? '◀  인터록 실습실' : '자동기동 실습장  ▶', 1.5, .3, { bg: '#0a7d78', fg: '#fff', px: 512, font: 900 });
+  signIn.rotation.y = side === 'left' ? Math.PI / 2 : -Math.PI / 2;
+  signIn.position.set(side === 'left' ? .14 : -.14, DOOR_H + .32, 0); g.add(signIn);
+  const signOut = labelMesh(side === 'left' ? '자기유지 실습실  ▶' : '◀  자기유지 실습실', 1.5, .3, { bg: '#16202b', fg: '#ffd42a', px: 512, font: 900 });
+  signOut.rotation.y = side === 'left' ? -Math.PI / 2 : Math.PI / 2;
+  signOut.position.set(side === 'left' ? -.14 : .14, DOOR_H + .32, 0); g.add(signOut);
+  [signIn, signOut].forEach(m => m.userData.door = side);
+  DOORS[side] = { g, leaves, open: 0, target: 0, name: toName };
+}
+function updateDoors(dt) {
+  for (const d of Object.values(DOORS)) {
+    d.open += (d.target - d.open) * Math.min(1, dt * 4);
+    for (const lf of d.leaves) lf.position.z = lf.userData.base + lf.userData.s * d.open * (lf.userData.W / 2 - .06);
+  }
+}
+
+// 실습실 비품 : 실습대(작업대), 분전반, 배관, 소화기, 포스터
+function buildBench(room) {
+  const g = room.group, cx = 0;
+  const top = mesh(rbox(3.9, .05, 1.35, .01), MAT.laminate, cx, .875, -2.2, g);
+  mesh(box(3.7, .006, 1.1), MAT.mat, cx, .903, -2.05, g);
+  for (const sx of [-1.85, 1.85]) for (const sz of [-2.8, -1.6]) mesh(box(.06, .85, .06), MAT.paintBlue, cx + sx, .425, sz, g);
+  mesh(box(3.76, .06, .05), MAT.paintBlue, cx, .12, -1.6, g);
+  mesh(box(3.76, .06, .05), MAT.paintBlue, cx, .12, -2.8, g);
+  // 서랍장
+  const cab = mesh(rbox(.9, .7, 1.1, .01), MAT.paintBeige, cx - 1.25, .43, -2.2, g);
+  for (let i = 0; i < 3; i++) {
+    mesh(box(.84, .2, .01), MAT.paintGray, cx - 1.25, .66 - i * .22, -1.645, g);
+    mesh(box(.2, .02, .03), MAT.chrome, cx - 1.25, .66 - i * .22, -1.63, g);
+  }
+  // 실습판 프레임 (알루미늄 압출재)
+  mesh(box(3.6, .06, .06), MAT.alu, cx, 3.0, -2.76, g);
+  for (const sx of [-1.78, 1.78]) mesh(box(.06, 2.1, .06), MAT.alu, cx + sx, 1.95, -2.76, g);
+}
+function buildDecor(room, key) {
+  const g = room.group;
+  // 벽면 분전반 (금속 외함)
+  const pb = new THREE.Group(); pb.position.set(-4.2, 1.45, ZB + .16); g.add(pb);
+  mesh(rbox(.9, 1.3, .25, .02), MAT.paintBeige, 0, 0, 0, pb);
+  mesh(box(.86, 1.26, .015), MAT.paintGray, 0, 0, .13, pb);
+  mesh(box(.03, .14, .03), MAT.chrome, .36, 0, .15, pb);
+  const pl = labelMesh('분 전 반\n3φ4W 380/220V', .5, .16, { bg: '#fff', fg: '#16202b', px: 256, border: '#16202b' }); pl.position.set(0, .45, .14); pb.add(pl);
+  const wl = labelMesh('⚠ 감전주의', .3, .12, { bg: '#f3c900', fg: '#111', px: 256 }); wl.position.set(0, .25, .14); pb.add(wl);
+  // 배관(전선관): 분전반 → 천장 → 실습판 상부
+  const pipeMat = MAT.galv;
+  const p1 = mesh(cyl(.028, .028, H - 2.1, 16), pipeMat, -4.2, 2.1 + (H - 2.1) / 2, ZB + .12, g);
+  const p2 = mesh(cyl(.028, .028, 4.2, 16), pipeMat, -2.1, H - .25, ZB + .12, g); p2.rotation.z = Math.PI / 2;
+  const p3 = mesh(cyl(.028, .028, 1.85, 16), pipeMat, 0, H - .25, -3.68, g); p3.rotation.x = Math.PI / 2;
+  const p4 = mesh(cyl(.028, .028, .32, 16), pipeMat, 0, 3.0 + .095, -2.76, g);
+  for (const [x, z] of [[-3, ZB + .12], [-1, ZB + .12], [0, -3.2]]) mesh(box(.08, .04, .08), pipeMat, x, H - .25 + .03, z, g);
+  // 소화기
+  const fe = new THREE.Group(); fe.position.set(5.6, 0, ZB + .35); g.add(fe);
+  mesh(cyl(.09, .09, .5, 24), MAT.red, 0, .3, 0, fe); mesh(cyl(.03, .05, .1, 16), MAT.plK, 0, .6, 0, fe);
+  const fl = labelMesh('소화기', .22, .08, { bg: '#d0281f', fg: '#fff', px: 256 }); fl.position.set(0, 1.1, -.2); fe.add(fl);
+  // 포스터: KEC 전선색 / LOTO
+  const kec = canvasTex(512, 640, (c, w, h) => {
+    c.fillStyle = '#fff'; c.fillRect(0, 0, w, h); c.fillStyle = '#0a7d78'; c.fillRect(0, 0, w, 90);
+    c.fillStyle = '#fff'; c.font = '900 40px "Noto Sans KR"'; c.textAlign = 'center'; c.fillText('KEC 전선 식별 색상', w / 2, 60);
+    const rows = [['L1', '#7b4a24', '갈색'], ['L2', '#1d1d1f', '흑색'], ['L3', '#9a9a9a', '회색'], ['N', '#1f5fd6', '청색'], ['PE', 'pe', '녹색-노란색']];
+    rows.forEach((r, i) => {
+      const y = 140 + i * 95; c.textAlign = 'left'; c.fillStyle = '#16202b'; c.font = '900 40px "JetBrains Mono"'; c.fillText(r[0], 40, y + 32);
+      if (r[1] === 'pe') { for (let k = 0; k < 14; k++) { c.fillStyle = k % 2 ? '#f2d21b' : '#2e9e3e'; c.fillRect(150 + k * 16, y, 16, 50); } }
+      else { c.fillStyle = r[1]; c.fillRect(150, y, 224, 50); }
+      c.fillStyle = '#16202b'; c.font = '700 30px "Noto Sans KR"'; c.fillText(r[2], 390, y + 36);
+    });
+  });
+  const kp = mesh(new THREE.PlaneGeometry(.8, 1), std({ map: kec, roughness: .7 }), 3.4, 1.9, ZB + .012, g, false);
+  const loto = canvasTex(512, 640, (c, w, h) => {
+    c.fillStyle = '#fff'; c.fillRect(0, 0, w, h); c.fillStyle = '#d0281f'; c.fillRect(0, 0, w, 90);
+    c.fillStyle = '#fff'; c.font = '900 40px "Noto Sans KR"'; c.textAlign = 'center'; c.fillText('LOTO 안전수칙', w / 2, 60);
+    c.fillStyle = '#16202b'; c.textAlign = 'left'; c.font = '700 30px "Noto Sans KR"';
+    ['① 전원 차단', '② 잠금 · 표지 부착', '③ 검전 (무전압 확인)', '④ 결선 작업', '⑤ 도통 · 절연 검사', '⑥ 잠금 해제 · 투입', '⑦ 동작 시험'].forEach((s, i) => c.fillText(s, 50, 160 + i * 66));
+  });
+  mesh(new THREE.PlaneGeometry(.8, 1), std({ map: loto, roughness: .7 }), 4.4, 1.9, ZB + .012, g, false);
+  // 실 이름판 (뒷벽 상단)
+  const title = labelMesh(room.spec.name, 3.2, .42, { bg: '#16202b', fg: '#ffffff', px: 1024, font: 900 });
+  title.position.set(0, 3.08, ZB + .015); g.add(title);
+  const sub = labelMesh(room.spec.sub, 3.2, .16, { fg: '#16202b', px: 1024, font: 700 });
+  sub.position.set(0, 2.78, ZB + .015); g.add(sub);
+}
+
+/* =====================================================================
+   5. 기기 모델 (치수 비례 · 단자번호 · 나사 · 명판)
+   ===================================================================== */
+const hitMat = new THREE.MeshBasicMaterial({ visible: false });
+const hitGeo = new THREE.SphereGeometry(0.023, 10, 8);
+const ringGeo = new THREE.TorusGeometry(0.02, 0.0036, 8, 28);
+const screwGeo = (() => { const g = new THREE.CylinderGeometry(0.0105, 0.0112, 0.006, 20); g.rotateX(Math.PI / 2); return g; })();
+const slotGeo = new THREE.BoxGeometry(0.017, 0.0026, 0.002);
+const clampGeo = new THREE.BoxGeometry(0.026, 0.024, 0.004);
+const recessGeo = new THREE.BoxGeometry(0.032, 0.032, 0.003);
+
+function newDevice(type, spec, w, h, d) {
+  const group = new THREE.Group();
+  return { type, name: spec.n, spec, group, w, h, d, terms: [], parts: {}, state: {} };
+}
+function addTerm(dev, name, x, y, z, side, { dark = false, pre = false, label = null } = {}) {
+  const g = new THREE.Group(); g.position.set(x, y, z); dev.group.add(g);
+  mesh(recessGeo, MAT.plK, 0, 0, -0.0005, g, false);
+  mesh(clampGeo, MAT.copper, 0, 0, 0.0015, g, false);
+  const s = mesh(screwGeo, MAT.zinc, 0, 0, 0.006, g, false);
+  const sl = mesh(slotGeo, MAT.slot, 0, 0, 0.0092, g, false); sl.rotation.z = Math.random() * Math.PI;
+  const lb = labelMesh(label ?? name, 0.036, 0.016, { fg: dark ? '#f5f5f5' : '#1b1b1b', px: 128, font: 900, family: '"JetBrains Mono",monospace' });
+  lb.position.set(0, -side * 0.026, 0.0012); g.add(lb);
+  const hit = new THREE.Mesh(hitGeo, hitMat); hit.position.z = 0.008; g.add(hit);
+  const ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0xffb300, toneMapped: false, transparent: true, depthTest: false }));
+  ring.position.z = 0.011; ring.visible = false; ring.renderOrder = 10; g.add(ring);
+  const t = { name, id: `${dev.name}.${name}`, dev: dev.name, local: V3(x, y, z + 0.006), side, hit, ring, g, pre, screw: s };
+  hit.userData.term = t;
+  dev.terms.push(t); return t;
+}
+function devLabel(dev, text, x, y, z, w, h, opts = {}) { const m = labelMesh(text, w, h, opts); m.position.set(x, y, z + 0.0012); dev.group.add(m); return m; }
+function clickable(obj, kind, dev, extra = {}) { obj.traverse(o => { if (o.isMesh) o.userData.click = { kind, dev, ...extra }; }); }
+
+const DEV = {};
+
+// --- 누전차단기 ELB 4P ---
+DEV.elb4 = (spec) => {
+  const w = .34, h = .38, d = .15; const dev = newDevice('elb4', spec, w, h, d), g = dev.group;
+  mesh(rbox(w, h, d, .012), MAT.plW, 0, 0, d / 2, g);
+  for (let i = 1; i < 4; i++) mesh(box(.002, h - .02, .002), MAT.plG, -w / 2 + i * w / 4, 0, d + .0005, g, false);
+  mesh(rbox(w - .02, .16, .03, .008), MAT.plW, 0, 0.0, d + .012, g);
+  const lev = new THREE.Group(); lev.position.set(0, 0, d + .027); g.add(lev);
+  const lm = mesh(rbox(.22, .05, .03, .008), MAT.plK, 0, .03, .012, lev);
+  mesh(box(.16, .006, .002), MAT.plW, 0, .045, .028, lev, false);
+  clickable(lev, 'elb', spec.n); dev.parts.lever = lev;
+  const tb = mesh(cyl(.013, .013, .012, 18), MAT.plYellow, .13, -.055, d + .03, g); tb.rotation.x = Math.PI / 2;
+  devLabel(dev, 'T', .13, -.055, d + .037, .018, .014, { fg: '#111', px: 64, font: 900 });
+  devLabel(dev, 'ELB 4P 30A  IΔn 30mA', 0, -.068, d + .027, .21, .022, { fg: '#16202b', px: 512 });
+  devLabel(dev, 'ON ▲', -.13, .075, d + .027, .06, .018, { fg: '#c62828', px: 128, font: 900 });
+  devLabel(dev, 'OFF ▼', -.13, -.032, d + .027, .06, .018, { fg: '#16202b', px: 128, font: 900 });
+  const lock = new THREE.Group(); lock.visible = false; lock.position.set(.07, -.02, d + .06); g.add(lock);
+  mesh(rbox(.05, .05, .025, .006), MAT.red, 0, -.03, 0, lock);
+  const sh = mesh(new THREE.TorusGeometry(.017, .004, 8, 16, Math.PI), MAT.chrome, 0, -.005, 0, lock);
+  const tag = labelMesh('위험\n조작금지\nLOTO', .07, .1, { bg: '#ffd42a', fg: '#b3241b', px: 128, font: 900 });
+  tag.position.set(.06, -.1, .005); lock.add(tag);
+  dev.parts.lock = lock;
+  ['L1', 'L2', 'L3', 'N'].forEach((n, i) => addTerm(dev, n, -.126 + i * .084, .155, d, 1, { pre: true }));
+  ['T1', 'T2', 'T3', 'TN'].forEach((n, i) => addTerm(dev, n, -.126 + i * .084, -.155, d, -1));
+  return dev;
+};
+// --- 제어용 퓨즈홀더 ---
+DEV.fuse = (spec) => {
+  const w = .09, h = .27, d = .13; const dev = newDevice('fuse', spec, w, h, d), g = dev.group;
+  mesh(rbox(w, h, d, .008), MAT.plG, 0, 0, d / 2, g);
+  mesh(rbox(w - .015, .11, .03, .006), MAT.plD, 0, 0, d + .01, g);
+  const indMat = std({ color: '#3b3f43', emissive: '#ff2200', emissiveIntensity: 0, roughness: .4 });
+  const ind = mesh(cyl(.011, .011, .01, 16), indMat, 0, .02, d + .027, g); ind.rotation.x = Math.PI / 2;
+  dev.parts.indMat = indMat;
+  devLabel(dev, spec.n, 0, -.025, d + .026, .06, .025, { fg: '#fff', px: 128, font: 900 });
+  devLabel(dev, '6A', 0, -.045, d + .026, .04, .015, { fg: '#ffd42a', px: 128, font: 900 });
+  clickable(g.children[1], 'fuse', spec.n);
+  addTerm(dev, '1', 0, .112, d, 1); addTerm(dev, '2', 0, -.112, d, -1);
+  return dev;
+};
+// --- 전자접촉기 MC ---
+DEV.mc = (spec) => {
+  const w = .34, h = .37, d = .17; const dev = newDevice('mc', spec, w, h, d), g = dev.group;
+  const bd = d * .6;
+  mesh(rbox(w, h, bd, .012), MAT.plW, 0, 0, bd / 2, g);
+  mesh(rbox(w - .03, h - .13, d - bd + .01, .012), MAT.plW, 0, 0, bd + (d - bd) / 2 - .005, g);
+  mesh(rbox(w - .14, .07, .022, .006), MAT.plG, 0, .065, d + .006, g);
+  const win = mesh(box(.07, .03, .004), MAT.plK, .09, -.06, d + .002, g, false);
+  const indMat = std({ color: '#ff8f00', emissive: '#ff6f00', emissiveIntensity: 0, roughness: .4 });
+  const ind = mesh(box(.026, .022, .006), indMat, .075, -.06, d + .004, g, false);
+  dev.parts.ind = ind; dev.parts.indMat = indMat;
+  devLabel(dev, spec.label || spec.n, -.06, -.045, d, .14, .05, { fg: '#16202b', px: 256, font: 900 });
+  devLabel(dev, 'AC220V  18A  AC-3', -.05, -.085, d, .16, .02, { fg: '#53606c', px: 512 });
+  devLabel(dev, '13 21 43 · AUX', 0, .065, d + .018, .17, .022, { fg: '#16202b', px: 512, font: 700 });
+  const xs = [-.138, -.092, -.046, 0, .046, .092, .138];
+  ['L1', 'L2', 'L3', 'A1', '13', '21', '43'].forEach((n, i) => addTerm(dev, n, xs[i], .155, bd, 1));
+  ['T1', 'T2', 'T3', 'A2', '14', '22', '44'].forEach((n, i) => addTerm(dev, n, xs[i], -.155, bd, -1));
+  return dev;
+};
+// --- 열동계전기 THR ---
+DEV.thr = (spec) => {
+  const w = .31, h = .32, d = .15; const dev = newDevice('thr', spec, w, h, d), g = dev.group;
+  const bd = .09;
+  mesh(rbox(w, h, bd, .01), MAT.plD, 0, 0, bd / 2, g);
+  mesh(rbox(w - .03, h - .12, d - bd + .01, .01), MAT.plD, 0, 0, bd + (d - bd) / 2 - .005, g);
+  const dial = mesh(cyl(.03, .03, .012, 28), MAT.plBlue, -.07, .01, d + .006, g); dial.rotation.x = Math.PI / 2;
+  mesh(box(.004, .026, .003), MAT.plW, -.07, .022, d + .013, g, false);
+  devLabel(dev, '4   5   6A', -.07, .055, d, .09, .02, { fg: '#fff', px: 256, font: 700 });
+  const rs = mesh(cyl(.018, .018, .02, 20), MAT.plBlue, .06, .03, d + .01, g); rs.rotation.x = Math.PI / 2;
+  clickable(rs, 'thrReset', spec.n); dev.parts.reset = rs;
+  devLabel(dev, 'RESET', .06, .062, d, .06, .016, { fg: '#cfe3ff', px: 128, font: 900 });
+  const flagMat = std({ color: '#2e9e3e', emissive: '#000', roughness: .4 });
+  mesh(box(.04, .018, .006), flagMat, .06, -.03, d + .003, g, false); dev.parts.flagMat = flagMat;
+  devLabel(dev, 'THR', -.04, -.045, d, .09, .035, { fg: '#fff', px: 128, font: 900 });
+  devLabel(dev, 'TRIP', .06, -.052, d, .05, .014, { fg: '#ccc', px: 128 });
+  const xs = [-.125, -.075, -.025, .05, .11];
+  ['L1', 'L2', 'L3', '95', '97'].forEach((n, i) => addTerm(dev, n, xs[i], .132, bd, 1, { dark: true }));
+  ['T1', 'T2', 'T3', '96', '98'].forEach((n, i) => addTerm(dev, n, xs[i], -.132, bd, -1, { dark: true }));
+  return dev;
+};
+// --- 8핀 릴레이 / 타이머 (소켓 포함) ---
+function socket8(dev, d0) {
+  const g = dev.group;
+  mesh(rbox(dev.w, dev.h, d0, .008), MAT.plK, 0, 0, d0 / 2, g);
+  ['1', '2', '3', '4'].forEach((n, i) => addTerm(dev, n, -.072 + i * .048, .122, d0, 1, { dark: true }));
+  ['5', '6', '7', '8'].forEach((n, i) => addTerm(dev, n, -.072 + i * .048, -.122, d0, -1, { dark: true }));
+}
+DEV.relay = (spec) => {
+  const w = .21, h = .31, d = .2; const dev = newDevice('relay', spec, w, h, d), g = dev.group;
+  socket8(dev, .05);
+  mesh(rbox(.15, .18, .14, .01), MAT.clear, 0, 0, .05 + .07, g, false);
+  const coil = mesh(cyl(.025, .025, .07, 20), MAT.copper, -.025, 0, .1, g);
+  const arm = mesh(box(.05, .006, .05), MAT.steel, .03, .045, .1, g); dev.parts.arm = arm;
+  const ledMat = std({ color: '#400', emissive: '#ff2a2a', emissiveIntensity: 0 });
+  mesh(cyl(.006, .006, .006, 12), ledMat, .05, -.06, .19, g).rotation.x = Math.PI / 2; dev.parts.ledMat = ledMat;
+  devLabel(dev, `${spec.n}  AC220V`, 0, -.07, .19, .12, .022, { fg: '#16202b', px: 256, font: 900 });
+  return dev;
+};
+DEV.timer = (spec) => {
+  const w = .21, h = .31, d = .2; const dev = newDevice('timer', spec, w, h, d), g = dev.group;
+  socket8(dev, .05);
+  mesh(rbox(.15, .18, .14, .012), MAT.plG, 0, 0, .05 + .07, g);
+  const face = canvasTex(256, 256, (c, W) => {
+    c.fillStyle = '#f7f7f4'; c.beginPath(); c.arc(W / 2, W / 2, W / 2 - 4, 0, 7); c.fill();
+    c.strokeStyle = '#16202b'; c.lineWidth = 3; c.font = '700 26px "JetBrains Mono"'; c.fillStyle = '#16202b'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    for (let i = 0; i <= 10; i++) {
+      const a = (-225 + i * 27) * Math.PI / 180; const r1 = 100, r2 = i % 5 ? 90 : 84;
+      c.beginPath(); c.moveTo(W / 2 + Math.cos(a) * r1, W / 2 + Math.sin(a) * r1); c.lineTo(W / 2 + Math.cos(a) * r2, W / 2 + Math.sin(a) * r2); c.stroke();
+      if (i % 5 === 0) c.fillText(String(i), W / 2 + Math.cos(a) * 68, W / 2 + Math.sin(a) * 68);
+    }
+    c.font = '700 20px "JetBrains Mono"'; c.fillText('sec', W / 2, W / 2 + 70);
+  });
+  const fm = mesh(new THREE.CircleGeometry(.05, 40), std({ map: face, roughness: .5 }), 0, .025, .1905, g, false);
+  const knob = new THREE.Group(); knob.position.set(0, .025, .193); g.add(knob);
+  mesh(cyl(.02, .02, .012, 24), MAT.plK, 0, 0, .006, knob).rotation.x = Math.PI / 2;
+  mesh(box(.004, .036, .004), MAT.plW, 0, .012, .013, knob, false);
+  dev.parts.knob = knob;
+  const ledP = std({ color: '#031', emissive: '#22ff66', emissiveIntensity: 0 });
+  const ledO = std({ color: '#300', emissive: '#ff3322', emissiveIntensity: 0 });
+  mesh(cyl(.006, .006, .006, 12), ledP, -.045, -.055, .19, g).rotation.x = Math.PI / 2;
+  mesh(cyl(.006, .006, .006, 12), ledO, .045, -.055, .19, g).rotation.x = Math.PI / 2;
+  dev.parts.ledP = ledP; dev.parts.ledO = ledO;
+  devLabel(dev, `${spec.n}  ON-DELAY`, 0, -.075, .19, .12, .02, { fg: '#16202b', px: 256, font: 900 });
+  return dev;
+};
+// --- 푸시버튼 ---
+DEV.pb = (spec) => {
+  const w = .13, h = .17, d = .11; const dev = newDevice('pb', spec, w, h, d), g = dev.group;
+  mesh(rbox(w, h, d * .55, .008), MAT.plD, 0, 0, d * .275, g);
+  const bz = mesh(cyl(.046, .048, .02, 32), MAT.chrome, 0, -.005, d * .55 + .01, g); bz.rotation.x = Math.PI / 2;
+  const headMat = phys({ color: spec.color === 'red' ? '#d32f2f' : spec.color === 'black' ? '#222' : '#1e9e46', roughness: .22, clearcoat: 1, clearcoatRoughness: .15 });
+  const head = new THREE.Group(); head.position.set(0, -.005, d * .55 + .02); g.add(head);
+  mesh(cyl(.038, .038, .028, 32), headMat, 0, 0, .014, head).rotation.x = Math.PI / 2;
+  const hl = labelMesh(spec.cap || (spec.kind === 'NC' ? 'OFF' : 'ON'), .05, .022, { fg: '#fff', px: 128, font: 900 });
+  hl.position.z = .0285; head.add(hl);
+  clickable(head, 'pb', spec.n); dev.parts.head = head;
+  devLabel(dev, spec.label, 0, -.067, d * .55, .11, .022, { fg: '#fff', px: 256, font: 900 });
+  const [a, b] = spec.kind === 'NC' ? ['1', '2'] : ['3', '4'];
+  addTerm(dev, a, -.03, .062, d * .55, 1, { dark: true }); addTerm(dev, b, .03, .062, d * .55, 1, { dark: true });
+  devLabel(dev, spec.kind === 'NC' ? 'NC(b)' : 'NO(a)', 0, .03, d * .55, .06, .014, { fg: '#ffd42a', px: 128, font: 700 });
+  return dev;
+};
+// --- 표시등 ---
+DEV.lamp = (spec) => {
+  const w = .11, h = .16, d = .11; const dev = newDevice('lamp', spec, w, h, d), g = dev.group;
+  mesh(rbox(w, h, d * .55, .008), MAT.plD, 0, 0, d * .275, g);
+  const bz = mesh(cyl(.04, .042, .018, 32), MAT.chrome, 0, -.008, d * .55 + .009, g); bz.rotation.x = Math.PI / 2;
+  const c = new THREE.Color(spec.color);
+  const lensMat = phys({ color: c.clone().multiplyScalar(.75), emissive: c, emissiveIntensity: 0, roughness: .18, clearcoat: 1, transparent: true, opacity: .92 });
+  const lens = new THREE.Mesh(new THREE.SphereGeometry(.032, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2), lensMat);
+  lens.rotation.x = Math.PI / 2; lens.position.set(0, -.008, d * .55 + .016); lens.scale.set(1, .55, 1); g.add(lens);
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: c, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, opacity: 0 }));
+  glow.scale.set(.2, .2, 1); glow.position.set(0, -.008, d * .55 + .04); g.add(glow);
+  dev.parts.lensMat = lensMat; dev.parts.glow = glow;
+  devLabel(dev, spec.label, 0, -.068, d * .55, .1, .02, { fg: '#fff', px: 256, font: 900 });
+  addTerm(dev, 'X1', -.026, .058, d * .55, 1, { dark: true }); addTerm(dev, 'X2', .026, .058, d * .55, 1, { dark: true });
+  return dev;
+};
+// --- 전동기 연결 단자대 ---
+DEV.tb = (spec) => {
+  const w = .32, h = .12, d = .08; const dev = newDevice('tb', spec, w, h, d), g = dev.group;
+  mesh(box(w + .02, .035, .01), MAT.galv, 0, 0, .005, g);
+  ['U', 'V', 'W', 'PE'].forEach((n, i) => {
+    const x = -.114 + i * .076;
+    mesh(rbox(.07, h, d, .006), n === 'PE' ? MAT.plGreenGY : MAT.plG, x, 0, d / 2, g);
+    addTerm(dev, n, x, .034, d, 1);
+  });
+  devLabel(dev, 'MOTOR  TB', 0, -.04, d, .16, .02, { fg: '#16202b', px: 256, font: 900 });
+  return dev;
+};
+// --- PE 접지 단자바 ---
+DEV.pe = (spec) => {
+  const w = .22, h = .08, d = .06; const dev = newDevice('pe', spec, w, h, d), g = dev.group;
+  for (const x of [-.095, .095]) mesh(cyl(.014, .014, .04, 12), MAT.red, x, 0, .02, g).rotation.x = Math.PI / 2;
+  mesh(box(w, .04, .012), MAT.copper, 0, 0, .046, g);
+  devLabel(dev, '⏚ PE', -.07, .028, .052, .06, .016, { bg: '#2e9e3e', fg: '#ffeb3b', px: 128, font: 900 });
+  ['1', '2', '3'].forEach((n, i) => addTerm(dev, n, -.03 + i * .045, 0, .052, -1));
+  return dev;
+};
+// --- 아날로그 계기 ---
+DEV.meter = (spec) => {
+  const w = .22, h = .22, d = .09; const dev = newDevice('meter', spec, w, h, d), g = dev.group;
+  mesh(rbox(w, h, d, .01), MAT.plK, 0, 0, d / 2, g);
+  const max = spec.max, unit = spec.unit;
+  const face = canvasTex(512, 512, (c, W) => {
+    c.fillStyle = '#fbfaf5'; c.fillRect(0, 0, W, W);
+    c.strokeStyle = '#16202b'; c.fillStyle = '#16202b'; c.lineWidth = 4; c.textAlign = 'center'; c.textBaseline = 'middle';
+    const cx = W / 2, cy = W * .72, R = W * .5;
+    c.beginPath(); c.arc(cx, cy, R, Math.PI * 1.2, Math.PI * 1.8); c.stroke();
+    for (let i = 0; i <= 50; i++) {
+      const a = Math.PI * 1.2 + i / 50 * Math.PI * .6; const L = i % 10 ? (i % 5 ? 14 : 24) : 34;
+      c.lineWidth = i % 10 ? 2 : 4;
+      c.beginPath(); c.moveTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R); c.lineTo(cx + Math.cos(a) * (R - L), cy + Math.sin(a) * (R - L)); c.stroke();
+      if (i % 10 === 0) { c.font = '700 34px "JetBrains Mono"'; c.fillText(String(max * i / 50), cx + Math.cos(a) * (R - 62), cy + Math.sin(a) * (R - 62)); }
+    }
+    if (spec.red) { c.strokeStyle = '#d32f2f'; c.lineWidth = 10; c.beginPath(); const a0 = Math.PI * 1.2 + spec.red / max * Math.PI * .6; c.arc(cx, cy, R + 8, a0, a0 + .04); c.stroke(); }
+    c.font = '900 70px "Noto Sans KR"'; c.fillStyle = '#16202b'; c.fillText(unit, cx, cy - 20);
+    c.font = '700 22px "JetBrains Mono"'; c.fillText('AC  CLASS 2.5', cx, W * .9);
+  });
+  mesh(new THREE.PlaneGeometry(w - .025, h - .025), std({ map: face, roughness: .6 }), 0, 0, d + .001, g, false);
+  const nd = new THREE.Group(); nd.position.set(0, -(h - .025) * .22, d + .004); g.add(nd);
+  mesh(box(.0025, .1, .002), std({ color: '#c62828', roughness: .5 }), 0, .05, 0, nd, false);
+  mesh(cyl(.008, .008, .004, 16), MAT.plK, 0, 0, .002, nd, false).rotation.x = Math.PI / 2;
+  mesh(box(w - .02, h - .02, .003), MAT.glass, 0, 0, d + .009, g, false);
+  dev.parts.needle = nd; dev.state.val = 0;
+  return dev;
+};
+
+// --- 3상 유도전동기 (작업대 위) ---
+function buildMotor(parent, x, y, z) {
+  const g = new THREE.Group(); g.position.set(x, y, z); parent.add(g);
+  const L = .42, R = .14;
+  const body = mesh(cyl(R, R, L, 40), MAT.motorBlue, 0, R + .05, 0, g); body.rotation.x = Math.PI / 2;
+  const finGeo = new THREE.BoxGeometry(.012, .028, L - .06);
+  const fins = new THREE.InstancedMesh(finGeo, MAT.motorBlue, 28); const m4 = new THREE.Matrix4(), q = new THREE.Quaternion();
+  for (let i = 0; i < 28; i++) {
+    const a = i / 28 * Math.PI * 2; if (Math.abs(Math.sin(a) + 1) < .25) { m4.makeScale(0, 0, 0); fins.setMatrixAt(i, m4); continue; }
+    q.setFromAxisAngle(V3(0, 0, 1), a - Math.PI / 2);
+    m4.compose(V3(Math.cos(a) * (R + .01), R + .05 + Math.sin(a) * (R + .01), 0), q, V3(1, 1, 1)); fins.setMatrixAt(i, m4);
+  }
+  fins.castShadow = true; g.add(fins);
+  for (const s of [-1, 1]) { const b = mesh(cyl(R + .012, R + .012, .05, 40), MAT.paintGray, 0, R + .05, s * (L / 2 + .02), g); b.rotation.x = Math.PI / 2; }
+  const fan = mesh(cyl(R - .005, R + .005, .1, 40, 1, true), MAT.galv, 0, R + .05, -L / 2 - .09, g); fan.rotation.x = Math.PI / 2;
+  mesh(rbox(.36, .03, .3, .006), MAT.paintGray, 0, .015, 0, g);
+  for (const s of [-1, 1]) mesh(box(.05, .06, .24), MAT.paintGray, s * .1, .05, 0, g);
+  const shaft = mesh(cyl(.018, .018, .12, 20), MAT.chrome, 0, R + .05, L / 2 + .1, g); shaft.rotation.x = Math.PI / 2;
+  const rot = new THREE.Group(); rot.position.set(0, R + .05, L / 2 + .17); g.add(rot);
+  const discTex = canvasTex(256, 256, (c, W) => {
+    c.fillStyle = '#eee'; c.beginPath(); c.arc(W / 2, W / 2, W / 2, 0, 7); c.fill();
+    c.fillStyle = '#d32f2f'; c.beginPath(); c.moveTo(W / 2, W / 2); c.arc(W / 2, W / 2, W / 2, -0.5, 0.5); c.fill();
+    c.fillStyle = '#16202b'; c.beginPath(); c.moveTo(W / 2, W / 2); c.arc(W / 2, W / 2, W / 2, Math.PI - .25, Math.PI + .25); c.fill();
+    c.fillStyle = '#888'; c.beginPath(); c.arc(W / 2, W / 2, 20, 0, 7); c.fill();
+  });
+  const disc = mesh(cyl(.085, .085, .02, 40), [MAT.steel, std({ map: discTex, roughness: .4, metalness: .3 }), MAT.steel], 0, 0, 0, rot); disc.rotation.x = Math.PI / 2;
+  const tbx = mesh(rbox(.13, .08, .12, .008), MAT.motorBlue, 0, 2 * R + .09, .02, g);
+  const gland = mesh(cyl(.016, .018, .03, 16), MAT.plK, .075, 2 * R + .09, .02, g); gland.rotation.z = Math.PI / 2;
+  const np = labelMesh('3φ IM 2.2kW\n380V 4.9A 4P\n1730 rpm', .12, .07, { bg: '#e6e8ea', fg: '#16202b', px: 256, font: 700 });
+  np.position.set(0, R + .05, R + .003); np.rotation.x = 0; np.position.z = 0; np.position.y = R + .05; np.position.x = R + .004; np.rotation.y = Math.PI / 2; g.add(np);
+  const arrow = labelMesh('정회전 ⟳', .16, .045, { bg: '#1f9d55', fg: '#fff', px: 256, font: 900, radius: 20 });
+  arrow.position.set(0, 2 * R + .2, .2); arrow.visible = false; g.add(arrow);
+  const frameEarth = mesh(box(.02, .02, .02), MAT.copper, .16, .04, .14, g);
+  return { g, rot, arrow, termPos: V3(x + .09, y + 2 * R + .09, z + .02), speed: 0, dir: 0 };
+}
+
+/* =====================================================================
+   6. 실습 회로 사양 (기기 배치 · 정답 결선표 = 회로도와 1:1)
+   ===================================================================== */
+const RA = .62, RB = -.05, RC = -.74;
+const WCOL = { L1: '#7b4a24', L2: '#1d1d1f', L3: '#8f9397', N: '#1f5fd6', PE: 'pe', R: '#e53935', O: '#ff8f00', Y: '#fdd835', G: '#43a047', P: '#8e24aa', K: '#ec407a', W: '#f2f2f2', C: '#00acc1' };
+const WNAME = { L1: '갈색 L1', L2: '흑색 L2', L3: '회색 L3', N: '청색 N', PE: '녹황 PE', R: '빨강', O: '주황', Y: '노랑', G: '초록', P: '보라', K: '분홍', W: '흰색', C: '하늘' };
+const MAIN3 = (mc) => [
+  ['ELB.T1', `${mc}.L1`, 'L1'], ['ELB.T2', `${mc}.L2`, 'L2'], ['ELB.T3', `${mc}.L3`, 'L3']];
+const TAIL = [['THR.T1', 'TB.U', 'L1'], ['THR.T2', 'TB.V', 'L2'], ['THR.T3', 'TB.W', 'L3'], ['PE.1', 'TB.PE', 'PE'],
+['ELB.T1', 'F1.1', 'R'], ['ELB.TN', 'F2.1', 'N'], ['F1.2', 'THR.95', 'R'], ['THR.95', 'THR.97', 'R'], ['THR.96', 'PBOFF.1', 'O']];
+const COMMON_A = [
+  { n: 'PE', t: 'pe', x: -1.5, y: RA }, { n: 'ELB', t: 'elb4', x: -1.05, y: RA },
+  { n: 'VM', t: 'meter', x: .98, y: RA, max: 500, unit: 'V', red: 380 }, { n: 'AM', t: 'meter', x: 1.32, y: RA, max: 30, unit: 'A', red: 6 },
+  { n: 'F1', t: 'fuse', x: -1.42, y: RB }, { n: 'F2', t: 'fuse', x: -1.28, y: RB },
+  { n: 'PBOFF', t: 'pb', kind: 'NC', color: 'red', label: 'PB-OFF', cap: 'OFF', x: -1.4, y: RC },
+  { n: 'TB', t: 'tb', x: 1.2, y: RC }];
+
+const SPECS = {
+  selfhold: {
+    name: '자기유지 실습실', short: '자기유지', sub: 'SELF-HOLDING CIRCUIT LAB · MC 13–14 자기유지 접점',
+    devices: [...COMMON_A,
+    { n: 'MC', t: 'mc', x: -.78, y: RB, label: 'MC' }, { n: 'THR', t: 'thr', x: -.3, y: RB },
+    { n: 'PBON', t: 'pb', kind: 'NO', color: 'green', label: 'PB-ON', cap: 'ON', x: -1.22, y: RC },
+    { n: 'RL', t: 'lamp', color: '#ff3b30', label: 'RL 운전', x: -.9, y: RC }, { n: 'GL', t: 'lamp', color: '#22e06b', label: 'GL 정지', x: -.76, y: RC },
+    { n: 'YL', t: 'lamp', color: '#ffc400', label: 'YL 트립', x: -.62, y: RC }],
+    wires: [...MAIN3('MC'), ['MC.T1', 'THR.L1', 'L1'], ['MC.T2', 'THR.L2', 'L2'], ['MC.T3', 'THR.L3', 'L3'], ...TAIL,
+    ['PBOFF.2', 'PBON.3', 'Y'], ['PBON.3', 'MC.13', 'Y'], ['PBON.4', 'MC.14', 'G'], ['PBON.4', 'MC.A1', 'G'], ['MC.A2', 'F2.2', 'N'],
+    ['THR.96', 'MC.43', 'O'], ['MC.43', 'MC.21', 'O'], ['MC.44', 'RL.X1', 'K'], ['MC.22', 'GL.X1', 'P'], ['THR.98', 'YL.X1', 'W'],
+    ['RL.X2', 'GL.X2', 'N'], ['GL.X2', 'YL.X2', 'N'], ['YL.X2', 'F2.2', 'N']],
+    pbs: ['PBOFF', 'PBON'], lamps: ['RL', 'GL', 'YL'], coils: ['MC'], mcs: ['MC'],
+    hold: [{ coil: 'MC', el: 'MC.13-14', pb: 'PBON' }],
+  },
+  interlock: {
+    name: '인터록 실습실', short: '인터록', sub: 'INTERLOCK (FWD/REV) LAB · MCF ⇄ MCR b접점 상호 차단',
+    devices: [...COMMON_A,
+    { n: 'MCF', t: 'mc', x: -.86, y: RB, label: 'MCF 정' }, { n: 'MCR', t: 'mc', x: -.44, y: RB, label: 'MCR 역' }, { n: 'THR', t: 'thr', x: 0, y: RB },
+    { n: 'PBF', t: 'pb', kind: 'NO', color: 'green', label: 'PB-F 정', cap: 'FWD', x: -1.22, y: RC },
+    { n: 'PBR', t: 'pb', kind: 'NO', color: 'black', label: 'PB-R 역', cap: 'REV', x: -1.04, y: RC },
+    { n: 'RL', t: 'lamp', color: '#ff3b30', label: 'RL 정회전', x: -.72, y: RC }, { n: 'GL', t: 'lamp', color: '#22e06b', label: 'GL 역회전', x: -.58, y: RC },
+    { n: 'YL', t: 'lamp', color: '#ffc400', label: 'YL 트립', x: -.44, y: RC }],
+    wires: [...MAIN3('MCF'), ['MCF.L1', 'MCR.L1', 'L1'], ['MCF.L2', 'MCR.L2', 'L2'], ['MCF.L3', 'MCR.L3', 'L3'],
+    ['MCF.T1', 'THR.L1', 'L1'], ['MCF.T2', 'THR.L2', 'L2'], ['MCF.T3', 'THR.L3', 'L3'],
+    ['MCR.T1', 'THR.L3', 'L3'], ['MCR.T2', 'THR.L2', 'L2'], ['MCR.T3', 'THR.L1', 'L1'], ...TAIL,
+    ['PBOFF.2', 'PBF.3', 'Y'], ['PBF.3', 'PBR.3', 'Y'], ['PBF.3', 'MCF.13', 'Y'], ['PBF.4', 'MCF.14', 'G'],
+    ['PBF.4', 'MCR.21', 'P'], ['MCR.22', 'MCF.A1', 'P'], ['PBR.3', 'MCR.13', 'Y'], ['PBR.4', 'MCR.14', 'C'],
+    ['PBR.4', 'MCF.21', 'P'], ['MCF.22', 'MCR.A1', 'P'], ['MCF.A2', 'MCR.A2', 'N'], ['MCR.A2', 'F2.2', 'N'],
+    ['THR.96', 'MCF.43', 'O'], ['MCF.43', 'MCR.43', 'O'], ['MCF.44', 'RL.X1', 'K'], ['MCR.44', 'GL.X1', 'W'], ['THR.98', 'YL.X1', 'W'],
+    ['RL.X2', 'GL.X2', 'N'], ['GL.X2', 'YL.X2', 'N'], ['YL.X2', 'F2.2', 'N']],
+    pbs: ['PBOFF', 'PBF', 'PBR'], lamps: ['RL', 'GL', 'YL'], coils: ['MCF', 'MCR'], mcs: ['MCF', 'MCR'],
+    hold: [{ coil: 'MCF', el: 'MCF.13-14', pb: 'PBF' }, { coil: 'MCR', el: 'MCR.13-14', pb: 'PBR' }],
+  },
+  auto: {
+    name: '자동기동 실습장', short: '자동기동', sub: 'AUTO-START (ON-DELAY TIMER) LAB · X 자기유지 → T 한시 a접점 → MC',
+    devices: [...COMMON_A,
+    { n: 'X', t: 'relay', x: -1.02, y: RB }, { n: 'T', t: 'timer', x: -.76, y: RB },
+    { n: 'MC', t: 'mc', x: -.36, y: RB, label: 'MC' }, { n: 'THR', t: 'thr', x: .1, y: RB },
+    { n: 'PBON', t: 'pb', kind: 'NO', color: 'green', label: 'PB-ON', cap: 'ON', x: -1.22, y: RC },
+    { n: 'WL', t: 'lamp', color: '#fff2c4', label: 'WL 대기', x: -.9, y: RC }, { n: 'RL', t: 'lamp', color: '#ff3b30', label: 'RL 운전', x: -.76, y: RC },
+    { n: 'YL', t: 'lamp', color: '#ffc400', label: 'YL 트립', x: -.62, y: RC }],
+    wires: [...MAIN3('MC'), ['MC.T1', 'THR.L1', 'L1'], ['MC.T2', 'THR.L2', 'L2'], ['MC.T3', 'THR.L3', 'L3'], ...TAIL,
+    ['PBOFF.2', 'PBON.3', 'Y'], ['PBON.3', 'X.1', 'Y'], ['PBON.4', 'X.3', 'G'], ['PBON.4', 'X.2', 'G'], ['X.2', 'T.2', 'G'], ['T.2', 'T.8', 'G'],
+    ['T.6', 'MC.A1', 'C'], ['T.5', 'WL.X1', 'K'], ['MC.A1', 'RL.X1', 'C'], ['THR.98', 'YL.X1', 'W'],
+    ['X.7', 'T.7', 'N'], ['T.7', 'F2.2', 'N'], ['MC.A2', 'F2.2', 'N'], ['WL.X2', 'RL.X2', 'N'], ['RL.X2', 'YL.X2', 'N'], ['YL.X2', 'MC.A2', 'N']],
+    pbs: ['PBOFF', 'PBON'], lamps: ['WL', 'RL', 'YL'], coils: ['X', 'T', 'MC'], mcs: ['MC'],
+    hold: [{ coil: 'X', el: 'X.1-3', pb: 'PBON' }],
+  },
+};
+const TERM_DESC = {
+  mc: { L1: '주접점 전원측', L2: '주접점 전원측', L3: '주접점 전원측', T1: '주접점 부하측', T2: '주접점 부하측', T3: '주접점 부하측', A1: '조작코일 A1', A2: '조작코일 A2', 13: '보조 a접점 13', 14: '보조 a접점 14 (자기유지)', 21: '보조 b접점 21', 22: '보조 b접점 22', 43: '보조 a접점 43 (표시등)', 44: '보조 a접점 44' },
+  thr: { L1: '히터 전원측', L2: '히터 전원측', L3: '히터 전원측', T1: '히터 부하측', T2: '히터 부하측', T3: '히터 부하측', 95: 'b접점 95 (트립 시 개로)', 96: 'b접점 96', 97: 'a접점 97 (트립 시 폐로)', 98: 'a접점 98' },
+  elb4: { L1: '전원측 L1 (기결선·활선)', L2: '전원측 L2 (기결선·활선)', L3: '전원측 L3 (기결선·활선)', N: '전원측 N (기결선)', T1: '부하측 L1', T2: '부하측 L2', T3: '부하측 L3', TN: '부하측 N' },
+  relay: { 1: '공통 1 (a: 1–3, b: 1–4)', 2: '코일 2', 3: 'a접점 3', 4: 'b접점 4', 5: 'b접점 5 (8–5)', 6: 'a접점 6 (8–6)', 7: '코일 7', 8: '공통 8' },
+  timer: { 1: '순시 공통 1', 2: '코일 2', 3: '순시 a 3', 4: '순시 b 4', 5: '한시 b접점 5 (8–5)', 6: '한시 a접점 6 (8–6)', 7: '코일 7', 8: '한시 공통 8' },
+  pb: { 1: 'b접점 1', 2: 'b접점 2', 3: 'a접점 3', 4: 'a접점 4' },
+  lamp: { X1: '램프 X1', X2: '램프 X2' }, fuse: { 1: '퓨즈 입력', 2: '퓨즈 출력' },
+  tb: { U: '전동기 U', V: '전동기 V', W: '전동기 W', PE: '전동기 외함접지' }, pe: { 1: '보호도체 PE', 2: '보호도체 PE', 3: '보호도체 PE' },
+};
+
+/* =====================================================================
+   7. 실습실 조립 (실습판 · 덕트 · DIN레일 · 기기 · 기결선 케이블)
+   ===================================================================== */
+const DUCT = { D1: .29, D2: -.43, DVx: -1.625 };
+const ROOMS = {};
+const wireMatCache = new Map();
+function wireMat(key) {
+  if (key === 'PE') { const t = peTex.clone(); t.needsUpdate = true; return std({ map: t, roughness: .4 }); }
+  if (!wireMatCache.has(key)) wireMatCache.set(key, phys({ color: WCOL[key] || key, roughness: .33, clearcoat: .55, clearcoatRoughness: .3, metalness: 0 }));
+  return wireMatCache.get(key);
+}
+const markerMat = phys({ color: '#fbfbf6', roughness: .4 });
+const ferruleMat = MAT.zinc;
+
+function buildRoom(key) {
+  const spec = SPECS[key];
+  const room = { key, spec, group: new THREE.Group(), dev: {}, terms: {}, hits: [], clickables: [], wires: [], wireId: 1, burns: [],
+    load: 1, coilState: {}, events: [], loto: false, lotoSteps: {}, flags: {}, sol: null, els: [] };
+  room.group.position.x = ROOM_CX[key]; scene.add(room.group); ROOMS[key] = room;
+  buildBench(room); buildDecor(room, key);
+  const board = new THREE.Group(); board.position.set(0, 1.95, -2.72); room.group.add(board); room.board = board;
+  const plateMat = std({ map: perfTex, bumpMap: perfBump, bumpScale: .9, color: '#e6e9ec', metalness: .72, roughness: .38, roughnessMap: grungeTex });
+  mesh(box(3.5, 2.04, .02), plateMat, 0, 0, -.01, board);
+  // DIN 레일
+  for (const y of [RA, RB, RC]) {
+    mesh(box(3.2, .035, .003), MAT.galv, -.05, y, .0015, board, false);
+    mesh(box(3.2, .006, .0075), MAT.galv, -.05, y + .0145, .006, board, false);
+    mesh(box(3.2, .006, .0075), MAT.galv, -.05, y - .0145, .006, board, false);
+  }
+  // 배선 덕트 (빗살형)
+  const fingers = [];
+  const addDuct = (x0, x1, y0, y1, vertical) => {
+    const L = vertical ? y1 - y0 : x1 - x0, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+    mesh(box(vertical ? .085 : L, vertical ? L : .085, .004), MAT.ductG, cx, cy, .002, board, false);
+    const n = Math.floor(L / .026);
+    for (let i = 0; i < n; i++) for (const s of [-1, 1]) {
+      const p = -L / 2 + (i + .5) * L / n;
+      fingers.push(vertical ? [cx + s * .04, cy + p] : [cx + p, cy + s * .04]);
+    }
+  };
+  addDuct(-1.66, 1.66, DUCT.D1, DUCT.D1, false); addDuct(-1.66, 1.66, DUCT.D2, DUCT.D2, false);
+  addDuct(DUCT.DVx, DUCT.DVx, DUCT.D2 + .045, DUCT.D1 - .045, true);
+  const fg = new THREE.InstancedMesh(new THREE.BoxGeometry(.016, .006, .07), MAT.ductG, fingers.length);
+  const m4 = new THREE.Matrix4();
+  fingers.forEach(([x, y], i) => {
+    const vert = Math.abs(x - DUCT.DVx) < .06 && y < DUCT.D1 - .04 && y > DUCT.D2 + .04;
+    m4.makeRotationZ(vert ? Math.PI / 2 : 0); m4.setPosition(x, y, .037); fg.setMatrixAt(i, m4);
+  });
+  fg.castShadow = true; board.add(fg);
+  const np = labelMesh(`${spec.short} 회로 실습판  ·  3φ 380V / 제어 220V`, 1.6, .09, { bg: '#16202b', fg: '#ffd42a', px: 1024, font: 900 });
+  np.position.set(0, .95, .001); board.add(np);
+  const warn = labelMesh('⚠ 위험  380V 충전부 — 결선은 전원 차단(LOTO) 후', .82, .07, { bg: '#f3c900', fg: '#111', px: 1024, font: 900 });
+  warn.position.set(.22, .7, .001); board.add(warn);
+  const kec = labelMesh('L1 갈 · L2 흑 · L3 회 · N 청 · PE 녹황', .82, .05, { fg: '#16202b', px: 1024, font: 700 });
+  kec.position.set(.22, .6, .001); board.add(kec);
+
+  // 기기 배치
+  for (const ds of spec.devices) {
+    const dev = DEV[ds.t](ds); dev.group.position.set(ds.x, ds.y, 0); board.add(dev.group);
+    dev.group.traverse(o => { if (o.isMesh && !o.userData.term && o.material !== hitMat) { o.castShadow = o.castShadow; } if (o.userData.click) room.clickables.push(o); });
+    room.dev[ds.n] = dev;
+    for (const t of dev.terms) { t.lp = V3(ds.x + t.local.x, ds.y + t.local.y, t.local.z); t.wires = []; room.terms[t.id] = t; room.hits.push(t.hit); }
+    if (['mc', 'relay', 'timer', 'thr', 'fuse'].includes(ds.t)) {
+      const el = document.createElement('div'); el.className = 'badge';
+      const o = new CSS2DObject(el); o.position.set(0, dev.h / 2 + (ds.t === 'timer' ? .1 : .05), dev.d); dev.group.add(o); dev.badge = el;
+    }
+    initDevState(dev);
+  }
+  room.motor = buildMotor(room.group, 1.25, .9, -2.05);
+  const mb = document.createElement('div'); mb.className = 'badge'; const mo = new CSS2DObject(mb); mo.position.set(0, .55, 0); room.motor.g.add(mo); room.motor.badge = mb;
+  room.group.updateMatrixWorld(true);
+  for (const t of Object.values(room.terms)) t.wp = board.localToWorld(t.lp.clone());
+  buildPrewires(room);
+  room.wireGroup = new THREE.Group(); board.add(room.wireGroup);
+  return room;
+}
+function initDevState(dev) {
+  const s = dev.state;
+  if (dev.type === 'elb4') Object.assign(s, { on: false, trip: false });
+  if (dev.type === 'fuse') s.blown = false;
+  if (['mc', 'relay', 'timer'].includes(dev.type)) Object.assign(s, { on: false, t0: 0, timed: false, anim: 0 });
+  if (dev.type === 'thr') Object.assign(s, { trip: false, heat: 0 });
+  if (dev.type === 'pb') s.pressed = false;
+  if (dev.type === 'lamp') s.b = 0;
+}
+// 기결선 : 전원 케이블(배관 → ELB 1차측), 전동기 케이블(TB → 전동기)
+function buildPrewires(room) {
+  const b = room.board, elb = room.dev.ELB, pe = room.dev.PE;
+  const ent = V3(0, 1.07, .03);
+  const sup = [['L1', 'L1'], ['L2', 'L2'], ['L3', 'L3'], ['N', 'N']];
+  sup.forEach(([n, c], i) => {
+    const t = room.terms[`ELB.${n}`];
+    const pts = [ent.clone().add(V3(-.03 + i * .02, 0, 0)), V3(-.2 - i * .02, .99, .05), V3(t.lp.x, .9, .05), V3(t.lp.x, t.lp.y + .05, t.lp.z + .01), t.lp.clone()];
+    room.wires.push(makeWireObj(room, null, null, c, new THREE.CatmullRomCurve3(pts, false, 'centripetal'), { pre: true, curEl: `ELB.${n}-${n === 'N' ? 'TN' : 'T' + n[1]}` }));
+  });
+  const pp = V3(pe.spec.x + .085, RA, .05);
+  room.wires.push(makeWireObj(room, null, null, 'PE', new THREE.CatmullRomCurve3([ent.clone().add(V3(.05, 0, 0)), V3(-.5, 1.0, .06), V3(-1.2, .9, .06), V3(pp.x + .04, pp.y + .1, .06), pp], false, 'centripetal'), { pre: true, curEl: 'PE.earth' }));
+  // 전동기 케이블 (4심 회색 시스)
+  const tb = room.dev.TB.spec;
+  const g0 = room.motor.g.position; const glW = room.group.localToWorld(V3(g0.x + .105, g0.y + .37, g0.z + .02));
+  const gl = room.board.worldToLocal(glW.clone());
+  const curve = new THREE.CatmullRomCurve3([V3(tb.x, RC - .06, .045), V3(tb.x, RC - .2, .06), V3(tb.x + .1, -1.02, .25), V3(gl.x + .12, gl.y - .12, gl.z - .12), V3(gl.x + .02, gl.y, gl.z)], false, 'centripetal');
+  room.wires.push(makeWireObj(room, null, null, '#5b6168', curve, { pre: true, curEl: 'TB.U-M.U', radius: .013 }));
+}
+
+/* ---------- 전선 지오메트리 (스플라인 · 덕트 경로 · 압착단자 · 마킹튜브) ---------- */
+function ductOf(t) {
+  if (t.lp.y > .42) return 'D1';
+  if (t.lp.y > -.32) return t.side > 0 ? 'D1' : 'D2';
+  return 'D2';
+}
+function roundedPath(P, r = .03) {
+  const path = new THREE.CurvePath(); let cur = P[0].clone();
+  for (let i = 1; i < P.length - 1; i++) {
+    const p = P[i], a = P[i - 1], c = P[i + 1];
+    const d1 = p.clone().sub(a), d2 = c.clone().sub(p); const l1 = d1.length(), l2 = d2.length();
+    if (l1 < 1e-5 || l2 < 1e-5) continue;
+    const rr = Math.min(r, l1 / 2, l2 / 2);
+    const pin = p.clone().sub(d1.normalize().multiplyScalar(rr)), pout = p.clone().add(d2.normalize().multiplyScalar(rr));
+    if (cur.distanceTo(pin) > 1e-5) path.add(new THREE.LineCurve3(cur, pin));
+    path.add(new THREE.QuadraticBezierCurve3(pin, p.clone(), pout)); cur = pout;
+  }
+  path.add(new THREE.LineCurve3(cur, P[P.length - 1].clone()));
+  return path;
+}
+function routeCurve(room, ta, tb, seed) {
+  const A = ta.lp.clone(), B = tb.lp.clone();
+  const rj = (k) => { const x = Math.sin(seed * 12.9898 + k * 78.233) * 43758.5453; return x - Math.floor(x); };
+  if (state.route === 'free') {
+    const d = A.distanceTo(B);
+    const A1 = A.clone().add(V3(0, ta.side * .045, .03)), B1 = B.clone().add(V3(0, tb.side * .045, .03));
+    const mid = V3((A.x + B.x) / 2, Math.min(A.y, B.y) - .05 - .12 * d, .1 + .08 * d + rj(1) * .04);
+    if (Math.abs(A.y - B.y) > .3 && ta.side !== tb.side) mid.y = (A.y + B.y) / 2;
+    return new THREE.CatmullRomCurve3([A, A1, mid, B1, B], false, 'centripetal');
+  }
+  const zA = .018 + rj(2) * .04, jy = (rj(3) - .5) * .045;
+  const dA = ductOf(ta), dB = ductOf(tb), yA = DUCT[dA] + jy, yB = DUCT[dB] + jy;
+  const P = [A, A.clone().add(V3(0, ta.side * .02, .01)), V3(A.x + (rj(4) - .5) * .01, yA, zA)];
+  if (dA === dB) P.push(V3(B.x, yB, zA));
+  else { const vx = DUCT.DVx + (rj(5) - .5) * .04; P.push(V3(vx, yA, zA), V3(vx, yB, zA), V3(B.x, yB, zA)); }
+  P.push(B.clone().add(V3(0, tb.side * .02, .01)), B);
+  return roundedPath(P, .028);
+}
+function makeWireObj(room, a, b, colorKey, curve, { pre = false, curEl = null, radius = .0062 } = {}) {
+  const len = curve.getLength();
+  const geo = new THREE.TubeGeometry(curve, Math.min(420, Math.max(30, Math.round(len * 160))), radius, 8, false);
+  const mat = WCOL[colorKey] ? wireMat(colorKey) : phys({ color: colorKey, roughness: .55, clearcoat: .2 });
+  if (colorKey === 'PE') mat.map.repeat.set(Math.max(1, len * 28), 1);
+  const m = new THREE.Mesh(geo, mat); m.castShadow = true;
+  const grp = new THREE.Group(); grp.add(m);
+  if (!pre && a) for (const [u, sgn] of [[0, 1], [1, -1]]) {
+    const p = curve.getPointAt(u), tg = curve.getTangentAt(u).multiplyScalar(sgn);
+    const q = new THREE.Quaternion().setFromUnitVectors(V3(0, 1, 0), tg);
+    const fer = new THREE.Mesh(cyl(.0042, .0042, .02, 10), ferruleMat); fer.position.copy(p).addScaledVector(tg, .006); fer.quaternion.copy(q); grp.add(fer);
+    const pm = curve.getPointAt(clamp(u + sgn * .05 / len, 0, 1));
+    const mk = new THREE.Mesh(cyl(.0083, .0083, .016, 12), markerMat); mk.position.copy(pm); mk.quaternion.copy(q); grp.add(mk);
+  }
+  const samples = curve.getSpacedPoints(90).map(p => room.board.localToWorld(p.clone()));
+  const w = { id: pre ? 0 : room.wireId++, a, b, color: colorKey, pre, curEl, mesh: grp, tube: m, curve, len, samples, I: 0, dir: 1, kind: 'ctrl', burnt: false };
+  m.userData.wire = w;
+  if (pre) room.board.add(grp);
+  return w;
+}
+function addWire(room, a, b, colorKey) {
+  const ta = room.terms[a], tb = room.terms[b];
+  if (!ta || !tb) return null;
+  const w = makeWireObj(room, a, b, colorKey, routeCurve(room, ta, tb, room.wireId + a.length * 7 + b.length));
+  room.wireGroup.add(w.mesh); room.wires.push(w); ta.wires.push(w); tb.wires.push(w);
+  w.kind = ['L1', 'L2', 'L3', 'PE'].includes(colorKey) ? 'main' : 'ctrl';
+  return w;
+}
+function removeWire(room, w) {
+  room.wireGroup.remove(w.mesh);
+  w.mesh.traverse(o => { if (o.isMesh && o.geometry && o.geometry.type === 'TubeGeometry') o.geometry.dispose(); });
+  room.wires = room.wires.filter(x => x !== w);
+  for (const k of [w.a, w.b]) { const t = room.terms[k]; if (t) t.wires = t.wires.filter(x => x !== w); }
+}
+function rerouteAll(room) {
+  const list = room.wires.filter(w => !w.pre).map(w => [w.a, w.b, w.color, w.burnt]);
+  for (const w of room.wires.filter(w => !w.pre)) removeWire(room, w);
+  for (const [a, b, c, burnt] of list) { const w = addWire(room, a, b, c); if (burnt) burnWire(w); }
+}
+function findWire(room, a, b) { return room.wires.find(w => !w.pre && ((w.a === a && w.b === b) || (w.a === b && w.b === a))); }
+function inferColor(room, a, b) {
+  const ex = room.spec.wires.find(([x, y]) => (x === a && y === b) || (x === b && y === a));
+  if (ex) return ex[2];
+  const nm = (id) => id.split('.')[1];
+  const ph = (n) => ({ L1: 'L1', T1: 'L1', U: 'L1', L2: 'L2', T2: 'L2', V: 'L2', L3: 'L3', T3: 'L3', W: 'L3', TN: 'N', PE: 'PE' })[n];
+  const pa = ph(nm(a)), pb = ph(nm(b));
+  if (a.startsWith('PE.') || b.startsWith('PE.')) return 'PE';
+  if (pa && pa === pb) return pa;
+  if (pa && !pb && ['L1', 'L2', 'L3'].includes(pa) && !/^(MC|MCF|MCR|THR|ELB)\./.test(b)) return 'R';
+  if (pa || pb) return pa || pb;
+  if (/A2|X2|\.7$|F2\.2/.test(a + ' ' + b)) return 'N';
+  return 'Y';
+}
+function burnWire(w) {
+  if (!w || w.burnt) return; w.burnt = true;
+  w.tube.material = std({ color: '#2a1d14', roughness: .95 });
+}
+
+/* =====================================================================
+   8. 전기적 거동 해석 — 복소 페이저 노드해석 (3상 4선식 TN, 380/220V)
+      · 접점/전선 = 저저항 소자, 코일/램프/전동기 = 임피던스 소자
+      · 단락 → 퓨즈 용단 / ELB 과전류 트립, 지락 → ELB 누설전류(30mA) 트립
+   ===================================================================== */
+const VPH = 220;
+const PHV = { L1: [VPH, 0], L2: [VPH * Math.cos(-2 * Math.PI / 3), VPH * Math.sin(-2 * Math.PI / 3)], L3: [VPH * Math.cos(2 * Math.PI / 3), VPH * Math.sin(2 * Math.PI / 3)] };
+const ZS = [0.06, 0.09];
+const PICKUP = 176, DROPOUT = 110, FUSE_A = 10, ELB_OC = 60, ELB_RES = 0.03, THR_SET = 6;
+const alias = (id) => id.startsWith('PE.') ? 'PE' : id;
+
+function buildElements(room) {
+  const E = [];
+  const add = (id, a, b, zr, zi, kind, dev = null, ref = null) => E.push({ id, a: alias(a), b: alias(b), zr, zi, kind, dev, ref });
+  for (const dev of Object.values(room.dev)) {
+    const n = dev.name, s = dev.state, P = (x) => `${n}.${x}`;
+    const ct = (a, b, cond, kind = 'contact') => { if (cond) add(`${n}.${a}-${b}`, P(a), P(b), .003, 0, kind, n); };
+    switch (dev.type) {
+      case 'elb4': if (s.on) for (const [a, b] of [['L1', 'T1'], ['L2', 'T2'], ['L3', 'T3'], ['N', 'TN']]) add(`${n}.${a}-${b}`, P(a), P(b), .002, 0, 'pole', n); break;
+      case 'fuse': if (!s.blown) add(`${n}.1-2`, P('1'), P('2'), .02, 0, 'fuse', n); break;
+      case 'mc':
+        add(`${n}.A1-A2`, P('A1'), P('A2'), 1500, 4200, 'coil', n);
+        for (const k of ['1', '2', '3']) ct('L' + k, 'T' + k, s.on, 'main');
+        ct('13', '14', s.on); ct('43', '44', s.on); ct('21', '22', !s.on); break;
+      case 'thr':
+        for (const k of ['1', '2', '3']) add(`${n}.L${k}-T${k}`, P('L' + k), P('T' + k), .04, 0, 'heater', n);
+        ct('95', '96', !s.trip); ct('97', '98', s.trip); break;
+      case 'pb': if (dev.spec.kind === 'NC') ct('1', '2', !s.pressed); else ct('3', '4', s.pressed); break;
+      case 'lamp': add(`${n}.X1-X2`, P('X1'), P('X2'), 9680, 0, 'lamp', n); break;
+      case 'relay': add(`${n}.2-7`, P('2'), P('7'), 2600, 6800, 'coil', n); ct('1', '3', s.on); ct('1', '4', !s.on); ct('8', '6', s.on); ct('8', '5', !s.on); break;
+      case 'timer': add(`${n}.2-7`, P('2'), P('7'), 2600, 6800, 'coil', n); ct('1', '3', s.on); ct('1', '4', !s.on); ct('8', '6', s.timed); ct('8', '5', !s.timed); break;
+      case 'tb': for (const x of ['U', 'V', 'W']) add(`TB.${x}-M.${x}`, P(x), `M.${x}`, .03, 0, 'cable', n); add('TB.PE-M.E', P('PE'), 'M.E', .03, 0, 'cable', n); break;
+    }
+  }
+  const sp = Math.abs(room.motor.speed), lf = room.load;
+  const zr = lerp(3.0, 38 / lf, sp), zi = lerp(6.6, 22 / lf, sp);
+  for (const x of ['U', 'V', 'W']) add(`M.${x}-S`, `M.${x}`, 'M.S', zr, zi, 'motor', 'M');
+  add('PE.earth', 'PE', 'GND', 0.4, 0, 'earth');
+  for (const w of room.wires) if (!w.pre) add(`W${w.id}`, w.a, w.b, .004 + .01 * w.len, 0, 'wire', null, w);
+  return E;
+}
+
+function solve(E) {
+  const idx = new Map(); let n = 0;
+  const id = (k) => { if (k === 'GND') return -1; let i = idx.get(k); if (i === undefined) { i = n++; idx.set(k, i); } return i; };
+  for (const k of ['ELB.L1', 'ELB.L2', 'ELB.L3', 'ELB.N', 'PE']) id(k);
+  for (const e of E) { e.ia = id(e.a); e.ib = id(e.b); }
+  const N = n, Ar = new Float64Array(N * N), Ai = new Float64Array(N * N), Br = new Float64Array(N), Bi = new Float64Array(N);
+  const st = (i, j, gr, gi) => { if (i < 0 || j < 0) return; Ar[i * N + j] += gr; Ai[i * N + j] += gi; };
+  for (const e of E) {
+    const d = e.zr * e.zr + e.zi * e.zi, gr = e.zr / d, gi = -e.zi / d;
+    st(e.ia, e.ia, gr, gi); st(e.ib, e.ib, gr, gi); st(e.ia, e.ib, -gr, -gi); st(e.ib, e.ia, -gr, -gi);
+  }
+  for (let i = 0; i < N; i++) Ar[i * N + i] += 1e-7;
+  const dz = ZS[0] ** 2 + ZS[1] ** 2, gsr = ZS[0] / dz, gsi = -ZS[1] / dz;
+  for (const [k, ph] of [['ELB.L1', 'L1'], ['ELB.L2', 'L2'], ['ELB.L3', 'L3'], ['ELB.N', null]]) {
+    const i = idx.get(k); st(i, i, gsr, gsi);
+    if (ph) { const [vr, vi] = PHV[ph]; Br[i] += vr * gsr - vi * gsi; Bi[i] += vr * gsi + vi * gsr; }
+  }
+  // 복소 가우스 소거 (부분 피벗)
+  for (let k = 0; k < N; k++) {
+    let p = k, best = 0;
+    for (let r = k; r < N; r++) { const m = Ar[r * N + k] ** 2 + Ai[r * N + k] ** 2; if (m > best) { best = m; p = r; } }
+    if (best < 1e-30) continue;
+    if (p !== k) {
+      for (let c = 0; c < N; c++) { let t = Ar[k * N + c]; Ar[k * N + c] = Ar[p * N + c]; Ar[p * N + c] = t; t = Ai[k * N + c]; Ai[k * N + c] = Ai[p * N + c]; Ai[p * N + c] = t; }
+      let t = Br[k]; Br[k] = Br[p]; Br[p] = t; t = Bi[k]; Bi[k] = Bi[p]; Bi[p] = t;
+    }
+    const pr = Ar[k * N + k], pi = Ai[k * N + k], pd = pr * pr + pi * pi;
+    for (let r = k + 1; r < N; r++) {
+      const ar = Ar[r * N + k], ai = Ai[r * N + k]; if (ar === 0 && ai === 0) continue;
+      const fr = (ar * pr + ai * pi) / pd, fi = (ai * pr - ar * pi) / pd;
+      for (let c = k; c < N; c++) {
+        const br = Ar[k * N + c], bi = Ai[k * N + c]; if (br === 0 && bi === 0) continue;
+        Ar[r * N + c] -= fr * br - fi * bi; Ai[r * N + c] -= fr * bi + fi * br;
+      }
+      Br[r] -= fr * Br[k] - fi * Bi[k]; Bi[r] -= fr * Bi[k] + fi * Br[k];
+    }
+  }
+  const Vr = new Float64Array(N), Vi = new Float64Array(N);
+  for (let k = N - 1; k >= 0; k--) {
+    let sr = Br[k], si = Bi[k];
+    for (let c = k + 1; c < N; c++) { const ar = Ar[k * N + c], ai = Ai[k * N + c]; sr -= ar * Vr[c] - ai * Vi[c]; si -= ar * Vi[c] + ai * Vr[c]; }
+    const pr = Ar[k * N + k], pi = Ai[k * N + k], pd = pr * pr + pi * pi || 1e-30;
+    Vr[k] = (sr * pr + si * pi) / pd; Vi[k] = (si * pr - sr * pi) / pd;
+  }
+  // 연결성(무전압/부동 노드 판별)
+  const adj = Array.from({ length: N }, () => []);
+  for (const e of E) if (e.ia >= 0 && e.ib >= 0) { adj[e.ia].push(e.ib); adj[e.ib].push(e.ia); }
+  const live = new Uint8Array(N); const q = [0, 1, 2, 3, 4]; q.forEach(i => live[i] = 1);
+  for (const e of E) if (e.ib < 0 && e.ia >= 0 && !live[e.ia]) { live[e.ia] = 1; q.push(e.ia); }
+  while (q.length) { const i = q.pop(); for (const j of adj[i]) if (!live[j]) { live[j] = 1; q.push(j); } }
+  const V = (k) => { const i = idx.get(alias(k)); return i === undefined ? [0, 0] : [Vr[i], Vi[i]]; };
+  const isLive = (k) => { const i = idx.get(alias(k)); return i !== undefined && !!live[i]; };
+  for (const e of E) {
+    const a = e.ia < 0 ? [0, 0] : [Vr[e.ia], Vi[e.ia]], b = e.ib < 0 ? [0, 0] : [Vr[e.ib], Vi[e.ib]];
+    const dr = a[0] - b[0], di = a[1] - b[1], d = e.zr * e.zr + e.zi * e.zi;
+    e.Ir = (dr * e.zr + di * e.zi) / d; e.Ii = (di * e.zr - dr * e.zi) / d; e.I = Math.hypot(e.Ir, e.Ii);
+    e.Vd = Math.hypot(dr, di); e.Vmr = (a[0] + b[0]) / 2; e.Vmi = (a[1] + b[1]) / 2;
+  }
+  return { idx, Vr, Vi, V, isLive, N };
+}
+const vabs = (v) => Math.hypot(v[0], v[1]);
+
+function coilDevs(room) { return Object.values(room.dev).filter(d => ['mc', 'relay', 'timer'].includes(d.type)); }
+function coilEl(d) { return `${d.name}.${d.type === 'mc' ? 'A1-A2' : '2-7'}`; }
+
+function simulate(room, quiet = false) {
+  let E, sol, it = 0, changed = true;
+  const now = performance.now() / 1000;
+  for (; it < 20; it++) {
+    E = buildElements(room); sol = solve(E);
+    if (protect(room, E, sol)) continue;
+    changed = false;
+    for (const d of coilDevs(room)) {
+      const e = E.find(x => x.id === coilEl(d)); const v = e ? e.Vd : 0; d.state.v = v;
+      if (!d.state.on && v > PICKUP) { d.state.on = true; d.state.t0 = now; d.state.timed = false; changed = true; room.events.push({ k: 'pick', d: d.name, v }); }
+      else if (d.state.on && v < DROPOUT) { d.state.on = false; d.state.timed = false; changed = true; room.events.push({ k: 'drop', d: d.name }); }
+    }
+    if (!changed) break;
+  }
+  if (it >= 20) room.events.push({ k: 'chatter' });
+  room.E = E; room.sol = sol; room.el = new Map(E.map(e => [e.id, e]));
+  postSim(room, quiet);
+}
+
+function elementPos(room, e) {
+  if (e.ref) { const s = e.ref.samples; return s[Math.floor(s.length / 2)].clone(); }
+  const ta = room.terms[e.a], tb = room.terms[e.b];
+  if (ta && tb) return ta.wp.clone().add(tb.wp).multiplyScalar(.5);
+  if (ta) return ta.wp.clone(); if (tb) return tb.wp.clone();
+  return room.motor.g.getWorldPosition(V3()).add(V3(0, .4, 0));
+}
+function faultSparks(room, E, exclude) {
+  const wrong = new Set(grade(room).wrong);
+  const cand = E.filter(e => ['wire', 'contact', 'main', 'heater', 'cable', 'motor'].includes(e.kind) && e.I > 30).sort((a, b) => b.I - a.I);
+  const maxI = cand.length ? cand[0].I : 0; const picked = [];
+  // 오결선 전선이 단락 경로에 있으면 그 지점을 우선 (실제 단락 위치)
+  const order = [...cand.filter(e => e.ref && wrong.has(e.ref)), ...cand.filter(e => !(e.ref && wrong.has(e.ref)))];
+  const hasWrong = order.length && order[0].ref && wrong.has(order[0].ref);
+  for (const e of order) {
+    if (e.I < maxI * .45 || picked.length >= 3) continue;
+    if (hasWrong && e.ref && !wrong.has(e.ref)) continue;
+    const p = elementPos(room, e); if (picked.some(q => q.p.distanceTo(p) < .06)) continue;
+    picked.push({ e, p });
+    if (hasWrong && e.ref) { const s = e.ref.samples; for (const q of [s[2], s[s.length - 3]]) if (!picked.some(x => x.p.distanceTo(q) < .06)) picked.push({ e, p: q.clone() }); }
+  }
+  picked.forEach((x, i) => { spawnSpark(room, x.p, i === 0 ? 1 : .6); if (x.e.ref) burnWire(x.e.ref); });
+  if (!picked.length && exclude) spawnSpark(room, elementPos(room, exclude), .8);
+  return picked.filter((x, i, a) => a.findIndex(y => y.e === x.e) === i);
+}
+function protect(room, E, sol) {
+  for (const e of E) if (e.kind === 'fuse' && e.I > FUSE_A) {
+    const dev = room.dev[e.dev]; dev.state.blown = true;
+    const p = faultSparks(room, E, e);
+    spawnSpark(room, room.terms[`${e.dev}.1`].wp.clone().lerp(room.terms[`${e.dev}.2`].wp, .5), .5);
+    const where = p.filter(x => x.e.ref).map(x => `${x.e.ref.a}–${x.e.ref.b}`).join(', ');
+    room.events.push({ k: 'fault', type: 'fuse', I: e.I, dev: e.dev, where });
+    return true;
+  }
+  const elb = room.dev.ELB;
+  if (elb.state.on) {
+    const poles = E.filter(e => e.kind === 'pole'); let mx = 0, sr = 0, si = 0;
+    for (const p of poles) { mx = Math.max(mx, p.I); sr += p.Ir; si += p.Ii; }
+    const res = Math.hypot(sr, si);
+    if (res > ELB_RES || mx > ELB_OC) {
+      const ground = res > ELB_RES && res > mx * .2;
+      const ph = poles.filter(p => p.I > mx * .3 && !p.id.includes('N-')).map(p => p.id.split('.')[1].split('-')[0]);
+      const bothMC = room.key === 'interlock' && room.dev.MCF.state.on && room.dev.MCR.state.on;
+      const p = faultSparks(room, E, null);
+      elb.state.on = false; elb.state.trip = true;
+      const where = p.filter(x => x.e.ref).map(x => `${x.e.ref.a}–${x.e.ref.b}`).join(', ');
+      room.events.push({ k: 'fault', type: ground ? 'ground' : 'short', I: ground ? res : mx, phases: ph, bothMC, where });
+      return true;
+    }
+  }
+  return false;
+}
+
+// 대칭좌표 : 정상분/역상분 → 회전방향 판정
+function seqComp(V) {
+  const a = [-0.5, Math.sqrt(3) / 2], a2 = [-0.5, -Math.sqrt(3) / 2];
+  const mul = (x, y) => [x[0] * y[0] - x[1] * y[1], x[0] * y[1] + x[1] * y[0]];
+  const [u, v, w] = V;
+  const p1 = mul(a, v), p2 = mul(a2, w), n1 = mul(a2, v), n2 = mul(a, w);
+  return { pos: Math.hypot(u[0] + p1[0] + p2[0], u[1] + p1[1] + p2[1]) / 3, neg: Math.hypot(u[0] + n1[0] + n2[0], u[1] + n1[1] + n2[1]) / 3 };
+}
+
+function postSim(room, quiet) {
+  const { V, isLive } = room.sol, el = room.el;
+  const I = (id) => (el.get(id)?.I) || 0;
+  // 표시등
+  for (const d of Object.values(room.dev)) if (d.type === 'lamp') { const e = el.get(`${d.name}.X1-X2`); d.state.b = clamp(((e?.Vd || 0) / 220) ** 2, 0, 1.25); }
+  // 전동기 회전자계
+  const vm = ['M.U', 'M.V', 'M.W'].map(V); const sq = seqComp(vm);
+  const m = room.motor; let tgt = 0, hum = false;
+  if (sq.pos > 120 && sq.neg < .35 * sq.pos) tgt = 1; else if (sq.neg > 120 && sq.pos < .35 * sq.neg) tgt = -1;
+  else if (Math.max(sq.pos, sq.neg) > 50) hum = true;
+  m.target = tgt; m.hum = hum; m.I = I('TB.U-M.U'); m.Imax = Math.max(I('TB.U-M.U'), I('TB.V-M.V'), I('TB.W-M.W'));
+  room.meterV = vabs([V('ELB.T1')[0] - V('ELB.T2')[0], V('ELB.T1')[1] - V('ELB.T2')[1]]);
+  room.meterA = I('THR.L1-T1');
+  room.heaterI = Math.max(I('THR.L1-T1'), I('THR.L2-T2'), I('THR.L3-T3'));
+  // 전선 전류 · 방향 (전력조류 기준)
+  for (const w of room.wires) {
+    const e = w.pre ? el.get(w.curEl) : el.get(`W${w.id}`);
+    if (!e) { w.I = 0; continue; }
+    w.I = e.I;
+    if (w.pre) { w.dir = w.curEl.includes('N-') || w.curEl === 'PE.earth' ? -1 : 1; continue; }
+    const vm2 = Math.hypot(e.Vmr, e.Vmi);
+    const pw = e.Vmr * e.Ir + e.Vmi * e.Ii;
+    w.dir = vm2 > 30 ? (pw >= 0 ? 1 : -1) : (e.Ir >= 0 ? 1 : -1);
+  }
+  processEvents(room, quiet);
+  if (room === cur()) refreshUI(room);
+}
+
+/* ---------- 실시간 안내 (여자 · 소자 · 자기유지 · 인터록 · 단락 · 지락) ---------- */
+function processEvents(room, quiet) {
+  const ev = room.events.splice(0);
+  const here = room === cur();
+  for (const e of ev) {
+    const d = room.dev[e.d];
+    if (e.k === 'pick') {
+      if (here) sfxClack(true);
+      if (d.type === 'mc') {
+        const s = `${e.d} 코일 여자 (A1–A2 ≈ ${Math.round(e.v)} V) → 주접점 L–T 폐로 · a접점(13–14, 43–44) 폐로 · b접점(21–22) 개로`;
+        log('ok', s); callout(room, d, `⚡ ${e.d} 여자`, 'ok');
+      } else if (d.type === 'relay') { log('ok', `X 릴레이 여자 → a접점 1–3 폐로 (자기유지 경로 형성)`); callout(room, d, '⚡ X 여자', 'ok'); }
+      else if (d.type === 'timer') { log('info', `T 타이머 여자 → ${state.timerSet}초 계수 시작 · 한시 b접점(8–5)로 WL 대기등 점등`); callout(room, d, `⏱ ${state.timerSet}s 계수`, 'ok'); }
+    }
+    if (e.k === 'drop') {
+      if (here) sfxClack(false);
+      log('info', `${e.d} ${d.type === 'timer' ? '타이머' : '코일'} 소자 → 모든 접점 원위치 복귀`);
+      const rel = room.lastRelease;
+      if (d.type === 'mc' || d.type === 'relay') {
+        const h = room.spec.hold.find(x => x.coil === e.d);
+        if (h && rel && rel.pb === h.pb && performance.now() - rel.t < 400 && !room.dev.PBOFF.state.pressed && !room.dev.THR.state.trip)
+          log('warn', `${h.pb}에서 손을 떼자 ${e.d}가 소자되었습니다 → 자기유지 접점(${h.el.split('.')[1]}) 결선 누락 = 촌동(인칭) 운전`);
+      }
+      room.flags['hold_' + e.d] = false;
+    }
+    if (e.k === 'chatter') log('danger', '채터링(발진) — 코일이 자신의 b접점을 통해 여자되는 등 회로가 안정되지 않습니다. 결선을 확인하세요.');
+    if (e.k === 'fault') {
+      let t1, t2;
+      if (e.type === 'fuse') { t1 = `⚡ 단락! 제어회로 ${e.dev} 퓨즈 용단 (단락전류 ≈ ${fmtA(e.I)})`; t2 = `L1과 N이 코일·램프(부하) 없이 직결 ${e.where ? '· 의심 전선: ' + e.where : ''} → 전원 차단 후 결선 수정, 퓨즈 교체`; }
+      else if (e.type === 'ground') { t1 = `⚡ 지락(누전)! ELB 트립 — 누설전류 ≈ ${fmtA(e.I)} (정격감도 30 mA)`; t2 = `충전부가 PE(외함접지)에 접촉 ${e.where ? '· ' + e.where : ''}`; }
+      else { t1 = `⚡ 상간 단락! ${e.phases.join('–')} — ELB 과전류 트립 (≈ ${fmtA(e.I)})`; t2 = e.bothMC ? '인터록 미구성: MCF·MCR이 동시에 투입되어 주회로 L1–L3가 단락되었습니다' : `주회로 전선이 서로 다른 상을 직결 ${e.where ? '· ' + e.where : ''}`; }
+      log('danger', t1 + ' — ' + t2); if (here) { toast(t1, t2); sfxSpark(true); flashScreen(); }
+      room.faultCount = (room.faultCount || 0) + 1;
+    }
+    if (e.k === 'timed') { log('ok', `T 설정시간(${state.timerSet}s) 경과 → 한시 a접점 8–6 폐로 → MC 여자 · 전동기 자동기동 (WL 소등, RL 점등)`); callout(room, room.dev.T, '⏱ 시간 도달', 'ok'); }
+  }
+  // 자기유지 성립 감지
+  for (const h of room.spec.hold) {
+    const d = room.dev[h.coil], pb = room.dev[h.pb];
+    const hi = room.el.get(h.el)?.I || 0;
+    if (d.state.on && !pb.state.pressed && hi > .004 && !room.flags['hold_' + h.coil]) {
+      room.flags['hold_' + h.coil] = true;
+      log('ok', `자기유지 성립 — ${h.pb}을(를) 놓아도 ${h.el.replace('.', ' ')} 접점을 통해 ${h.coil} 코일 전류(≈${(hi * 1000).toFixed(0)} mA)가 유지됩니다`);
+      callout(room, d, '🔒 자기유지', 'ok');
+    }
+  }
+  // 인터록 동작 감지
+  if (room.key === 'interlock') {
+    for (const [pb, me, other] of [['PBR', 'MCR', 'MCF'], ['PBF', 'MCF', 'MCR']]) {
+      const k = 'il_' + pb;
+      if (room.dev[pb].state.pressed && room.dev[other].state.on && !room.dev[me].state.on) {
+        if (!room.flags[k]) { room.flags[k] = true; log('warn', `인터록 동작 — ${other} b접점(21–22) 개로로 ${me} 코일 회로 차단. 역방향 지령 무시 → PB-OFF로 정지 후 재기동하세요`); callout(room, room.dev[me], '⛔ 인터록', 'bad'); }
+      } else if (!room.dev[pb].state.pressed) room.flags[k] = false;
+    }
+  }
+  // 코일 전압 부족
+  for (const d of coilDevs(room)) {
+    const k = 'uv_' + d.name;
+    if (!d.state.on && d.state.v > 40 && d.state.v < PICKUP) { if (!room.flags[k]) { room.flags[k] = true; log('warn', `${d.name} 코일 전압 부족 (${Math.round(d.state.v)} V < 흡인전압) — 다른 부하와 직렬로 결선되었는지 확인`); } }
+    else room.flags[k] = false;
+  }
+}
+const fmtA = (a) => a >= 1000 ? `${(a / 1000).toFixed(2)} kA` : a >= 1 ? `${a.toFixed(1)} A` : `${(a * 1000).toFixed(0)} mA`;
+
+/* =====================================================================
+   9. 사운드 (MC 흡착음 · 전동기 험 · 아크 방전음)
+   ===================================================================== */
+const AU = { ctx: null };
+function audioInit() {
+  if (AU.ctx || !window.AudioContext) return;
+  try {
+    const c = AU.ctx = new AudioContext(); AU.master = c.createGain(); AU.master.gain.value = .55; AU.master.connect(c.destination);
+    const g = c.createGain(); g.gain.value = 0; const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 420;
+    const o1 = c.createOscillator(); o1.type = 'sawtooth'; o1.frequency.value = 60;
+    const o2 = c.createOscillator(); o2.type = 'sine'; o2.frequency.value = 120;
+    const o3 = c.createOscillator(); o3.type = 'triangle'; o3.frequency.value = 400; const g3 = c.createGain(); g3.gain.value = .25;
+    o1.connect(lp); o2.connect(lp); o3.connect(g3); g3.connect(lp); lp.connect(g); g.connect(AU.master);
+    o1.start(); o2.start(); o3.start(); AU.hum = { g, o3, lp };
+    const len = c.sampleRate * 1.2; AU.noise = c.createBuffer(1, len, c.sampleRate); const d = AU.noise.getChannelData(0); for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  } catch (e) { AU.ctx = null; }
+}
+function noiseHit(t, dur, freq, q, gain, type = 'bandpass') {
+  const c = AU.ctx, s = c.createBufferSource(); s.buffer = AU.noise;
+  const f = c.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q;
+  const g = c.createGain(); g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(.0008, t + dur);
+  s.connect(f); f.connect(g); g.connect(AU.master); s.start(t, Math.random() * .8); s.stop(t + dur + .02);
+}
+function tone(t, f0, f1, dur, gain, type = 'sine') {
+  const c = AU.ctx, o = c.createOscillator(), g = c.createGain(); o.type = type;
+  o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(.0008, t + dur);
+  o.connect(g); g.connect(AU.master); o.start(t); o.stop(t + dur + .02);
+}
+function sfxClack(on) { if (!AU.ctx || !state.sound) return; const t = AU.ctx.currentTime; noiseHit(t, on ? .05 : .035, on ? 2400 : 3200, 1.2, on ? .9 : .5); tone(t, on ? 140 : 180, 60, on ? .09 : .05, on ? .7 : .35); }
+function sfxClick() { if (!AU.ctx || !state.sound) return; const t = AU.ctx.currentTime; noiseHit(t, .02, 4000, 2, .35); }
+function sfxSpark(big) {
+  if (!AU.ctx || !state.sound) return; const t = AU.ctx.currentTime;
+  tone(t, 90, 32, .5, big ? 1 : .5); noiseHit(t, .25, 900, .7, big ? 1.2 : .6, 'lowpass');
+  for (let i = 0; i < (big ? 26 : 10); i++) noiseHit(t + Math.random() * .7, .012 + Math.random() * .03, 2500 + Math.random() * 5000, 3, .25 + Math.random() * .5);
+}
+function sfxBeep(f = 880, d = .12) { if (!AU.ctx || !state.sound) return; tone(AU.ctx.currentTime, f, f, d, .25, 'square'); }
+
+/* =====================================================================
+   10. 이펙트 — 불꽃(아크 스파크) · 섬광 · 연기 · 그을음 · 전류 흐름 입자
+   ===================================================================== */
+const SP_MAX = 1400;
+const spPos = new Float32Array(SP_MAX * 6), spCol = new Float32Array(SP_MAX * 6);
+const spGeo = new THREE.BufferGeometry();
+spGeo.setAttribute('position', new THREE.BufferAttribute(spPos, 3).setUsage(THREE.DynamicDrawUsage));
+spGeo.setAttribute('color', new THREE.BufferAttribute(spCol, 3).setUsage(THREE.DynamicDrawUsage));
+const spLines = new THREE.LineSegments(spGeo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, toneMapped: false }));
+spLines.frustumCulled = false; spLines.renderOrder = 20; scene.add(spLines);
+// 밝은 실습실 배경에서도 보이도록: 불꽃 머리(Points, 일반 블렌딩 + 고휘도 색)
+const sptPos = new Float32Array(SP_MAX * 3), sptCol = new Float32Array(SP_MAX * 3);
+const sptGeo = new THREE.BufferGeometry();
+sptGeo.setAttribute('position', new THREE.BufferAttribute(sptPos, 3).setUsage(THREE.DynamicDrawUsage));
+sptGeo.setAttribute('color', new THREE.BufferAttribute(sptCol, 3).setUsage(THREE.DynamicDrawUsage));
+const sparkHeadTex = canvasTex(64, 64, (g, w) => { const gr = g.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(.35, 'rgba(255,255,255,.95)'); gr.addColorStop(.6, 'rgba(255,255,255,.35)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, w, w); });
+const sptPts = new THREE.Points(sptGeo, new THREE.PointsMaterial({ size: .032, map: sparkHeadTex, vertexColors: true, transparent: true, depthWrite: false, toneMapped: false, sizeAttenuation: true }));
+sptPts.frustumCulled = false; sptPts.renderOrder = 21; scene.add(sptPts);
+const sparkP = [], flashes = [], smokes = [];
+const flashLight = new THREE.PointLight(0xffc27a, 0, 5, 2); scene.add(flashLight);
+
+function spawnSpark(room, pos, power = 1) {
+  const n = Math.round(170 * power);
+  for (let i = 0; i < n; i++) {
+    if (sparkP.length >= SP_MAX) sparkP.shift();
+    const dir = V3(rnd(-1, 1), rnd(-.3, 1.4), rnd(.15, 1.5)).normalize();
+    const life = rnd(.3, 1.15);
+    sparkP.push({ p: pos.clone().add(V3(rnd(-.01, .01), rnd(-.01, .01), .02)), v: dir.multiplyScalar(rnd(.6, 3.6) * power + .3), life, max: life });
+  }
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffb648, depthWrite: false, transparent: true, toneMapped: false }));
+  s.position.copy(pos).add(V3(0, 0, .03)); s.scale.setScalar(.6 * power); scene.add(s); flashes.push({ s, t: 0, d: .4, k: power });
+  flashLight.position.copy(pos).add(V3(0, 0, .15)); flashLight.intensity = 60 * power;
+  for (let i = 0; i < 7 * power; i++) {
+    const m = new THREE.Sprite(new THREE.SpriteMaterial({ map: smokeTex, color: 0x777777, transparent: true, depthWrite: false, opacity: 0 }));
+    m.position.copy(pos).add(V3(rnd(-.03, .03), rnd(0, .03), .04)); m.scale.setScalar(.06); scene.add(m);
+    smokes.push({ m, t: -i * .08, d: rnd(2, 3.4), vx: rnd(-.03, .03) });
+  }
+  const sc = new THREE.Mesh(new THREE.PlaneGeometry(.11 * power + .04, .11 * power + .04), new THREE.MeshBasicMaterial({ map: scorchTex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }));
+  sc.position.copy(pos).add(V3(0, 0, .012)); scene.add(sc); room.burns.push(sc);
+}
+function updateFX(dt) {
+  for (let i = sparkP.length - 1; i >= 0; i--) {
+    const s = sparkP[i]; s.life -= dt; if (s.life <= 0) { sparkP.splice(i, 1); continue; }
+    s.v.y -= 7.5 * dt; s.v.multiplyScalar(1 - dt * 1.1); s.p.addScaledVector(s.v, dt);
+    if (s.p.y < .905 && s.v.y < 0 && s.p.z > -2.88 && s.p.z < -1.52) { s.p.y = .905; s.v.y *= -.35; s.v.x *= .6; s.v.z *= .6; }
+    if (s.p.y < .01 && s.v.y < 0) { s.p.y = .01; s.v.y *= -.3; }
+  }
+  for (let i = 0; i < sparkP.length; i++) {
+    const s = sparkP[i], k = s.life / s.max, o = i * 6;
+    spPos[o] = s.p.x; spPos[o + 1] = s.p.y; spPos[o + 2] = s.p.z;
+    spPos[o + 3] = s.p.x - s.v.x * .028; spPos[o + 4] = s.p.y - s.v.y * .028; spPos[o + 5] = s.p.z - s.v.z * .028;
+    spCol[o] = 1; spCol[o + 1] = .55 + .4 * k; spCol[o + 2] = .1 + .5 * k * k;
+    spCol[o + 3] = 1; spCol[o + 4] = .35 * k; spCol[o + 5] = 0;
+    const q = i * 3; sptPos[q] = s.p.x; sptPos[q + 1] = s.p.y; sptPos[q + 2] = s.p.z;
+    sptCol[q] = 1; sptCol[q + 1] = .5 + .5 * k; sptCol[q + 2] = .1 + .7 * k * k;
+  }
+  spGeo.setDrawRange(0, sparkP.length * 2); sptGeo.setDrawRange(0, sparkP.length);
+  sptGeo.attributes.position.needsUpdate = true; sptGeo.attributes.color.needsUpdate = true;
+  spGeo.attributes.position.needsUpdate = true; spGeo.attributes.color.needsUpdate = true;
+  flashLight.intensity *= Math.exp(-dt * 9);
+  for (let i = flashes.length - 1; i >= 0; i--) {
+    const f = flashes[i]; f.t += dt; const k = f.t / f.d;
+    if (k >= 1) { scene.remove(f.s); f.s.material.dispose(); flashes.splice(i, 1); continue; }
+    f.s.material.opacity = (1 - k) ** 2; f.s.scale.setScalar((.5 + k * 1.2) * f.k);
+  }
+  for (let i = smokes.length - 1; i >= 0; i--) {
+    const s = smokes[i]; s.t += dt; if (s.t < 0) continue; const k = s.t / s.d;
+    if (k >= 1) { scene.remove(s.m); s.m.material.dispose(); smokes.splice(i, 1); continue; }
+    s.m.position.y += dt * .16; s.m.position.x += s.vx * dt; s.m.scale.setScalar(.06 + k * .45);
+    s.m.material.opacity = Math.sin(k * Math.PI) * .55;
+  }
+}
+function flashScreen() {
+  const f = $('#flash'); f.style.transition = 'none'; f.style.opacity = 1;
+  requestAnimationFrame(() => { f.style.transition = 'opacity .7s'; f.style.opacity = 0; });
+  shake = .5;
+}
+let shake = 0;
+
+// 전류 흐름 입자 (전선 따라 이동, 방향 = 전력조류, 속도/색 = 전류 크기)
+const PMAX = 3000;
+const pMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(.0072, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false, transparent: true, opacity: .95, depthWrite: false }), PMAX);
+pMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); pMesh.frustumCulled = false; pMesh.renderOrder = 15; pMesh.count = 0; scene.add(pMesh);
+pMesh.setColorAt(0, new THREE.Color(1, 1, 1));
+const _m4 = new THREE.Matrix4(), _c = new THREE.Color(), _p = V3();
+function updateFlow(room, t) {
+  let k = 0;
+  if (state.flow && room) for (const w of room.wires) {
+    if (w.I < .002 || w.burnt) continue;
+    const big = w.I > 100, main = w.I > .8;
+    const n = clamp(Math.round(w.len / (big ? .03 : main ? .045 : .06)), 2, 90);
+    const speed = big ? 1.6 : main ? .32 + .04 * Math.log(1 + w.I) : .18;
+    const off = ((t * speed / w.len) % 1) * w.dir;
+    _c.set(big ? 0xff2a1a : main ? 0x2ef2ff : 0xffd23a);
+    const sc = big ? 1.7 : main ? 1.3 : 1, S = w.samples, L = S.length - 1;
+    for (let i = 0; i < n && k < PMAX; i++) {
+      let u = (i / n + off) % 1; if (u < 0) u += 1;
+      const f = u * L, i0 = Math.floor(f), fr = f - i0;
+      _p.copy(S[i0]).lerp(S[Math.min(L, i0 + 1)], fr);
+      _m4.makeScale(sc, sc, sc); _m4.setPosition(_p); pMesh.setMatrixAt(k, _m4); pMesh.setColorAt(k, _c); k++;
+    }
+  }
+  pMesh.count = k; pMesh.instanceMatrix.needsUpdate = true; if (pMesh.instanceColor) pMesh.instanceColor.needsUpdate = true;
+}
+
+// 3D 말풍선 (여자 · 단락 등 현장 안내)
+function callout(room, dev, text, type = '') {
+  if (room !== cur()) return;
+  if (dev._co) { dev.group.remove(dev._co); dev._co.element.remove(); }
+  const el = document.createElement('div'); el.className = 'callout ' + type; el.textContent = text;
+  const o = new CSS2DObject(el); o.position.set(0, dev.h / 2 + .13, dev.d + .02); dev.group.add(o); dev._co = o;
+  setTimeout(() => { if (dev._co === o) { dev.group.remove(o); el.remove(); dev._co = null; } }, 2800);
+}
+
+/* =====================================================================
+   11. 회로도 (배선도 ↔ 회로도 1:1, 노드 전위 · 전류 실시간 표시)
+   ===================================================================== */
+const NS = 'http://www.w3.org/2000/svg';
+function sv(tag, at, parent) { const e = document.createElementNS(NS, tag); for (const k in at) e.setAttribute(k, at[k]); if (parent) parent.appendChild(e); return e; }
+function svgDoc(w, h) { return sv('svg', { viewBox: `0 0 ${w} ${h}`, class: 'sch' }); }
+function W(g, x1, y1, x2, y2, n, e = '', mode = 'v') { return sv('line', { x1, y1, x2, y2, class: 'w', 'data-n': n, 'data-e': e, 'data-m': mode }, g); }
+function dot(g, x, y) { sv('circle', { cx: x, cy: y, r: 2.8, class: 'dot' }, g); }
+function T(g, x, y, s, cls = '', anchor = 'start') { const t = sv('text', { x, y, class: cls, 'text-anchor': anchor }, g); t.textContent = s; return t; }
+function contactV(g, x, y, type, label, el, o = {}) {
+  W(g, x, y, x, y + 12, o.nt, el); W(g, x, y + 28, x, y + 40, o.nb, el);
+  const c = sv('g', { 'data-c': el, 'data-type': type, 'data-x': x, 'data-y': y }, g);
+  if (type === 'NC') sv('line', { x1: x, y1: y + 12, x2: x + 10, y2: y + 12, class: 'sym' }, c);
+  else sv('line', { x1: x - 4, y1: y + 12, x2: x, y2: y + 12, class: 'sym' }, c);
+  sv('line', { x1: x, y1: y + 28, x2: x, y2: y + 12, class: 'blade' }, c);
+  const mx = x - 4, my = y + 20;
+  if (o.v === 'pb') { sv('path', { d: `M${mx} ${my} H${x - 20} M${x - 20} ${my - 6} V${my + 6}`, class: 'act' }, c); }
+  if (o.v === 'thr') { sv('path', { d: `M${mx} ${my} H${x - 16}`, class: 'act' }, c); sv('path', { d: `M${x - 27} ${my - 5} h10 v10 h-10 z M${x - 25} ${my + 3} l2 -6 l2 6 l2 -6`, class: 'sym', 'stroke-width': 1 }, c); }
+  if (o.v === 'tm') { sv('path', { d: `M${mx} ${my} H${x - 14}`, class: 'act' }, c); sv('path', { d: `M${x - 14} ${my - 6} a6 6 0 0 0 0 12`, class: 'sym' }, c); }
+  if (o.t) { T(g, x + 4, y + 10, o.t[0], 't'); T(g, x + 4, y + 39, o.t[1], 't'); }
+  T(g, x + (type === 'NC' ? 13 : 6), y + 24, label, 'lbl');
+  if (o.tag) T(g, x + 6, y + 33, o.tag, 't').setAttribute('fill', '#8e24aa');
+  return c;
+}
+function coilV(g, x, y, label, dev, el, nt, nb) {
+  W(g, x, y, x, y + 9, nt, el); W(g, x, y + 31, x, y + 40, nb, el);
+  const c = sv('g', { class: 'coil', 'data-coil': dev }, g);
+  sv('rect', { x: x - 15, y: y + 9, width: 30, height: 22, rx: 2 }, c); T(c, x, y + 23.5, label, 'lbl', 'middle');
+  T(g, x + 17, y + 12, nt.split('.')[1], 't'); T(g, x + 17, y + 34, nb.split('.')[1], 't');
+}
+function lampV(g, x, y, label, dev, color, nt, nb) {
+  W(g, x, y, x, y + 9, nt, `${dev}.X1-X2`); W(g, x, y + 31, x, y + 40, nb, `${dev}.X1-X2`);
+  const c = sv('g', { class: 'lamp', 'data-lamp': dev, style: `--lc:${color}` }, g);
+  sv('circle', { cx: x, cy: y + 20, r: 11 }, c);
+  sv('path', { d: `M${x - 7.5} ${y + 12.5} l15 15 M${x + 7.5} ${y + 12.5} l-15 15`, class: 'sym', 'stroke-width': 1.3 }, c);
+  T(g, x + 14, y + 24, label, 'lbl');
+}
+function contactH(g, x, y, el, nl, nr, closedMode = 'el') {
+  W(g, x - 2, y, x + 10, y, nl, el, 'p'); W(g, x + 30, y, x + 42, y, nr, el, 'p');
+  const c = sv('g', { 'data-c': el, 'data-type': 'NO', 'data-h': 1, 'data-x': x, 'data-y': y }, g);
+  sv('line', { x1: x + 10, y1: y - 4, x2: x + 10, y2: y, class: 'sym' }, c);
+  sv('line', { x1: x + 30, y1: y, x2: x + 10, y2: y, class: 'blade' }, c);
+  return c;
+}
+function heaterH(g, x, y, el, nl, nr) {
+  W(g, x - 2, y, x + 8, y, nl, el, 'p'); W(g, x + 32, y, x + 42, y, nr, el, 'p');
+  sv('rect', { x: x + 8, y: y - 5, width: 24, height: 10, class: 'sym', fill: '#fff' }, g);
+  sv('path', { d: `M${x + 10} ${y} l3 -3 l4 6 l4 -6 l4 6 l3 -3`, class: 'sym', 'stroke-width': 1.1 }, g);
+}
+function motorSym(g, cx, cy, ends) {
+  for (const [x, y, n, e] of ends) W(g, x, y, cx - 18, cy + (y - cy) * .35, n, e, 'p');
+  sv('circle', { cx, cy, r: 21, fill: '#fff', class: 'sym' }, g);
+  T(g, cx, cy - 1, 'M', 'lbl', 'middle'); T(g, cx, cy + 11, '3~', 't', 'middle');
+  const r = sv('g', { 'data-motor': 1 }, g); const a = sv('text', { x: cx, y: cy + 36, 'text-anchor': 'middle', class: 'lbl' }, r); a.textContent = '';
+}
+
+function buildMainSVG(key) {
+  const inter = key === 'interlock', H = inter ? 182 : 134; const s = svgDoc(440, H), g = sv('g', {}, s);
+  const ys = [28, 46, 64], yN = 82, yPE = inter ? 168 : 120, mc = inter ? 'MCF' : 'MC';
+  ['L1', 'L2', 'L3', 'N'].forEach((p, i) => T(g, 4, (i < 3 ? ys[i] : yN) + 3, p, 'lbl'));
+  T(g, 4, yPE + 3, 'PE', 'lbl');
+  T(g, 66, 12, 'ELB', 'lbl'); T(g, inter ? 168 : 168, 12, mc, 'lbl'); T(g, 262, 12, 'THR', 'lbl');
+  ys.forEach((y, i) => {
+    const k = i + 1;
+    W(g, 24, y, 58, y, `ELB.L${k}`, `ELB.L${k}-T${k}`, 'p');
+    contactH(g, 60, y, `ELB.L${k}-T${k}`, `ELB.L${k}`, `ELB.T${k}`);
+    W(g, 102, y, 168, y, `${mc}.L${k}`, `${mc}.L${k}-T${k}`, 'p');
+    contactH(g, 170, y, `${mc}.L${k}-T${k}`, `${mc}.L${k}`, `${mc}.T${k}`);
+    W(g, 212, y, 250, y, `THR.L${k}`, `THR.L${k}-T${k}`, 'p');
+    heaterH(g, 250, y, `THR.L${k}-T${k}`, `THR.L${k}`, `THR.T${k}`);
+    W(g, 292, y, 330, y, `TB.${'UVW'[i]}`, `TB.${'UVW'[i]}-M.${'UVW'[i]}`, 'p');
+  });
+  W(g, 24, yN, 58, yN, 'ELB.N', 'ELB.N-TN', 'p'); contactH(g, 60, yN, 'ELB.N-TN', 'ELB.N', 'ELB.TN');
+  W(g, 102, yN, 140, yN, 'ELB.TN', 'ELB.N-TN', 'p'); T(g, 144, yN + 3, '→ F2 (제어 N)', 't');
+  sv('line', { x1: 80, y1: ys[0] - 6, x2: 80, y2: yN + 2, class: 'act' }, g);
+  sv('line', { x1: 190, y1: ys[0] - 6, x2: 190, y2: ys[2] + 2, class: 'act' }, g);
+  if (inter) {
+    const yr = [104, 122, 140], xd = [118, 126, 134];
+    T(g, 168, 98, 'MCR', 'lbl');
+    yr.forEach((y, i) => {
+      const k = i + 1; dot(g, xd[i], ys[i]);
+      W(g, xd[i], ys[i], xd[i], y, `MCR.L${k}`, `MCR.L${k}-T${k}`, 'p'); W(g, xd[i], y, 168, y, `MCR.L${k}`, `MCR.L${k}-T${k}`, 'p');
+      contactH(g, 170, y, `MCR.L${k}-T${k}`, `MCR.L${k}`, `MCR.T${k}`);
+    });
+    sv('line', { x1: 190, y1: yr[0] - 6, x2: 190, y2: yr[2] + 2, class: 'act' }, g);
+    const cx = [[226, 104, 64], [234, 122, 46], [242, 140, 28]];
+    cx.forEach(([x, y, yt], i) => { W(g, 212, y, x, y, `MCR.T${i + 1}`, `MCR.L${i + 1}-T${i + 1}`, 'p'); W(g, x, y, x, yt, `MCR.T${i + 1}`, `MCR.L${i + 1}-T${i + 1}`, 'p'); dot(g, x, yt); });
+    T(g, 250, 134, '← MCR: L1↔L3 상 교체 (역상)', 't');
+  }
+  motorSym(g, 372, 46, ys.map((y, i) => [330, y, `M.${'UVW'[i]}`, `TB.${'UVW'[i]}-M.${'UVW'[i]}`]));
+  W(g, 24, yPE, 372, yPE, 'PE', 'PE.earth', 'p'); W(g, 372, yPE, 372, 67, 'M.E', 'TB.PE-M.E', 'p');
+  T(g, 300, yPE - 4, '외함접지', 't');
+  T(g, 24, H - 4, '제어전원: ELB 2차측 T1(L1) → F1,  TN(N) → F2', 't');
+  return s;
+}
+
+function buildCtrlSVG(key) {
+  const s = svgDoc(440, 462), g = sv('g', {}, s);
+  const TOP = 30, BOT = 440;
+  const rails = (x0, x1) => { W(g, x0, TOP, x1, TOP, 'F1.2', 'F1.1-2'); W(g, x0, BOT, x1, BOT, 'F2.2', 'F2.1-2'); T(g, 4, TOP + 3, 'F1', 'lbl'); T(g, 4, TOP + 14, 'L1', 't'); T(g, 4, BOT + 3, 'F2', 'lbl'); T(g, 4, BOT + 14, 'N', 't'); };
+  const thr = (x) => { W(g, x, TOP, x, 50, 'THR.95', 'THR.95-96'); contactV(g, x, 50, 'NC', 'THR', 'THR.95-96', { v: 'thr', t: ['95', '96'], nt: 'THR.95', nb: 'THR.96' }); };
+  const yl = (x, y) => { W(g, x, TOP, x, y, 'THR.97', 'THR.97-98'); contactV(g, x, y, 'NO', 'THR', 'THR.97-98', { v: 'thr', t: ['97', '98'], nt: 'THR.97', nb: 'THR.98' }); W(g, x, y + 40, x, 330, 'YL.X1', 'YL.X1-X2'); lampV(g, x, 330, 'YL', 'YL', '#ffc400', 'YL.X1', 'YL.X2'); W(g, x, 370, x, BOT, 'YL.X2', 'YL.X1-X2'); dot(g, x, TOP); };
+  if (key === 'selfhold') {
+    rails(30, 380); thr(70);
+    W(g, 70, 90, 70, 120, 'THR.96', 'THR.95-96');
+    contactV(g, 70, 120, 'NC', 'PB-OFF', 'PBOFF.1-2', { v: 'pb', t: ['1', '2'], nt: 'PBOFF.1', nb: 'PBOFF.2' });
+    W(g, 70, 160, 70, 190, 'PBOFF.2', 'PBOFF.1-2'); W(g, 70, 178, 135, 178, 'MC.13', 'MC.13-14'); W(g, 135, 178, 135, 190, 'MC.13', 'MC.13-14'); dot(g, 70, 178);
+    contactV(g, 70, 190, 'NO', 'PB-ON', 'PBON.3-4', { v: 'pb', t: ['3', '4'], nt: 'PBON.3', nb: 'PBON.4' });
+    contactV(g, 135, 190, 'NO', 'MC', 'MC.13-14', { t: ['13', '14'], nt: 'MC.13', nb: 'MC.14', tag: '자기유지' });
+    W(g, 135, 230, 135, 248, 'MC.14', 'MC.13-14'); W(g, 135, 248, 70, 248, 'MC.14', 'MC.13-14'); dot(g, 70, 248);
+    W(g, 70, 230, 70, 330, 'MC.A1', 'MC.A1-A2'); coilV(g, 70, 330, 'MC', 'MC', 'MC.A1-A2', 'MC.A1', 'MC.A2'); W(g, 70, 370, 70, BOT, 'MC.A2', 'MC.A1-A2');
+    W(g, 70, 105, 290, 105, 'THR.96', 'THR.95-96'); dot(g, 70, 105); dot(g, 230, 105);
+    W(g, 230, 105, 230, 250, 'MC.43', 'MC.43-44'); contactV(g, 230, 250, 'NO', 'MC', 'MC.43-44', { t: ['43', '44'], nt: 'MC.43', nb: 'MC.44' });
+    W(g, 230, 290, 230, 330, 'RL.X1', 'RL.X1-X2'); lampV(g, 230, 330, 'RL', 'RL', '#ff3b30', 'RL.X1', 'RL.X2'); W(g, 230, 370, 230, BOT, 'RL.X2', 'RL.X1-X2');
+    W(g, 290, 105, 290, 250, 'MC.21', 'MC.21-22'); contactV(g, 290, 250, 'NC', 'MC', 'MC.21-22', { t: ['21', '22'], nt: 'MC.21', nb: 'MC.22' });
+    W(g, 290, 290, 290, 330, 'GL.X1', 'GL.X1-X2'); lampV(g, 290, 330, 'GL', 'GL', '#22e06b', 'GL.X1', 'GL.X2'); W(g, 290, 370, 290, BOT, 'GL.X2', 'GL.X1-X2');
+    yl(375, 250);
+  }
+  if (key === 'interlock') {
+    rails(30, 400); thr(60);
+    W(g, 60, 90, 60, 120, 'THR.96', 'THR.95-96');
+    contactV(g, 60, 120, 'NC', 'PB-OFF', 'PBOFF.1-2', { v: 'pb', t: ['1', '2'], nt: 'PBOFF.1', nb: 'PBOFF.2' });
+    W(g, 60, 160, 60, 185, 'PBOFF.2', 'PBOFF.1-2'); W(g, 60, 175, 220, 175, 'PBR.3', 'PBR.3-4'); dot(g, 60, 175); dot(g, 110, 175); dot(g, 170, 175);
+    for (const [x, xh, pb, me, ot] of [[60, 110, 'PBF', 'MCF', 'MCR'], [170, 220, 'PBR', 'MCR', 'MCF']]) {
+      W(g, xh, 175, xh, 185, `${me}.13`, `${me}.13-14`);
+      contactV(g, x, 185, 'NO', pb === 'PBF' ? 'PB-F' : 'PB-R', `${pb}.3-4`, { v: 'pb', t: ['3', '4'], nt: `${pb}.3`, nb: `${pb}.4` });
+      contactV(g, xh, 185, 'NO', me, `${me}.13-14`, { t: ['13', '14'], nt: `${me}.13`, nb: `${me}.14` });
+      W(g, xh, 225, xh, 240, `${me}.14`, `${me}.13-14`); W(g, xh, 240, x, 240, `${me}.14`, `${me}.13-14`); dot(g, x, 240);
+      W(g, x, 225, x, 255, `${pb}.4`, `${ot}.21-22`);
+      contactV(g, x, 255, 'NC', ot, `${ot}.21-22`, { t: ['21', '22'], nt: `${ot}.21`, nb: `${ot}.22`, tag: '인터록' });
+      W(g, x, 295, x, 330, `${me}.A1`, `${me}.A1-A2`); coilV(g, x, 330, me, me, `${me}.A1-A2`, `${me}.A1`, `${me}.A2`); W(g, x, 370, x, BOT, `${me}.A2`, `${me}.A1-A2`);
+    }
+    W(g, 60, 105, 335, 105, 'THR.96', 'THR.95-96'); dot(g, 60, 105); dot(g, 280, 105);
+    for (const [x, me, lp, col] of [[280, 'MCF', 'RL', '#ff3b30'], [335, 'MCR', 'GL', '#22e06b']]) {
+      W(g, x, 105, x, 255, `${me}.43`, `${me}.43-44`); contactV(g, x, 255, 'NO', me, `${me}.43-44`, { t: ['43', '44'], nt: `${me}.43`, nb: `${me}.44` });
+      W(g, x, 295, x, 330, `${lp}.X1`, `${lp}.X1-X2`); lampV(g, x, 330, lp, lp, col, `${lp}.X1`, `${lp}.X2`); W(g, x, 370, x, BOT, `${lp}.X2`, `${lp}.X1-X2`);
+    }
+    yl(395, 255);
+  }
+  if (key === 'auto') {
+    rails(30, 405); thr(60);
+    W(g, 60, 90, 60, 120, 'THR.96', 'THR.95-96');
+    contactV(g, 60, 120, 'NC', 'PB-OFF', 'PBOFF.1-2', { v: 'pb', t: ['1', '2'], nt: 'PBOFF.1', nb: 'PBOFF.2' });
+    W(g, 60, 160, 60, 185, 'PBOFF.2', 'PBOFF.1-2'); W(g, 60, 175, 110, 175, 'X.1', 'X.1-3'); W(g, 110, 175, 110, 185, 'X.1', 'X.1-3'); dot(g, 60, 175);
+    contactV(g, 60, 185, 'NO', 'PB-ON', 'PBON.3-4', { v: 'pb', t: ['3', '4'], nt: 'PBON.3', nb: 'PBON.4' });
+    contactV(g, 110, 185, 'NO', 'X', 'X.1-3', { t: ['1', '3'], nt: 'X.1', nb: 'X.3', tag: '자기유지' });
+    W(g, 110, 225, 110, 240, 'X.3', 'X.1-3'); W(g, 110, 240, 60, 240, 'X.3', 'X.1-3'); dot(g, 60, 240);
+    W(g, 60, 225, 60, 330, 'X.2', 'X.2-7'); coilV(g, 60, 330, 'X', 'X', 'X.2-7', 'X.2', 'X.7'); W(g, 60, 370, 60, BOT, 'X.7', 'X.2-7');
+    W(g, 60, 262, 290, 262, 'T.2', 'T.2-7'); dot(g, 60, 262); dot(g, 160, 262); dot(g, 220, 262);
+    W(g, 160, 262, 160, 330, 'T.2', 'T.2-7'); coilV(g, 160, 330, 'T', 'T', 'T.2-7', 'T.2', 'T.7'); W(g, 160, 370, 160, BOT, 'T.7', 'T.2-7');
+    W(g, 220, 262, 220, 275, 'T.8', 'T.8-5'); contactV(g, 220, 275, 'NC', 'T', 'T.8-5', { v: 'tm', t: ['8', '5'], nt: 'T.8', nb: 'T.5' });
+    W(g, 220, 315, 220, 330, 'WL.X1', 'WL.X1-X2'); lampV(g, 220, 330, 'WL', 'WL', '#ffe9a8', 'WL.X1', 'WL.X2'); W(g, 220, 370, 220, BOT, 'WL.X2', 'WL.X1-X2');
+    W(g, 290, 262, 290, 275, 'T.8', 'T.8-6'); contactV(g, 290, 275, 'NO', 'T', 'T.8-6', { v: 'tm', t: ['8', '6'], nt: 'T.8', nb: 'T.6' });
+    W(g, 290, 315, 290, 330, 'MC.A1', 'MC.A1-A2'); coilV(g, 290, 330, 'MC', 'MC', 'MC.A1-A2', 'MC.A1', 'MC.A2'); W(g, 290, 370, 290, BOT, 'MC.A2', 'MC.A1-A2');
+    W(g, 290, 321, 345, 321, 'RL.X1', 'RL.X1-X2'); dot(g, 290, 321); W(g, 345, 321, 345, 330, 'RL.X1', 'RL.X1-X2');
+    lampV(g, 345, 330, 'RL', 'RL', '#ff3b30', 'RL.X1', 'RL.X2'); W(g, 345, 370, 345, BOT, 'RL.X2', 'RL.X1-X2');
+    yl(400, 275);
+  }
+  return s;
+}
+const PH_ANG = [0, -120, 120];
+function updateSVG(room) {
+  const { V, isLive } = room.sol, el = room.el;
+  for (const svg of [$('#svgMain svg'), $('#svgCtrl svg')]) {
+    if (!svg) continue;
+    svg.querySelectorAll('line.w').forEach(l => {
+      const n = l.dataset.n, e = el.get(l.dataset.e), v = V(n), mag = vabs(v);
+      let cls = 'w';
+      if (l.dataset.m === 'p') {
+        if (n === 'PE' || n === 'M.E') cls += isLive(n) ? ' pe' : '';
+        else if (isLive(n) && mag > 60) { const a = Math.atan2(v[1], v[0]) * 180 / Math.PI; let bi = 0, bd = 999; PH_ANG.forEach((p, i) => { const d = Math.abs(((a - p + 540) % 360) - 180); if (d < bd) { bd = d; bi = i; } }); cls += ' p' + (bi + 1); }
+        else if (n.includes('N') && isLive(n)) cls += ' pn';
+      } else if (isLive(n)) cls += mag > 150 ? ' hot' : mag < 35 ? ' low' : ' mid';
+      if (e && e.I > .001) cls += e.I > 50 ? ' flow fast' : ' flow';
+      if (l.getAttribute('class') !== cls) l.setAttribute('class', cls);
+    });
+    svg.querySelectorAll('[data-c]').forEach(c => {
+      const closed = el.has(c.dataset.c), x = +c.dataset.x, y = +c.dataset.y, b = c.querySelector('.blade'), ty = c.dataset.type;
+      if (c.dataset.h) { b.setAttribute('x2', x + 10); b.setAttribute('y2', closed ? y : y - 10); }
+      else if (ty === 'NO') { b.setAttribute('x2', closed ? x : x - 9); b.setAttribute('y2', closed ? y + 12 : y + 13); }
+      else { b.setAttribute('x2', closed ? x + 8 : x - 9); b.setAttribute('y2', closed ? y + 12 : y + 14); }
+      c.classList.toggle('closed', closed);
+    });
+    svg.querySelectorAll('[data-coil]').forEach(c => c.classList.toggle('on', !!room.dev[c.dataset.coil]?.state.on));
+    svg.querySelectorAll('[data-lamp]').forEach(c => c.classList.toggle('on', (room.dev[c.dataset.lamp]?.state.b || 0) > .3));
+    svg.querySelectorAll('[data-motor] text').forEach(t => { const m = room.motor; t.textContent = m.target > 0 ? '정회전 ⟳' : m.target < 0 ? '역회전 ⟲' : m.hum ? '결상·험' : ''; });
+  }
+}
+
+/* =====================================================================
+   12. 상태 · UI · 안내 로그
+   ===================================================================== */
+const state = { room: 'selfhold', mode: 'view', color: 'auto', route: 'duct', flow: true, sound: true, timerSet: 5, panel: true };
+const cur = () => ROOMS[state.room];
+const esc = (s) => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
+let _last = { s: '', t: 0 };
+function log(type, s) {
+  if (s === _last.s && performance.now() - _last.t < 1500) return; _last = { s, t: performance.now() };
+  const li = document.createElement('li'); li.className = type;
+  const d = new Date(), tt = [d.getHours(), d.getMinutes(), d.getSeconds()].map(x => String(x).padStart(2, '0')).join(':');
+  li.innerHTML = `<time>${tt}</time>${esc(s)}`; $('#log').prepend(li);
+  while ($('#log').children.length > 50) $('#log').lastChild.remove();
+}
+let toastT = 0;
+function toast(a, b = '') { const t = $('#toast'); t.innerHTML = `${esc(a)}${b ? `<small>${esc(b)}</small>` : ''}`; t.style.display = 'block'; clearTimeout(toastT); toastT = setTimeout(() => t.style.display = 'none', 4200); }
+
+function refreshUI(room) {
+  const s = room.dev.ELB.state, m = room.motor, thr = room.dev.THR.state;
+  const blown = ['F1', 'F2'].filter(f => room.dev[f].state.blown);
+  const pill = $('#statusPill');
+  let txt = '전원 차단', cls = '';
+  if (s.trip) { txt = '⚡ ELB 트립'; cls = 'fault'; }
+  else if (blown.length) { txt = `⚡ 퓨즈 ${blown.join('·')} 용단`; cls = 'fault'; }
+  else if (thr.trip) { txt = 'THR 트립'; cls = 'trip'; }
+  else if (m.target) { txt = `운전 · ${m.target > 0 ? '정회전' : '역회전'}`; cls = 'run'; }
+  else if (m.hum) { txt = '결상 · 기동불가'; cls = 'trip'; }
+  else if (s.on) { txt = '전원 투입 · 대기'; }
+  pill.textContent = txt; pill.className = cls;
+  const eb = $('#elbBtn'); eb.className = 'sw' + (s.on ? ' on' : s.trip ? ' trip' : '');
+  room.spec.lamps.forEach(l => { const i = $(`#lp-${l}`); if (i) i.classList.toggle('on', room.dev[l].state.b > .3); });
+  room.spec.pbs.forEach(p => { const b = $(`#pb-${p}`); if (b) b.classList.toggle('down', room.dev[p].state.pressed); });
+  $('#fuseBtn').classList.toggle('warn', blown.length > 0);
+  $('#thrReset').classList.toggle('warn', thr.trip);
+  updateSVG(room);
+  // 기기 상태
+  const items = [];
+  for (const n of room.spec.coils) { const d = room.dev[n]; items.push([n, d.state.on ? (d.type === 'timer' ? (d.state.timed ? '한시 동작' : '계수 중') : '여자') : '소자', d.state.on, `${Math.round(d.state.v || 0)} V`]); }
+  items.push(['THR', thr.trip ? '트립' : '정상', false, `${(room.heaterI || 0).toFixed(1)} A`, thr.trip]);
+  items.push(['F1·F2', blown.length ? '용단' : '정상', false, '6 A', !!blown.length]);
+  items.push(['ELB', s.on ? 'ON' : s.trip ? 'TRIP' : 'OFF', s.on, '30 mA', s.trip]);
+  items.push(['M', m.target ? (m.target > 0 ? '정회전' : '역회전') : m.hum ? '결상' : '정지', !!m.target, `${(m.Imax || 0).toFixed(1)} A`, m.hum]);
+  $('#devStates').innerHTML = items.map(([n, st, on, sub, bad]) => `<div class="dstate ${bad ? 'bad' : on ? 'on' : ''}"><b>${n}</b>${st} · <span style="color:#7a8794">${sub}</span></div>`).join('');
+  // 3D 배지
+  for (const d of Object.values(room.dev)) if (d.badge) {
+    let t = '', c = '';
+    if (['mc', 'relay'].includes(d.type) && d.state.on) { t = room.flags['hold_' + d.name] ? '자기유지' : '여자'; c = room.flags['hold_' + d.name] ? 'hold' : 'on'; }
+    if (d.type === 'timer' && d.state.on) { t = d.state.timed ? '한시동작' : '계수 중'; c = 'on'; }
+    if (d.type === 'thr' && d.state.trip) { t = 'TRIP'; c = 'trip'; }
+    if (d.type === 'fuse' && d.state.blown) { t = '용단'; c = 'bad'; }
+    d.badge.textContent = t; d.badge.className = 'badge ' + c + (t ? ' show' : '');
+  }
+  const mb = m.badge; const mt = m.target ? `${m.target > 0 ? '정회전' : '역회전'} · ${(m.Imax || 0).toFixed(1)} A` : m.hum ? '결상 — 험(hum)' : '';
+  mb.textContent = mt; mb.className = 'badge ' + (m.hum ? 'bad' : 'on') + (mt ? ' show' : '');
+  refreshSteps(room);
+}
+function hideBadges(room) { for (const d of Object.values(room.dev)) if (d.badge) d.badge.className = 'badge'; room.motor.badge.className = 'badge'; }
+
+/* ---------- 조작 ---------- */
+function pressPB(room, name, down) {
+  const d = room.dev[name]; if (d.state.pressed === down) return;
+  d.state.pressed = down; audioInit(); sfxClick();
+  if (!down) room.lastRelease = { pb: name, t: performance.now() };
+  simulate(room);
+}
+function toggleELB(room) {
+  audioInit(); const s = room.dev.ELB.state;
+  if (s.trip) { s.trip = false; s.on = false; log('info', 'ELB 리셋 (TRIP → OFF) — 원인을 제거한 뒤 다시 투입하세요'); }
+  else if (s.on) { s.on = false; log('info', 'ELB OFF — 전원 차단 (주회로·제어회로 무전압)'); }
+  else {
+    if (room.loto) { log('warn', 'LOTO 잠금 중에는 투입할 수 없습니다 — 안전절차 탭에서 잠금을 해제하세요'); sfxBeep(300, .25); return; }
+    s.on = true; log('info', 'ELB ON — 주회로 3φ 380 V, 제어회로(F1–F2) 220 V 인가');
+    if (room.lotoSteps.check) room.lotoSteps.on = true;
+  }
+  sfxClick(); simulate(room);
+}
+function resetTHR(room) {
+  const t = room.dev.THR.state; if (!t.trip) { log('info', 'THR 정상 상태입니다 (리셋 불필요)'); return; }
+  t.trip = false; t.heat = .35; sfxClick(); log('ok', 'THR 수동 리셋 — 95–96 복귀(폐로), 97–98 개로. 과부하 원인을 먼저 제거하세요'); simulate(room);
+}
+function replaceFuse(room) {
+  if (!['F1', 'F2'].some(f => room.dev[f].state.blown)) { log('info', '용단된 퓨즈가 없습니다'); return; }
+  if (room.dev.ELB.state.on) { log('warn', '활선 상태에서 퓨즈 교체 금지 — ELB를 먼저 차단하세요'); sfxBeep(300, .25); return; }
+  ['F1', 'F2'].forEach(f => room.dev[f].state.blown = false); sfxClick(); log('ok', '퓨즈 F1·F2 교체 완료 — 단락 원인(오결선)을 수정한 뒤 투입하세요'); simulate(room);
+}
+const isLiveRoom = (room) => room.dev.ELB.state.on;
+
+/* ---------- 결선 평가 (도통 · 절연저항) ---------- */
+function UF() { const p = new Map(); const f = (x) => { if (!p.has(x)) p.set(x, x); let r = x; while (p.get(r) !== r) r = p.get(r); p.set(x, r); return r; }; return { f, u: (a, b) => p.set(f(a), f(b)) }; }
+function grade(room) {
+  const U = UF(), X = UF();
+  const user = room.wires.filter(w => !w.pre);
+  user.forEach(w => U.u(alias(w.a), alias(w.b)));
+  room.spec.wires.forEach(([a, b]) => X.u(alias(a), alias(b)));
+  const rows = room.spec.wires.map(([a, b, c], i) => ({ i: i + 1, a, b, c, ok: U.f(alias(a)) === U.f(alias(b)) }));
+  const wrong = user.filter(w => X.f(alias(w.a)) !== X.f(alias(w.b)));
+  const done = rows.filter(r => r.ok).length;
+  // 절연 위험: 서로 다른 전위군이 한 네트로 합쳐졌는지
+  const mc = room.spec.mcs[0];
+  const cls = { 'ELB.T1': 'L1', 'ELB.T2': 'L2', 'ELB.T3': 'L3', 'ELB.TN': 'N', PE: 'PE', 'F1.2': 'L1(제어)', 'F2.2': 'N(제어)' };
+  for (const k of [1, 2, 3]) { cls[`${mc}.T${k}`] = `L${k}(${mc} 2차)`; cls[`THR.T${k}`] = `L${k}(전동기)`; }
+  const groups = new Map();
+  for (const [k, c] of Object.entries(cls)) { const r = U.f(alias(k)); if (!groups.has(r)) groups.set(r, new Set()); groups.get(r).add(c); }
+  for (const w of user) for (const k of [w.a, w.b]) {
+    const ek = Object.keys(cls).find(c => X.f(alias(c)) === X.f(alias(k)));
+    if (ek) { const r = U.f(alias(k)); if (!groups.has(r)) groups.set(r, new Set()); groups.get(r).add(cls[ek]); }
+  }
+  const hazards = [...groups.values()].filter(s => s.size > 1).map(s => [...s].join(' ↔ '));
+  return { rows, wrong, done, total: rows.length, hazards, complete: done === rows.length && !wrong.length };
+}
+function refreshWiring(room) {
+  const g = grade(room); room.grade = g;
+  const nx0 = g.rows.find(r => !r.ok); room.guide = nx0 ? [nx0.a, nx0.b] : null;
+  if (room !== cur()) return;
+  $('#progBar').style.width = (100 * g.done / g.total) + '%';
+  $('#progTxt').textContent = `정답 결선 ${g.done} / ${g.total}`;
+  $('#wrongTxt').innerHTML = g.wrong.length ? `<b style="color:var(--danger)">오결선 ${g.wrong.length}</b>` : '';
+  const nx = g.rows.find(r => !r.ok);
+  room.guide = nx ? [nx.a, nx.b] : null;
+  $('#nextHint').innerHTML = nx ? `다음 결선 ▶ <code>${nx.a}</code> → <code>${nx.b}</code> · ${WNAME[nx.c]} <span style="color:#8a6d00">(3D에서 하늘색 링으로 표시)</span>`
+    : g.wrong.length ? `⚠ 정답 결선은 완료되었지만 <b>불필요한 전선 ${g.wrong.length}가닥</b>이 있습니다. 결선 검사를 실행하세요.` : '✅ 결선 완료 — 결선 검사 후 전원을 투입하세요.';
+  const rows = g.rows.map(r => `<tr data-a="${r.a}" data-b="${r.b}"><td>${r.i}</td><td>${r.a}</td><td>${r.b}</td><td><span class="sw" style="background:${WCOL[r.c] === 'pe' ? 'repeating-linear-gradient(90deg,#2e9e3e 0 4px,#f2d21b 4px 8px)' : WCOL[r.c]};${r.c === 'W' ? 'box-shadow:0 0 0 1px #bbb' : ''}"></span></td><td class="${r.ok ? 'st-ok' : 'st-no'}">${r.ok ? '✓ 결선' : '— 미결선'}</td></tr>`);
+  g.wrong.forEach(w => rows.push(`<tr data-a="${w.a}" data-b="${w.b}"><td>!</td><td>${w.a}</td><td>${w.b}</td><td><span class="sw" style="background:${WCOL[w.color] === 'pe' ? '#2e9e3e' : WCOL[w.color] || '#999'}"></span></td><td class="st-bad">✗ 오결선</td></tr>`));
+  $('#wireTable').innerHTML = rows.join('');
+  refreshSteps(room);
+}
+function runCheck(room) {
+  const g = grade(room);
+  const ok = g.complete && !g.hazards.length;
+  let h = `<div class="res ${ok ? 'pass' : 'fail'}"><b>${ok ? '✅ 결선 검사 합격' : '❌ 결선 검사 불합격'}</b> — 도통 ${g.done}/${g.total}`;
+  const list = [];
+  g.rows.filter(r => !r.ok).slice(0, 8).forEach(r => list.push(`누락: ${r.a} – ${r.b}`));
+  g.wrong.forEach(w => list.push(`오결선: ${w.a} – ${w.b}`));
+  g.hazards.forEach(z => list.push(`<b style="color:#b3241b">절연저항 0 MΩ — ${z} 단락 위험</b>`));
+  if (!room.wires.some(w => !w.pre && (alias(w.a) === 'PE' || alias(w.b) === 'PE'))) list.push('<b>PE(외함접지) 미결선 — 지락 시 감전 위험</b>');
+  if (list.length) h += `<ul>${list.map(x => `<li>${x.startsWith('<') ? x : esc(x)}</li>`).join('')}</ul>`;
+  h += '</div>'; $('#checkOut').innerHTML = h;
+  if (ok) { room.lotoSteps.check = true; log('ok', '결선 검사 합격 — 도통 정상, 상간·대지 절연저항 양호. 잠금 해제 후 전원 투입 가능'); }
+  else log('warn', `결선 검사 불합격 — ${list.length}개 항목 확인 필요`);
+  refreshSteps(room);
+}
+function autoWire(room, instant = false) {
+  if (isLiveRoom(room)) { warnLive(); return; }
+  for (const w of room.wires.filter(w => !w.pre)) removeWire(room, w);
+  room.burns.forEach(b => scene.remove(b)); room.burns = [];
+  const list = room.spec.wires.slice();
+  if (instant) { list.forEach(([a, b, c]) => addWire(room, a, b, c)); refreshWiring(room); simulate(room, true); return; }
+  let i = 0; const step = () => {
+    if (room !== cur() && i < list.length) { list.slice(i).forEach(([a, b, c]) => addWire(room, a, b, c)); i = list.length; }
+    if (i < list.length) { const [a, b, c] = list[i++]; addWire(room, a, b, c); if (i % 3 === 0) sfxClick(); setTimeout(step, 45); }
+    else { refreshWiring(room); simulate(room); log('ok', `정답 자동결선 완료 — ${list.length}가닥 (KEC 색상 · 덕트 배선)`); }
+  }; step();
+}
+function warnLive() { log('danger', '⚠ 활선 작업 금지! ELB를 차단(OFF)하고 LOTO 후 결선하세요'); toast('⚠ 활선 작업 금지', '전원 차단 → 잠금·표지 → 검전 후 결선하세요'); sfxBeep(320, .3); }
+
+/* ---------- 고장 체험 ---------- */
+function injectWire(room, a, b, c, why) { if (!findWire(room, a, b)) addWire(room, a, b, c); log('warn', `고장 주입 — ${why}`); refreshWiring(room); simulate(room); }
+function removeBetween(room, a, b) { const w = findWire(room, a, b); if (w) removeWire(room, w); }
+function faultsFor(room) {
+  const mc = room.spec.mcs[0];
+  const F = [
+    { t: '제어회로 단락', d: `F1 출력(L1)과 ${mc} A2(N)를 직결합니다. 전원 투입 즉시 퓨즈 용단 · 불꽃.`, f: () => injectWire(room, 'F1.2', `${mc}.A2`, 'R', `F1.2 – ${mc}.A2 직결 (제어 L1–N 단락)`) },
+    { t: `주회로 상간단락 (${mc} 2차측 T1–T2)`, d: `${mc}가 여자되는 순간 L1–L2 단락 → ELB 과전류 트립 · 불꽃.`, f: () => injectWire(room, `${mc}.T1`, `${mc}.T2`, 'L1', `${mc}.T1 – ${mc}.T2 직결`) },
+    { t: '지락 (누전)', d: `${mc} 2차측 T3를 PE에 접촉시킵니다. 운전 시 누설전류 → ELB(30 mA) 트립.`, f: () => injectWire(room, `${mc}.T3`, 'PE.2', 'L3', `${mc}.T3 – PE 접촉 (지락)`) },
+    { t: '결상 (L3 단선)', d: `ELB T3 – ${mc} L3 전선을 제거합니다. 회전자계 불평형 → 기동 불가·과전류 → THR 트립.`, f: () => { removeBetween(room, 'ELB.T3', `${mc}.L3`); log('warn', '고장 주입 — L3 단선(결상)'); refreshWiring(room); simulate(room); } },
+    { t: '과부하 토글', d: '전동기 부하토크를 1.9배로 높입니다. 전류 증가 → 수 초 후 THR 트립 → YL 점등.', f: () => { room.load = room.load > 1 ? 1 : 1.9; $('#optLoad').checked = room.load > 1; log('warn', `부하 ${room.load > 1 ? '1.9배 (과부하)' : '정상'}로 변경`); simulate(room); } },
+  ];
+  if (room.key === 'selfhold') F.unshift({ t: '자기유지 접점 누락', d: 'PB-ON ↔ MC 13·14 결선을 제거합니다. PB-ON을 누르는 동안만 운전(촌동)되는 것을 확인하세요.', f: () => { removeBetween(room, 'PBON.3', 'MC.13'); removeBetween(room, 'PBON.4', 'MC.14'); log('warn', '고장 주입 — 자기유지 접점(13–14) 결선 제거'); refreshWiring(room); simulate(room); } });
+  if (room.key === 'interlock') F.unshift({ t: '인터록 제거 (위험)', d: '상대 MC의 b접점(21–22)을 거치지 않고 코일에 직결합니다. 정회전 중 PB-R → MCF·MCR 동시 투입 → L1–L3 단락!', f: () => { for (const [a, b] of [['PBF.4', 'MCR.21'], ['MCR.22', 'MCF.A1'], ['PBR.4', 'MCF.21'], ['MCF.22', 'MCR.A1']]) removeBetween(room, a, b); addWire(room, 'PBF.4', 'MCF.A1', 'P'); addWire(room, 'PBR.4', 'MCR.A1', 'P'); log('warn', '고장 주입 — 인터록 b접점 우회 결선'); refreshWiring(room); simulate(room); } });
+  if (room.key === 'auto') F.unshift({ t: '한시 a·b 접점 착오', d: 'T의 8–6(한시 a)과 8–5(한시 b) 결선을 서로 바꿉니다. 즉시 기동 후 설정시간에 정지하는 반대 동작을 관찰하세요.', f: () => { removeBetween(room, 'T.6', 'MC.A1'); removeBetween(room, 'T.5', 'WL.X1'); addWire(room, 'T.5', 'MC.A1', 'C'); addWire(room, 'T.6', 'WL.X1', 'K'); log('warn', '고장 주입 — 타이머 한시 a/b 접점 교차 결선'); refreshWiring(room); simulate(room); } });
+  return F;
+}
+function restoreAll(room) {
+  const e = room.dev.ELB.state; e.on = false; e.trip = false; room.loto = false;
+  ['F1', 'F2'].forEach(f => room.dev[f].state.blown = false); Object.assign(room.dev.THR.state, { trip: false, heat: 0 });
+  room.load = 1; $('#optLoad').checked = false;
+  for (const d of Object.values(room.dev)) if (d.type === 'pb') d.state.pressed = false;
+  autoWire(room, true); $('#checkOut').innerHTML = '';
+  log('ok', '전체 복구 — 정답 결선 · 보호기기 리셋 · 전원 차단 상태');
+}
+function buildFaultPane(room) {
+  const F = faultsFor(room); const box = $('#faults'); box.innerHTML = '';
+  F.forEach(x => { const d = document.createElement('div'); d.className = 'fault'; d.innerHTML = `<b>${esc(x.t)}</b><p>${esc(x.d)}</p>`; const b = document.createElement('button'); b.className = 'btn sm dan'; b.textContent = '고장 주입'; b.onclick = () => { audioInit(); x.f(); }; d.appendChild(b); box.appendChild(d); });
+  const r = document.createElement('div'); r.className = 'fault'; r.innerHTML = '<b>전체 복구</b><p>정답 결선으로 되돌리고 퓨즈·THR·ELB를 리셋합니다.</p>';
+  const rb = document.createElement('button'); rb.className = 'btn sm pri'; rb.textContent = '복구'; rb.onclick = () => restoreAll(room); r.appendChild(rb); box.appendChild(r);
+}
+
+/* ---------- 안전절차 (LOTO) ---------- */
+function refreshSteps(room) {
+  const L = room.lotoSteps, s = room.dev.ELB.state;
+  if (!s.on) L.off = true;
+  if (room.motor.target) L.run = true;
+  if (L.run && !room.motor.target && room.dev.PBOFF.state.pressed) L.stop = true;
+  const g = room.grade || grade(room);
+  const steps = [
+    ['전원 차단 — ELB OFF', '조작반 스위치 또는 3D 차단기 레버', L.off],
+    ['잠금 · 표지(LOTO) 부착', '차단기에 자물쇠와 “조작금지” 표지를 체결', L.lock, room.loto ? '잠금 해제' : '잠금장치 체결', () => { if (s.on) { log('warn', '먼저 ELB를 차단하세요'); return; } room.loto = !room.loto; if (room.loto) L.lock = true; log(room.loto ? 'ok' : 'info', room.loto ? 'LOTO 체결 — 작업 중 타인 투입 방지' : 'LOTO 해제'); refreshSteps(room); }],
+    ['검전 — 부하측 무전압 확인', '검전기로 ELB 2차측 L1–L2 · L1–N 측정', L.test, '검전기 측정', () => { const v = Math.round(room.meterV || 0); if (v < 5) { L.test = true; log('ok', '검전 결과 0 V — 무전압 확인, 결선 작업 가능'); } else log('danger', `검전 결과 ${v} V 충전 중! 작업 금지`); refreshSteps(room); }],
+    ['결선 작업', `정답 ${g.done}/${g.total}${g.wrong.length ? ` · 오결선 ${g.wrong.length}` : ''}`, g.complete],
+    ['결선 검사 (도통 · 절연저항)', '누락 · 오결선 · 상간/대지 단락 여부 확인', L.check, '검사 실행', () => runCheck(room)],
+    ['잠금 해제 후 전원 투입', '검사 합격 → LOTO 해제 → ELB ON', L.on],
+    ['동작 시험', '기동(PB-ON/F/R) → 운전 확인 → PB-OFF 정지 확인', L.run && L.stop],
+  ];
+  if (room !== cur()) return;
+  const ci = steps.findIndex(x => !x[2]);
+  const sig = steps.map(x => x[0] + x[1] + !!x[2] + (x[3] || '')).join('|') + ci;
+  if (sig === room._stepSig && $('#steps').children.length) return; room._stepSig = sig;
+  const ol = $('#steps'); ol.innerHTML = '';
+  steps.forEach(([t, sub, done, bl, fn], i) => {
+    const li = document.createElement('li'); li.className = done ? 'done' : i === ci ? 'cur' : '';
+    li.innerHTML = `<div>${esc(t)}<small>${esc(sub)}</small></div>`;
+    if (bl) { const b = document.createElement('button'); b.className = 'btn sm'; b.textContent = bl; b.onclick = fn; li.firstChild.appendChild(b); }
+    ol.appendChild(li);
+  });
+}
+
+/* =====================================================================
+   13. 입력 (단자 클릭 결선 · 버튼 · 문 이동)
+   ===================================================================== */
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+const doorMeshes = [];
+let sel = null, down = null, heldPB = null, hoverW = null;
+const prevLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([V3(), V3()]), new THREE.LineDashedMaterial({ color: 0xff9800, dashSize: .02, gapSize: .012, depthTest: false, transparent: true }));
+prevLine.visible = false; prevLine.renderOrder = 30; scene.add(prevLine);
+
+function pick(ev) {
+  const r = renderer.domElement.getBoundingClientRect();
+  ndc.set((ev.clientX - r.left) / r.width * 2 - 1, -(ev.clientY - r.top) / r.height * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const room = cur();
+  const objs = [...room.hits, ...room.clickables, ...doorMeshes, ...room.wires.filter(w => !w.pre).map(w => w.tube)];
+  const hs = ray.intersectObjects(objs, false); if (!hs.length) return null;
+  const termHit = hs.find(h => h.object.userData.term && h.distance - hs[0].distance < .06);
+  const h = termHit || hs[0], u = h.object.userData;
+  if (u.term) return { type: 'term', t: u.term };
+  if (u.click) return { type: 'click', ...u.click };
+  if (u.door) return { type: 'door', side: u.door };
+  if (u.wire) return { type: 'wire', w: u.wire };
+  return null;
+}
+function termTip(room, t) {
+  const dev = room.dev[t.dev];
+  const desc = TERM_DESC[dev.type]?.[t.name] || '';
+  const v = room.sol ? vabs(room.sol.V(t.id)) : 0, live = room.sol?.isLive(t.id);
+  return `<code>${t.id}</code> ${esc(desc)}<br>결선 ${t.wires.length}가닥${t.pre ? ' · 기결선(전원)' : ''} · 대지전압 <b>${live ? Math.round(v) : 0} V</b>`;
+}
+const tip = $('#tooltip');
+function showTip(ev, html) { if (!html) { tip.style.display = 'none'; return; } tip.innerHTML = html; tip.style.display = 'block'; tip.style.left = Math.min(innerWidth - 270, ev.clientX + 14) + 'px'; tip.style.top = (ev.clientY + 14) + 'px'; }
+
+function setHoverWire(w) {
+  if (hoverW === w) return;
+  if (hoverW && hoverW.baseMat && !hoverW.burnt) hoverW.tube.material = hoverW.baseMat;
+  hoverW = w;
+  if (w && !w.burnt) { w.baseMat = w.tube.material; const m = w.baseMat.clone(); m.emissive = new THREE.Color(state.mode === 'del' ? 0x991111 : 0x2a4a66); w.tube.material = m; }
+}
+renderer.domElement.addEventListener('pointerdown', (ev) => {
+  audioInit(); down = { x: ev.clientX, y: ev.clientY };
+  if (tween) return;
+  const h = pick(ev);
+  if (h && h.type === 'click' && h.kind === 'pb') { heldPB = h.dev; pressPB(cur(), h.dev, true); controls.enabled = false; }
+});
+window.addEventListener('pointerup', (ev) => {
+  if (heldPB) { pressPB(cur(), heldPB, false); heldPB = null; controls.enabled = !tween; return; }
+  if (!down || ev.target !== renderer.domElement) { down = null; return; }
+  const moved = Math.hypot(ev.clientX - down.x, ev.clientY - down.y); down = null;
+  if (moved > 6 || tween) return;
+  onClick(pick(ev));
+});
+renderer.domElement.addEventListener('pointermove', (ev) => {
+  const room = cur(); if (tween) return;
+  const h = pick(ev); let html = '';
+  renderer.domElement.style.cursor = h ? 'pointer' : '';
+  setHoverWire(h && h.type === 'wire' ? h.w : null);
+  if (h?.type === 'term') html = termTip(room, h.t);
+  else if (h?.type === 'wire') html = `<code>W${h.w.id}</code> ${h.w.a} ↔ ${h.w.b}<br>${WNAME[h.w.color] || ''} · ${fmtA(h.w.I || 0)}${state.mode === 'del' ? '<br><b>클릭 → 제거</b>' : ''}`;
+  else if (h?.type === 'click') html = { pb: `${room.dev[h.dev].spec.label} — 누르고 있는 동안 접점 동작`, elb: 'ELB 레버 — 클릭하여 ON/OFF', thrReset: 'THR 리셋 버튼', fuse: `${h.dev} 퓨즈 — 클릭하여 교체` }[h.kind];
+  else if (h?.type === 'door') html = `🚪 ${h.side === 'left' ? (state.room === 'interlock' ? '자기유지 실습실' : '인터록 실습실') : (state.room === 'auto' ? '자기유지 실습실' : '자동기동 실습장')}(으)로 이동`;
+  showTip(ev, html);
+  if (sel) {
+    const plane = new THREE.Plane(V3(0, 0, 1), -(room.board.getWorldPosition(V3()).z + .07));
+    const p = V3(); if (ray.ray.intersectPlane(plane, p)) { prevLine.geometry.setFromPoints([sel.wp.clone().add(V3(0, 0, .012)), p]); prevLine.computeLineDistances(); prevLine.visible = true; }
+  }
+});
+renderer.domElement.addEventListener('pointerleave', () => showTip(null, ''));
+function cancelSel() { if (sel) sel.ring.visible = false; sel = null; prevLine.visible = false; }
+function onClick(h) {
+  const room = cur(); if (!h) { if (sel) cancelSel(); return; }
+  if (h.type === 'door') { const to = h.side === 'left' ? (state.room === 'interlock' ? 'selfhold' : 'interlock') : (state.room === 'auto' ? 'selfhold' : 'auto'); goRoom(to); return; }
+  if (h.type === 'click') {
+    if (h.kind === 'elb') toggleELB(room); else if (h.kind === 'thrReset') resetTHR(room); else if (h.kind === 'fuse') replaceFuse(room);
+    return;
+  }
+  if (h.type === 'wire' && state.mode === 'del') {
+    if (isLiveRoom(room)) { warnLive(); return; }
+    removeWire(room, h.w); hoverW = null; sfxClick(); log('info', `전선 제거: ${h.w.a} – ${h.w.b}`); refreshWiring(room); simulate(room, true); return;
+  }
+  if (h.type === 'term') {
+    if (state.mode === 'view') setMode('wire');
+    if (state.mode === 'del') return;
+    const t = h.t;
+    if (t.pre) { log('info', `${t.id}는 전원측 기결선 단자입니다 (결선 불가)`); return; }
+    if (isLiveRoom(room)) { warnLive(); return; }
+    if (!sel) { sel = t; t.ring.visible = true; t.ring.material.color.set(0xff9800); sfxClick(); return; }
+    if (sel === t) { cancelSel(); return; }
+    if (findWire(room, sel.id, t.id)) { log('warn', `이미 연결됨: ${sel.id} – ${t.id}`); cancelSel(); return; }
+    const c = state.color === 'auto' ? inferColor(room, sel.id, t.id) : state.color;
+    addWire(room, sel.id, t.id, c); sfxClick();
+    const ok = room.spec.wires.some(([a, b]) => (a === sel.id && b === t.id) || (a === t.id && b === sel.id));
+    log(ok ? 'ok' : 'info', `결선: ${sel.id} → ${t.id} (${WNAME[c]})${ok ? ' ✓' : ''}`);
+    if (t.wires.length > 2 || sel.wires.length > 2) log('warn', `한 단자에 3가닥 이상 체결 — 실무에서는 단자당 2가닥 이하로 점퍼 결선하세요`);
+    cancelSel(); refreshWiring(room); simulate(room, true);
+  }
+}
+window.addEventListener('keydown', (e) => { if (e.key === 'Escape') { cancelSel(); setMode('view'); } });
+
+/* ---------- 패널 / 조작반 ---------- */
+function setMode(m) {
+  state.mode = m; cancelSel();
+  $$('#modeSeg button').forEach(b => b.classList.toggle('on', b.dataset.mode === m));
+  const chip = $('#modeChip'); chip.className = m === 'view' ? '' : m;
+  chip.textContent = m === 'wire' ? '🔌 결선 모드 — 단자 두 개를 차례로 클릭 (Esc: 취소)' : m === 'del' ? '✂ 제거 모드 — 제거할 전선을 클릭' : '';
+  if (m !== 'view') { $$('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === 'wire')); $$('.pane').forEach(p => p.classList.toggle('on', p.id === 'pane-wire')); }
+}
+function setupUI() {
+  $$('.tabs button').forEach(b => b.onclick = () => { $$('.tabs button').forEach(x => x.classList.toggle('on', x === b)); $$('.pane').forEach(p => p.classList.toggle('on', p.id === 'pane-' + b.dataset.tab)); });
+  $$('#modeSeg button').forEach(b => b.onclick = () => setMode(b.dataset.mode));
+  $$('#routeSeg button').forEach(b => b.onclick = () => { state.route = b.dataset.route; $$('#routeSeg button').forEach(x => x.classList.toggle('on', x === b)); Object.values(ROOMS).forEach(rerouteAll); simulate(cur(), true); });
+  const pal = $('#palette');
+  const mk = (k, label) => { const b = document.createElement('button'); b.dataset.c = k; if (k === 'auto') { b.className = 'auto on'; b.textContent = '자동(KEC)'; } else { b.style.background = WCOL[k] === 'pe' ? 'repeating-linear-gradient(45deg,#2e9e3e 0 5px,#f2d21b 5px 10px)' : WCOL[k]; b.innerHTML = `<span>${label}</span>`; } b.title = label; b.onclick = () => { state.color = k; $$('#palette button').forEach(x => x.classList.toggle('on', x === b)); }; pal.appendChild(b); };
+  mk('auto', '자동'); ['L1', 'L2', 'L3', 'N', 'PE', 'R', 'O', 'Y', 'G', 'C', 'P', 'K', 'W'].forEach(k => mk(k, k.length === 1 ? WNAME[k] : k));
+  $('#btnAuto').onclick = () => autoWire(cur());
+  $('#btnCheck').onclick = () => runCheck(cur());
+  $('#btnClear').onclick = () => { const r = cur(); if (isLiveRoom(r)) { warnLive(); return; } r.wires.filter(w => !w.pre).forEach(w => removeWire(r, w)); r.lotoSteps.check = false; refreshWiring(r); simulate(r, true); log('info', '전체 전선 제거 — 결선표를 따라 직접 결선해 보세요 (🔌 결선 모드)'); };
+  $('#wireTable').onclick = (e) => { const tr = e.target.closest('tr'); if (!tr) return; cur().guide = [tr.dataset.a, tr.dataset.b]; };
+  $('#elbBtn').onclick = () => toggleELB(cur());
+  $('#thrReset').onclick = () => resetTHR(cur());
+  $('#fuseBtn').onclick = () => replaceFuse(cur());
+  $('#optLoad').onchange = (e) => { const r = cur(); r.load = e.target.checked ? 1.9 : 1; log('warn', `부하 ${r.load > 1 ? '1.9배 (과부하)' : '정상'}`); simulate(r); };
+  $('#optFlow').onchange = (e) => state.flow = e.target.checked;
+  $('#optSound').onchange = (e) => { state.sound = e.target.checked; };
+  $('#timerSet').oninput = (e) => { state.timerSet = +e.target.value; $('#timerVal').textContent = state.timerSet + 's'; };
+  $$('#roomTabs button').forEach(b => b.onclick = () => goRoom(b.dataset.room));
+  $('#panelToggle').onclick = () => { state.panel = !state.panel; $('#panel').classList.toggle('hide', !state.panel); $('#panelToggle').classList.toggle('hide', !state.panel); $('#panelToggle').textContent = state.panel ? '›' : '‹'; applyView(); };
+  shell.traverse(o => { if (o.isMesh && o.userData.door) doorMeshes.push(o); });
+}
+function setupRoomUI(room) {
+  const pa = $('#pbArea'); pa.innerHTML = '';
+  room.spec.pbs.forEach(n => {
+    const d = room.dev[n], col = d.spec.color === 'red' ? '#d32f2f' : d.spec.color === 'black' ? '#2b2b2b' : '#1e9e46';
+    const w = document.createElement('div'); w.className = 'pb';
+    const b = document.createElement('button'); b.id = 'pb-' + n; b.style.background = col; b.title = d.spec.label;
+    const dn = (e) => { e.preventDefault(); pressPB(cur(), n, true); }, up = () => pressPB(cur(), n, false);
+    b.addEventListener('pointerdown', dn); b.addEventListener('pointerup', up); b.addEventListener('pointerleave', up); b.addEventListener('pointercancel', up);
+    w.appendChild(b); w.appendChild(document.createTextNode(d.spec.label)); pa.appendChild(w);
+  });
+  $('#lampArea').innerHTML = room.spec.lamps.map(l => `<div class="lp"><i id="lp-${l}" style="--c:${room.dev[l].spec.color}"></i>${l}</div>`).join('');
+  $('#svgMain').innerHTML = ''; $('#svgMain').appendChild(buildMainSVG(room.key));
+  $('#svgCtrl').innerHTML = ''; $('#svgCtrl').appendChild(buildCtrlSVG(room.key));
+  $('#timerBox').style.display = room.key === 'auto' ? 'flex' : 'none';
+  $('#optLoad').checked = room.load > 1;
+  $('#roomName').textContent = room.spec.name; $('#dockRoom').textContent = room.spec.short;
+  $$('#roomTabs button').forEach(b => b.classList.toggle('on', b.dataset.room === room.key));
+  buildFaultPane(room); refreshWiring(room); $('#checkOut').innerHTML = '';
+}
+
+/* =====================================================================
+   14. 실습실 이동 (문 열림 · 카메라 이동) · 화면 오프셋
+   ===================================================================== */
+const VIEW = (k) => ({ pos: V3(ROOM_CX[k] + .05, 2.02, 1.5), tgt: V3(ROOM_CX[k] + .05, 1.74, -2.72) });
+let tween = null;
+function applyView() {
+  const off = state.panel && innerWidth > 980 ? 225 : 0;
+  if (off) camera.setViewOffset(innerWidth, innerHeight, off, 0, innerWidth, innerHeight); else camera.clearViewOffset();
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+}
+function goRoom(k, animate = true) {
+  if (tween || (k === state.room && animate)) return;
+  cancelSel();
+  const from = state.room; const v = VIEW(k);
+  if (!animate) { camera.position.copy(v.pos); controls.target.copy(v.tgt); enterRoom(k); return; }
+  hideBadges(cur());
+  const seq = [from]; if (from !== 'selfhold' && k !== 'selfhold') seq.push('selfhold'); seq.push(k);
+  const P = [camera.position.clone()], Tg = [controls.target.clone()];
+  const sides = [];
+  for (let i = 0; i < seq.length - 1; i++) {
+    const a = ROOM_CX[seq[i]], b = ROOM_CX[seq[i + 1]], dx = (a + b) / 2, s = Math.sign(b - a), z = (DOOR_Z0 + DOOR_Z1) / 2;
+    sides.push(dx < 0 ? 'left' : 'right');
+    P.push(V3(dx - s * 2.2, 1.7, z + .2), V3(dx + s * 1.6, 1.7, z));
+    Tg.push(V3(dx + s * 2, 1.6, z), V3(dx + s * 5, 1.6, z - .5));
+  }
+  P.push(v.pos); Tg.push(v.tgt);
+  Object.values(ROOMS).forEach(r => r.group.visible = true);
+  sides.forEach(s => DOORS[s].target = 1);
+  const pc = new THREE.CatmullRomCurve3(P, false, 'centripetal'), tc = new THREE.CatmullRomCurve3(Tg, false, 'centripetal');
+  tween = { pc, tc, t: 0, dur: clamp(pc.getLength() / 6.5, 1.6, 4), to: k, sides };
+  controls.enabled = false; sfxClick();
+  log('info', `🚪 ${SPECS[k].name}(으)로 이동 중…`);
+}
+function stepTween(dt) {
+  tween.t += dt / tween.dur; const u = ease(clamp(tween.t, 0, 1));
+  camera.position.copy(tween.pc.getPointAt(u)); controls.target.copy(tween.tc.getPointAt(u));
+  if (tween.t >= 1) { const tw = tween; tween = null; controls.enabled = true; setTimeout(() => tw.sides.forEach(s => DOORS[s].target = 0), 500); enterRoom(tw.to); }
+}
+function enterRoom(k) {
+  const prev = cur(); if (prev && prev.key !== k) hideBadges(prev);
+  state.room = k; const room = cur();
+  Object.values(ROOMS).forEach(r => r.group.visible = r === room);
+  aimLights(ROOM_CX[k]);
+  controls.minAzimuthAngle = -Math.PI * .45; controls.maxAzimuthAngle = Math.PI * .45;
+  setupRoomUI(room); simulate(room, true); refreshUI(room);
+  const intro = {
+    selfhold: 'PB-ON → MC 여자 → 13–14 a접점이 PB-ON과 병렬로 닫혀 자기유지. PB-OFF(b접점)로 해제합니다.',
+    interlock: 'PB-F/PB-R로 정·역 운전. 상대 MC의 b접점(21–22)이 코일 회로에 직렬로 들어가 동시 투입(상간단락)을 막습니다.',
+    auto: `PB-ON → X 자기유지 → T 계수(${state.timerSet}s) → 한시 a접점 8–6 → MC 여자로 전동기가 자동 기동합니다.`,
+  }[k];
+  log('info', `${room.spec.name} — ${intro}`);
+}
+
+/* =====================================================================
+   15. 동적 갱신 (전동기 · THR 열축적 · 타이머 · 애니메이션) & 메인 루프
+   ===================================================================== */
+let simT = 0, uiT = 0;
+const revTex = textTex('역회전 ⟲', { w: 256, h: 72, bg: '#1565c0', fg: '#fff', font: 900, radius: 20 });
+const fwdTex = textTex('정회전 ⟳', { w: 256, h: 72, bg: '#1f9d55', fg: '#fff', font: 900, radius: 20 });
+function roomDynamics(room, dt) {
+  const m = room.motor, now = performance.now() / 1000;
+  const tg = m.target || 0;
+  m.speed += (tg - m.speed) * Math.min(1, dt * (tg ? 2.2 : .75));
+  if (!tg && Math.abs(m.speed) < .003) m.speed = 0;
+  if (tg !== (m.lastT || 0)) {
+    if (tg === 1) log('ok', `전동기 ${room.key === 'interlock' ? '정회전 ' : ''}기동 — 기동전류 약 6배(≈30 A) → 가속 후 정격전류(≈5 A)로 안정`);
+    else if (tg === -1) log('ok', '전동기 역회전 기동 — MCR 주접점이 L1↔L3 상순을 바꿔 회전자계 반전');
+    else if (m.lastT) log('info', '전동기 전원 차단 — 관성으로 감속 후 정지');
+    m.lastT = tg;
+  }
+  if (m.hum && !m.lastHum) log('danger', '결상 운전 감지 — 회전자계 불평형으로 기동 불가, 과전류 → 수 초 후 THR 트립');
+  m.lastHum = m.hum;
+  simT += dt;
+  if ((Math.abs(tg - m.speed) > .004) && simT > .09) { simT = 0; simulate(room, true); }
+  const thr = room.dev.THR.state, ratio = (room.heaterI || 0) / THR_SET;
+  if (ratio > 1.05) thr.heat += Math.min(.35, .15 * (ratio * ratio - 1)) * dt; else thr.heat = Math.max(0, thr.heat - .06 * dt);
+  if (!thr.trip && thr.heat >= 1) {
+    thr.trip = true; sfxBeep(660, .3);
+    log('danger', `과부하 — THR 트립 (${(ratio * THR_SET).toFixed(1)} A > 설정 ${THR_SET} A): 95–96 개로 → 코일 소자, 97–98 폐로 → YL 점등`);
+    callout(room, room.dev.THR, '🔥 THR 트립', 'danger'); simulate(room);
+  }
+  for (const d of coilDevs(room)) if (d.type === 'timer' && d.state.on && !d.state.timed && now - d.state.t0 >= state.timerSet) { d.state.timed = true; room.events.push({ k: 'timed' }); simulate(room); }
+}
+function animateDevices(room, dt, t) {
+  const k = Math.min(1, dt * 22);
+  for (const d of Object.values(room.dev)) {
+    const s = d.state, P = d.parts;
+    switch (d.type) {
+      case 'mc': s.anim = lerp(s.anim, s.on ? 1 : 0, k); P.ind.position.x = .068 + s.anim * .044; P.indMat.emissiveIntensity = s.anim * 1.4; break;
+      case 'relay': s.anim = lerp(s.anim, s.on ? 1 : 0, k); P.arm.rotation.z = -s.anim * .3; P.ledMat.emissiveIntensity = s.on ? 2.2 : 0; break;
+      case 'timer': P.ledP.emissiveIntensity = s.on ? 2.2 : 0; P.ledO.emissiveIntensity = s.timed ? 2.2 : (s.on ? (Math.sin(t * 8) > 0 ? .6 : 0) : 0); P.knob.rotation.z = (135 - 27 * state.timerSet) * Math.PI / 180; break;
+      case 'pb': P.head.position.z = lerp(P.head.position.z, d.d * .55 + .02 - (s.pressed ? .012 : 0), k); break;
+      case 'elb4': P.lever.rotation.x = lerp(P.lever.rotation.x, s.on ? -.5 : s.trip ? 0 : .5, Math.min(1, dt * 14)); P.lock.visible = room.loto; break;
+      case 'fuse': P.indMat.emissiveIntensity = s.blown ? 1.6 + Math.sin(t * 10) * .4 : 0; break;
+      case 'thr': P.flagMat.color.set(s.trip ? '#ff8f00' : '#2e9e3e'); P.flagMat.emissive.set(s.trip ? '#ff6f00' : '#000'); break;
+      case 'lamp': { s.bs = lerp(s.bs || 0, s.b, Math.min(1, dt * 18)); P.lensMat.emissiveIntensity = s.bs * 3.2; P.glow.material.opacity = Math.min(.9, s.bs * .85); P.glow.scale.setScalar(.16 + s.bs * .08); break; }
+      case 'meter': { const tgt = d.name === 'VM' ? (room.meterV || 0) : (room.meterA || 0); s.val += (tgt - s.val) * Math.min(1, dt * 5); const f = clamp(s.val / d.spec.max, 0, 1.03); P.needle.rotation.z = (.5 - f) * Math.PI * .6; break; }
+    }
+  }
+  const m = room.motor;
+  m.rot.rotation.z -= m.speed * 15 * dt + (m.hum ? Math.sin(t * 120) * .002 : 0);
+  m.arrow.visible = Math.abs(m.speed) > .05;
+  m.arrow.material.map = m.speed >= 0 ? fwdTex : revTex;
+  if (AU.hum) AU.hum.g.gain.setTargetAtTime(state.sound ? Math.abs(m.speed) * .09 + (m.hum ? .14 : 0) : 0, AU.ctx.currentTime, .08), AU.hum.o3.frequency.setTargetAtTime(260 + 420 * Math.abs(m.speed), AU.ctx.currentTime, .1);
+  // 안내 링 (다음 결선 · 선택)
+  for (const tm of Object.values(room.terms)) if (tm !== sel) tm.ring.visible = false;
+  if (room.guide && state.mode !== 'view') for (const id of room.guide) { const tm = room.terms[id]; if (tm && tm !== sel) { tm.ring.visible = true; tm.ring.material.color.set(0x00c8ff); tm.ring.scale.setScalar(1 + .25 * Math.sin(t * 6)); } }
+  if (sel) sel.ring.scale.setScalar(1.15 + .1 * Math.sin(t * 9));
+}
+const clock = new THREE.Clock();
+const shakeOff = V3();
+function tick() {
+  requestAnimationFrame(tick);
+  const raw = clock.getDelta(), dt = Math.min(raw, .05), t = clock.elapsedTime;
+  if (tween) stepTween(dt);
+  controls.update();
+  updateDoors(dt);
+  const room = cur();
+  roomDynamics(room, Math.min(raw, .25));
+  animateDevices(room, dt, t);
+  updateFlow(room, t); updateFX(dt);
+  uiT += dt;
+  if (uiT > .1) { uiT = 0; $('#mV').textContent = Math.round(room.dev.VM.state.val); $('#mA').textContent = room.dev.AM.state.val.toFixed(1); $('#mR').textContent = Math.round(Math.abs(room.motor.speed) * 1730); }
+  if (shake > .01) { shakeOff.set(rnd(-1, 1), rnd(-1, 1), 0).multiplyScalar(shake * .012); shake *= Math.exp(-dt * 7); } else shakeOff.set(0, 0, 0);
+  camera.position.add(shakeOff);
+  renderer.render(scene, camera); labelRenderer.render(scene, camera);
+  camera.position.sub(shakeOff);
+}
+window.addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); labelRenderer.setSize(innerWidth, innerHeight); applyView(); });
+
+/* =====================================================================
+   16. 초기화
+   ===================================================================== */
+function init() {
+  buildShell();
+  for (const k of ['interlock', 'selfhold', 'auto']) { const r = buildRoom(k); autoWire(r, true); }
+  setupUI(); applyView();
+  goRoom('selfhold', false);
+  log('info', '실습판은 정답 결선 상태입니다. ‘회로연결’ 탭에서 전체 삭제 후 직접 결선하거나, 바로 ELB를 투입해 동작을 관찰하세요.');
+  log('info', '조작: 드래그 회전 · 휠 확대 · 우클릭 이동 · 단자에 마우스를 올리면 실시간 전압 표시');
+  tick();
+  requestAnimationFrame(() => { const l = $('#loading'); l.style.opacity = 0; setTimeout(() => l.style.display = 'none', 500); });
+}
+Promise.race([document.fonts ? document.fonts.ready : Promise.resolve(), new Promise(r => setTimeout(r, 2500))]).then(init);
+window.__cam = camera; window.__twin = { ctl: controls, renderer, scene, ROOMS, state, simulate, toggleELB, pressPB, goRoom, cur, grade, faultsFor, restoreAll };
+</script>
+</body>
+</html>
