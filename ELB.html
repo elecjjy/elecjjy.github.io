@@ -1,0 +1,2388 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>접지·누전차단기 배선 실습 디지털 트윈 교육 시스템</title>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<style>
+:root{
+  --bg:#e9edf2; --panel:#ffffff; --ink:#1b2430; --muted:#5d6b7c; --line:#d5dce5;
+  --accent:#0f6fd6; --accent2:#0b8f7a; --ok:#14a05a; --warn:#e39b00; --bad:#d63a2f;
+  --L:#8b4a1e; --N:#1f5fd6; --PE:#2f9e3a; --PEy:#e8c800;
+  --mono:ui-monospace,"SFMono-Regular","D2Coding",Consolas,monospace;
+  --schH:290px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;font-family:"Pretendard","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;color:var(--ink);background:var(--bg);font-size:14px}
+body{display:grid;grid-template-rows:auto 1fr auto;grid-template-columns:minmax(0,1fr);height:100vh;overflow:hidden}
+button{font:inherit;cursor:pointer}
+header{display:flex;align-items:center;gap:12px;padding:8px 14px;background:#14202e;color:#fff;flex-wrap:wrap}
+.brand{font-weight:700;font-size:15px;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.brand .bolt{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,#ffcf33,#ff8a00);color:#14202e;font-size:15px}
+.tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:#ffcf3325;color:#ffd75e;border:1px solid #ffd75e66}
+#modeTabs{display:flex;gap:4px;flex-wrap:wrap;margin-left:6px}
+#modeTabs button{background:transparent;border:1px solid #ffffff2a;color:#d9e3ef;padding:6px 11px;border-radius:8px;font-size:13px}
+#modeTabs button.on{background:#0f6fd6;border-color:#0f6fd6;color:#fff;font-weight:600}
+#modeTabs button:hover:not(.on){background:#ffffff14}
+.hdr-right{margin-left:auto;display:flex;gap:6px;align-items:center}
+.hbtn{background:#ffffff14;border:1px solid #ffffff2a;color:#fff;border-radius:8px;padding:6px 10px;font-size:13px}
+#vrSlot{position:relative;min-width:0}
+#vrSlot button{position:static !important;padding:6px 10px !important;font-size:12px !important;border-radius:8px !important;width:auto !important;left:auto !important;bottom:auto !important;background:#ffffff14 !important;border:1px solid #ffffff2a !important;opacity:1 !important}
+.mob,.mob2{display:none}
+.drawerClose{width:100%;margin-bottom:10px}
+
+main{display:grid;grid-template-columns:290px minmax(0,1fr) 370px;min-height:0}
+aside{background:var(--panel);overflow:auto;min-height:0}
+#left{border-right:1px solid var(--line)}
+#right{border-left:1px solid var(--line)}
+.ptabs{display:flex;position:sticky;top:0;background:var(--panel);z-index:2;border-bottom:1px solid var(--line)}
+.ptabs button{flex:1;border:0;background:none;padding:10px 4px;font-size:13px;color:var(--muted);border-bottom:2px solid transparent}
+.ptabs button.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:700}
+.pbody{padding:12px}
+.card{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px;background:#fff}
+.card h3{margin:0 0 8px;font-size:14px;display:flex;align-items:center;gap:6px}
+.card h4{margin:12px 0 6px;font-size:13px}
+.card p,.card li{line-height:1.55;color:#2c3846;font-size:13px}
+.card ul,.card ol{padding-left:18px;margin:6px 0}
+.muted{color:var(--muted);font-size:12px}
+.note{background:#fff8e1;border:1px solid #f3d27a;border-radius:8px;padding:8px 10px;font-size:12.5px;line-height:1.5;margin:8px 0}
+.note.blue{background:#eaf3ff;border-color:#a9c9f3}
+.note.red{background:#fdecea;border-color:#f2aaa3}
+.note.green{background:#e8f7ee;border-color:#9fd8b4}
+.badge{display:inline-block;font-size:11px;padding:1px 7px;border-radius:999px;background:#eef2f7;color:#41506a;font-weight:600;vertical-align:middle}
+.badge.virt{background:#fff1c9;color:#7a5600}
+.btn{border:1px solid var(--line);background:#f6f8fb;border-radius:8px;padding:7px 11px;font-size:13px;color:var(--ink)}
+.btn:hover{background:#eef3f9}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.pri:hover{background:#0b5fb9}
+.btn.ok{background:var(--ok);border-color:var(--ok);color:#fff}
+.btn.bad{background:var(--bad);border-color:var(--bad);color:#fff}
+.btn.warn{background:var(--warn);border-color:var(--warn);color:#fff}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.row+.row{margin-top:6px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+select,input[type=range]{font:inherit}
+select{border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:#fff;max-width:100%}
+.part{display:flex;gap:9px;align-items:flex-start;padding:8px;border-radius:9px;cursor:pointer;border:1px solid transparent}
+.part:hover{background:#f2f6fb;border-color:#e0e8f2}
+.part .ic{flex:0 0 28px;height:28px;border-radius:7px;display:grid;place-items:center;font-size:14px;background:#eef3f9}
+.part b{font-size:13px}
+.part .d{font-size:12px;color:var(--muted);line-height:1.45;margin-top:2px}
+.part.sel{background:#e8f1fd;border-color:#a9c9f3}
+.partDetail{font-size:12.5px;line-height:1.55;margin-top:6px;color:#2c3846}
+
+#center{display:grid;grid-template-rows:minmax(0,1fr) var(--schH);min-height:0;min-width:0}
+#viewWrap{position:relative;min-height:0;overflow:hidden;background:#cfd8e2}
+#view{width:100%;height:100%;display:block;touch-action:none}
+.ovl{position:absolute;display:flex;gap:6px;flex-wrap:wrap}
+#viewBtns{top:10px;left:10px}
+#viewBtns button,#viewTools button{background:#ffffffe6;border:1px solid #c9d3de;border-radius:8px;padding:5px 9px;font-size:12px}
+#viewBtns button.on,#viewTools button.on{background:#0f6fd6;color:#fff;border-color:#0f6fd6}
+#viewTools{top:10px;right:10px}
+#tip{position:absolute;pointer-events:none;background:#14202ef0;color:#fff;padding:6px 9px;border-radius:8px;font-size:12px;max-width:260px;display:none;z-index:5;line-height:1.45}
+#hint{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:#14202ee0;color:#fff;padding:7px 14px;border-radius:999px;font-size:12.5px;pointer-events:none;white-space:nowrap;max-width:94%;overflow:hidden;text-overflow:ellipsis}
+#tripFlash{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 0 0 #d63a2f;transition:box-shadow .25s}
+#tripFlash.on{box-shadow:inset 0 0 0 6px #d63a2f}
+#schWrap{background:#fbfcfe;border-top:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+#schHead{display:flex;align-items:center;gap:8px;padding:5px 10px;border-bottom:1px solid var(--line);font-size:12.5px}
+#schHead b{font-size:13px}
+#schHead .sp{flex:1}
+#schHead button{font-size:12px;padding:4px 9px}
+#schBody{flex:1;min-height:0;display:flex;gap:6px;padding:4px}
+#schBody svg{flex:1;min-width:0;height:100%}
+.schCmp{flex:1;display:flex;flex-direction:column;min-width:0;border:1px solid var(--line);border-radius:8px;background:#fff}
+.schCmp .cap{font-size:12px;font-weight:700;padding:3px 8px;border-bottom:1px solid var(--line)}
+#schResize{height:6px;cursor:ns-resize;background:linear-gradient(#0000 2px,#c6d0db 2px,#c6d0db 4px,#0000 4px)}
+
+footer{display:flex;align-items:center;gap:6px;padding:6px 10px;background:#fff;border-top:1px solid var(--line);flex-wrap:wrap;font-size:12.5px}
+.chip{display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:#f1f4f8;border:1px solid var(--line);white-space:nowrap}
+.dot{width:9px;height:9px;border-radius:50%;background:#9aa6b4;flex:0 0 9px}
+.dot.g{background:var(--ok);box-shadow:0 0 6px var(--ok)} .dot.r{background:var(--bad);box-shadow:0 0 6px var(--bad)} .dot.y{background:var(--warn);box-shadow:0 0 6px var(--warn)} .dot.b{background:var(--accent)}
+#lastLog{flex:1;min-width:160px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#disclaim{font-size:11px;color:#7a5600;background:#fff1c9;border-radius:6px;padding:3px 8px}
+#logDrawer{position:fixed;right:12px;bottom:48px;width:min(460px,94vw);max-height:46vh;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 40px #0003;display:none;z-index:40}
+#logDrawer.on{display:block}
+#logDrawer .lh{position:sticky;top:0;background:#fff;padding:9px 12px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.logItem{padding:6px 12px;border-bottom:1px solid #eef1f5;font-size:12.5px;line-height:1.45;display:flex;gap:8px}
+.logItem time{color:var(--muted);font-family:var(--mono);font-size:11.5px;flex:0 0 58px}
+.logItem.bad{background:#fff3f2} .logItem.warn{background:#fffaf0} .logItem.ok{background:#f2fbf5}
+
+/* live meter */
+.lv{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:13px;align-items:center}
+.lv .k{color:var(--muted)}
+.lv .v{font-family:var(--mono);font-weight:700;text-align:right}
+.bar{position:relative;height:16px;border-radius:6px;background:#eef2f7;overflow:hidden;margin-top:6px;border:1px solid #dde4ec}
+.bar>i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#14a05a,#e39b00 50%,#d63a2f);transition:width .2s}
+.bar .mk{position:absolute;top:-1px;bottom:-1px;width:2px;background:#14202e}
+.bar .mk span{position:absolute;top:16px;transform:translateX(-50%);font-size:10px;color:var(--muted);white-space:nowrap}
+.barWrap{padding-bottom:12px}
+.elbState{font-weight:800;font-size:15px;padding:6px 10px;border-radius:8px;text-align:center;margin-top:8px}
+.elbState.on{background:#e8f7ee;color:#0d7a43} .elbState.off{background:#eef2f7;color:#41506a} .elbState.trip{background:#fdecea;color:#b02a20}
+.lcd{background:#1b2a1f;color:#9dff9d;font-family:var(--mono);border-radius:10px;padding:10px 12px;margin-top:8px;border:3px solid #33433a;min-height:64px}
+.lcd .big{font-size:24px;font-weight:700;letter-spacing:.5px}
+.lcd .sm{font-size:11.5px;color:#cfe9cf;margin-top:3px;line-height:1.45}
+.inst{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.inst button{border:1px solid var(--line);background:#f6f8fb;border-radius:9px;padding:7px;font-size:12.5px;text-align:left;line-height:1.3}
+.inst button.on{border-color:var(--accent);background:#e8f1fd;box-shadow:inset 0 0 0 1px var(--accent)}
+.mitems{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.mitems button{font-size:12px;padding:5px 8px;border-radius:7px;border:1px solid var(--line);background:#fff}
+.mitems button.on{background:#14202e;color:#fff;border-color:#14202e}
+
+/* wiring */
+.wtype{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.wtype button{border:2px solid var(--line);background:#fff;border-radius:9px;padding:7px 4px;font-weight:700;font-size:13px}
+.wtype button i{display:block;height:6px;border-radius:3px;margin-top:4px}
+.wtype button.on{border-color:var(--ink);box-shadow:0 2px 0 var(--ink)}
+.wlist{max-height:170px;overflow:auto;margin-top:6px}
+.witem{display:flex;align-items:center;gap:6px;font-size:12.5px;padding:4px 6px;border-radius:6px}
+.witem:nth-child(odd){background:#f6f8fb}
+.witem .sw{width:16px;height:6px;border-radius:3px;flex:0 0 16px}
+.witem .x{margin-left:auto;border:0;background:none;color:var(--bad);font-weight:700}
+.chk{list-style:none;padding:0;margin:6px 0}
+.chk li{display:flex;gap:7px;align-items:flex-start;padding:4px 0;font-size:13px;border-bottom:1px dashed #e8edf3}
+.chk li .m{flex:0 0 20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:800;background:#eef2f7;color:#8a97a8}
+.chk li.y .m{background:var(--ok);color:#fff}
+.chk li.n .m{background:var(--bad);color:#fff}
+.chk li.cur .m{background:var(--warn);color:#fff}
+.err{border-left:4px solid var(--bad);background:#fff5f4;padding:7px 9px;border-radius:6px;margin:6px 0;font-size:12.5px;line-height:1.5}
+.err b{color:#b02a20}
+.okmsg{border-left:4px solid var(--ok);background:#f0faf4;padding:7px 9px;border-radius:6px;margin:6px 0;font-size:12.5px}
+table.cmp{width:100%;border-collapse:collapse;font-size:12px}
+table.cmp th,table.cmp td{border:1px solid var(--line);padding:5px 5px;text-align:left;vertical-align:top;line-height:1.4}
+table.cmp th{background:#f1f4f8}
+table.cmp tr.sel td{background:#eaf3ff}
+.pill{display:inline-block;padding:1px 6px;border-radius:6px;font-size:11px;font-weight:700}
+.pill.g{background:#e3f5ea;color:#0d7a43}.pill.r{background:#fde5e2;color:#b02a20}.pill.y{background:#fff1cf;color:#8a5a00}
+.q{border:1px solid var(--line);border-radius:10px;padding:9px 10px;margin:8px 0}
+.q .qt{font-weight:700;font-size:13px;line-height:1.45}
+.q label{display:flex;gap:6px;align-items:flex-start;font-size:13px;padding:3px 2px;line-height:1.4;cursor:pointer}
+.q.right{border-color:#9fd8b4;background:#f3fbf6}.q.wrong{border-color:#f2aaa3;background:#fff6f5}
+.q .ex{font-size:12.5px;margin-top:6px;color:#2c3846;display:none;line-height:1.5}
+.q.right .ex,.q.wrong .ex{display:block}
+.score{font-size:28px;font-weight:800;text-align:center;margin:6px 0}
+
+#modal{position:fixed;inset:0;background:#0b1320a8;display:none;place-items:center;z-index:60;padding:16px}
+#modal.on{display:grid}
+#modal .box{background:#fff;border-radius:16px;max-width:560px;width:100%;padding:20px 22px;box-shadow:0 20px 60px #0006;max-height:90vh;overflow:auto}
+#modal h2{margin:0 0 10px;font-size:18px}
+#modal p,#modal li{line-height:1.6;font-size:14px}
+#toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:70;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none}
+.toast{background:#14202e;color:#fff;padding:9px 16px;border-radius:10px;font-size:13px;box-shadow:0 8px 24px #0004;animation:tin .25s;max-width:90vw}
+.toast.bad{background:#b02a20}.toast.ok{background:#0d7a43}.toast.warn{background:#9a6a00}
+@keyframes tin{from{opacity:0;transform:translateY(-8px)}}
+#loading{position:fixed;inset:0;background:#14202e;color:#fff;display:grid;place-items:center;z-index:100;font-size:15px}
+#loading.hide{display:none}
+
+@media (max-width:1100px){
+  main{grid-template-columns:0 minmax(0,1fr) 340px}
+  #left{position:fixed;left:0;top:0;bottom:0;width:min(330px,88vw);z-index:50;transform:translateX(-105%);transition:transform .25s;box-shadow:0 0 40px #0004}
+  #left.open{transform:none}
+  .mob{display:inline-block}
+}
+@media (max-width:760px){
+  :root{--schH:230px}
+  body{height:auto;min-height:100vh;overflow:auto;grid-template-rows:auto auto auto}
+  main{display:block}
+  #center{height:auto;display:block}
+  #viewWrap{height:58vh}
+  #schWrap{height:var(--schH)}
+  #schResize{display:none}
+  #right{position:fixed;right:0;top:0;bottom:0;width:min(370px,92vw);z-index:50;transform:translateX(105%);transition:transform .25s;box-shadow:0 0 40px #0004;border:0}
+  #right.open{transform:none}
+  .mob2{display:block}
+  #modeTabs{order:3;width:100%;min-width:0;overflow-x:auto;flex-wrap:nowrap;margin-left:0}
+  #modeTabs button{flex:0 0 auto}
+  .brand .txt{font-size:13px}
+  .brand .tag{display:none}
+  #disclaim{display:none}
+  header{gap:6px;padding:6px 8px}
+  .hdr-right{margin-left:0;width:100%;flex-wrap:nowrap;overflow-x:auto}
+  .hbtn,#vrSlot button{white-space:nowrap;font-size:12px !important;padding:5px 8px !important}
+  #viewTools{top:auto;bottom:46px}
+  #viewBtns button,#viewTools button{padding:4px 7px;font-size:11.5px}
+  #hint{font-size:11px;bottom:8px}
+}
+</style>
+</head>
+<body>
+<div id="loading">3D 전기 실습실을 불러오는 중…</div>
+<header>
+  <div class="brand"><span class="bolt">⚡</span><span class="txt">접지·누전차단기 배선 실습 디지털 트윈</span><span class="tag">교육용 가상 시뮬레이션</span></div>
+  <nav id="modeTabs" aria-label="실습 모드">
+    <button data-mode="normal" class="on">① 정상 운전</button>
+    <button data-mode="leak">② 누전 시나리오</button>
+    <button data-mode="wiring">③ 배선 실습</button>
+    <button data-mode="compare">④ 접지 비교</button>
+    <button data-mode="diag">⑤ 고장 진단</button>
+    <button data-mode="quiz">⑥ 학습 평가</button>
+  </nav>
+  <div class="hdr-right">
+    <button class="hbtn mob" id="btnLeft">☰ 부품·원리</button>
+    <button class="hbtn mob" id="btnRight" style="display:none">⚙ 제어·측정</button>
+    <button class="hbtn" id="btnSound" title="소리 켜기/끄기">🔊 소리</button>
+    <button class="hbtn" id="btnHelp">도움말</button>
+    <div id="vrSlot"></div>
+  </div>
+</header>
+
+<main>
+  <aside id="left">
+    <div class="ptabs" id="leftTabs">
+      <button data-t="parts" class="on">부품</button>
+      <button data-t="theory">원리</button>
+      <button data-t="safety">안전 교육</button>
+    </div>
+    <div class="pbody"><button class="btn mob drawerClose" data-close="left">✕ 닫기</button><div id="leftBody"></div></div>
+  </aside>
+
+  <section id="center">
+    <div id="viewWrap">
+      <canvas id="view"></canvas>
+      <div class="ovl" id="viewBtns">
+        <button data-v="all" class="on">전체</button>
+        <button data-v="panel">배선 패널</button>
+        <button data-v="elb">누전차단기</button>
+        <button data-v="ground">접지극·대지</button>
+        <button data-v="load">부하·외함</button>
+        <button data-v="inst">측정 장비</button>
+      </div>
+      <div class="ovl" id="viewTools">
+        <button id="tglInternal" title="ELB 내부 구조(ZCT·트립코일·접점) 보기">ELB 내부 보기</button>
+        <button id="tglFlow" class="on" title="전류 흐름 입자 표시">전류 흐름</button>
+        <button id="tglLabels" class="on">라벨</button>
+      </div>
+      <div id="tip"></div>
+      <div id="hint">마우스: 회전(좌클릭 드래그)·이동(우클릭)·확대(휠) · 장비를 클릭해 조작하세요</div>
+      <div id="tripFlash"></div>
+    </div>
+    <div id="schWrap">
+      <div id="schResize" title="드래그하여 높이 조절"></div>
+      <div id="schHead">
+        <b>2D 결선도</b><span class="muted">3D 장비와 실시간 동기화 · 단자 클릭으로도 배선 가능</span>
+        <span class="sp"></span>
+        <button class="btn" id="schLive" style="background:#14202e;color:#fff">실시간</button>
+        <button class="btn" id="schCmpBtn">정상 vs 누전 비교</button>
+      </div>
+      <div id="schBody"><svg id="schMain" viewBox="0 0 900 370" preserveAspectRatio="xMidYMid meet"></svg></div>
+    </div>
+  </section>
+
+  <aside id="right">
+    <div class="pbody">
+      <button class="btn mob2 drawerClose" data-close="right">✕ 제어·측정 패널 닫기</button>
+      <div id="modePanel"></div>
+      <div class="card" id="liveCard">
+        <h3>⚡ 실시간 전류·전압 <span class="badge virt">교육용 가상값</span></h3>
+        <div class="lv" id="liveVals"></div>
+        <div class="barWrap">
+          <div class="muted" style="margin-top:8px">누설(불평형) 전류 I<sub>Δ</sub> = I<sub>L</sub> − I<sub>N</sub></div>
+          <div class="bar" id="leakBar"><i></i></div>
+        </div>
+        <div class="elbState off" id="elbState">ELB 개방</div>
+      </div>
+      <div class="card" id="measCard">
+        <h3>🔧 가상 측정 장비</h3>
+        <div class="inst" id="instBtns"></div>
+        <div id="measLoc" style="margin-top:8px"></div>
+        <div class="mitems" id="measItems"></div>
+        <div class="lcd" id="lcd"><div class="big">----</div><div class="sm">측정 장비와 측정 항목을 선택하세요</div></div>
+        <div class="muted" style="margin-top:6px">※ 표시값은 단순화된 회로 모델로 계산한 <b>교육용 가상 수치</b>이며 실제 설비의 측정값과 다릅니다.</div>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<footer>
+  <div class="chip"><span class="dot" id="dPower"></span>전원 <b id="sPower">OFF</b></div>
+  <div class="chip"><span class="dot" id="dElb"></span>차단기 <b id="sElb">개방</b></div>
+  <div class="chip"><span class="dot" id="dGnd"></span>접지 <b id="sGnd">-</b></div>
+  <div class="chip"><span class="dot" id="dLeak"></span>누전 <b id="sLeak">없음</b></div>
+  <div class="chip"><span class="dot" id="dLoad"></span>부하 <b id="sLoad">정지</b></div>
+  <button class="chip" id="btnLog" style="cursor:pointer">📋 고장 이력 <b id="logCount">0</b></button>
+  <div id="lastLog"></div>
+  <div id="disclaim">⚠ 교육용 가상 시뮬레이션 — 실제 활선 배선·감전 실험을 대체하지 않습니다</div>
+</footer>
+
+<div id="logDrawer"><div class="lh"><b>고장·동작 이력</b><span><button class="btn" id="logClear">지우기</button> <button class="btn" id="logClose">닫기</button></span></div><div id="logList"></div></div>
+<div id="modal"><div class="box" id="modalBox"></div></div>
+<div id="toast"></div>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { VRButton } from 'three/addons/webxr/VRButton.js';
+
+/* =====================================================================
+   MODULE 1 · CONFIG — 교육용 회로 상수 (단순화된 가정값)
+   ===================================================================== */
+const CFG = {
+  V: 220, F: 60,              // 단상 220 V 60 Hz (실효값, 저항성 모델로 단순화)
+  R_B: 5,                     // 전원측 계통접지(변압기 중성점) 저항 [Ω] — 가정
+  R_A: 10,                    // 기기측 보호접지극 저항(정상) [Ω] — 가정
+  R_A_HIGH: 300,              // 접지저항 불량 상태 [Ω]
+  R_LOOSE: 150,               // 접지 단자 접촉 불량 저항 [Ω]
+  R_WIRE: 0.01, R_CONTACT: 0.005,
+  R_LOAD: 48.4,               // 1 kW 히터·팬 부하 (220²/1000)
+  R_PERSON: 1000,             // 인체+접촉 저항(교육용 대표값) [Ω]
+  R_INS_OK: 2e8,              // 정상 절연저항 200 MΩ
+  R_TEST: 3300,               // ELB 시험회로 저항 → 약 67 mA
+  I_DN: 0.030,                // 정격감도전류 30 mA
+  I_NOTRIP: 0.015,            // 정격부동작전류 15 mA (50 %)
+  I_TRIP: 0.022,              // 본 모델의 트립 판정값(15~30 mA 사이)
+  T_TRIP_REAL: 0.03,          // 고감도 고속형 동작시간 ≤ 0.03 s
+  TRIP_VIS_MS: 650,           // 시각화를 위해 느리게 표시
+  MCCB_RATED: 20, MCCB_INST: 200,
+  GMIN: 1e-9
+};
+
+/* =====================================================================
+   MODULE 2 · 단자·전선 정의
+   ===================================================================== */
+const TERMS = {
+  SRC_L:     { label:'전원 L',            node:'SRC_L', func:'L',  side:'src'  },
+  SRC_N:     { label:'전원 N',            node:'SRC_N', func:'N',  side:'src'  },
+  ELB_IN_L:  { label:'ELB 전원측 L',      node:'IN_L',  func:'L',  side:'in'   },
+  ELB_IN_N:  { label:'ELB 전원측 N',      node:'IN_N',  func:'N',  side:'in'   },
+  ELB_OUT_L: { label:'ELB 부하측 L',      node:'OUT_L', func:'L',  side:'out'  },
+  ELB_OUT_N: { label:'ELB 부하측 N',      node:'OUT_N', func:'N',  side:'out'  },
+  LOAD_L:    { label:'부하 L',            node:'LOAD_L',func:'L',  side:'load' },
+  LOAD_N:    { label:'부하 N',            node:'LOAD_N',func:'N',  side:'load' },
+  LOAD_PE:   { label:'기기 외함 접지단자', node:'ENC',  func:'PE', side:'enc'  },
+  GB_1:      { label:'접지 단자대 PE-1',  node:'GB',    func:'PE', side:'gnd'  },
+  GB_2:      { label:'접지 단자대 PE-2',  node:'GB',    func:'PE', side:'gnd'  },
+  ROD:       { label:'접지극 단자',        node:'ROD',   func:'PE', side:'rod'  }
+};
+const WT = {
+  L:  { name:'L 활선',       kec:'갈색',        css:'#8b4a1e', hex:0x8b4a1e },
+  N:  { name:'N 중성선',     kec:'청색',        css:'#1f5fd6', hex:0x1f5fd6 },
+  PE: { name:'PE 보호도체',  kec:'녹색-노란색', css:'#2f9e3a', hex:0x2f9e3a }
+};
+const CORRECT = [
+  ['SRC_L','ELB_IN_L','L'], ['SRC_N','ELB_IN_N','N'],
+  ['ELB_OUT_L','LOAD_L','L'], ['ELB_OUT_N','LOAD_N','N'],
+  ['LOAD_PE','GB_1','PE'], ['GB_2','ROD','PE']
+];
+const lab = t => TERMS[t].label;
+
+/* =====================================================================
+   MODULE 3 · 상태(State) + 이벤트 버스
+   ===================================================================== */
+const S = {
+  mode: 'normal',
+  wires: [], userWires: [], wireSeq: 1, wiringSource: 'preset',
+  mccbOn: false, elbClosed: false, elbTripped: false, loadOn: true,
+  elbHealth: { test: true, mech: true },
+  fault: { active: false, R: 1000, loc: 'terminal' },
+  soilRA: CFG.R_A,
+  touching: false,
+  leakSim: { on: false, mA: 30 },
+  testPressed: false,
+  pendingTrip: null,
+  res: null, flags: {}, lastShock: null, noTripWarned: false,
+  diag: null, wireType: 'L', selTerm: null, selWire: null,
+  view: { internal: false, flow: true, labels: true },
+  quiz: { mcq: null, wiring: null, diag: null }
+};
+const Bus = {
+  f: {}, on(e, fn) { (this.f[e] ||= []).push(fn); },
+  emit(e, d) { (this.f[e] || []).forEach(fn => fn(d)); }
+};
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const fmtA = i => { const a = Math.abs(i); return a >= 1 ? a.toFixed(2) + ' A' : a >= 0.001 ? (a * 1000).toFixed(1) + ' mA' : a >= 1e-6 ? (a * 1e6).toFixed(0) + ' µA' : '0 mA'; };
+const fmtV = v => Math.abs(v) < 0.05 ? '0.0 V' : Math.abs(v).toFixed(1) + ' V';
+const fmtR = r => !isFinite(r) ? 'OL' : r >= 1e6 ? (r / 1e6).toFixed(r >= 1e8 ? 0 : 2) + ' MΩ' : r >= 1e3 ? (r / 1e3).toFixed(2) + ' kΩ' : r.toFixed(r < 1 ? 2 : 1) + ' Ω';
+
+/* =====================================================================
+   MODULE 4 · 회로 해석기 (수정절점해석 MNA, 실효값 저항 모델)
+   ===================================================================== */
+const NODES = ['SRC_L','SRC_N','IN_L','IN_N','OUT_L','OUT_N','LOAD_L','LOAD_N','LD_SW','ENC','GB','ROD'];
+const NI = Object.fromEntries(NODES.map((n, i) => [n, i]));
+
+function gauss(A, b) {
+  const n = b.length;
+  for (let c = 0; c < n; c++) {
+    let p = c, mx = Math.abs(A[c][c]);
+    for (let r = c + 1; r < n; r++) { const v = Math.abs(A[r][c]); if (v > mx) { mx = v; p = r; } }
+    if (mx < 1e-20) continue;
+    if (p !== c) { [A[p], A[c]] = [A[c], A[p]]; [b[p], b[c]] = [b[c], b[p]]; }
+    for (let r = c + 1; r < n; r++) {
+      const f = A[r][c] / A[c][c]; if (!f) continue;
+      for (let k = c; k < n; k++) A[r][k] -= f * A[c][k];
+      b[r] -= f * b[c];
+    }
+  }
+  const x = new Float64Array(n);
+  for (let r = n - 1; r >= 0; r--) {
+    let s = b[r]; for (let k = r + 1; k < n; k++) s -= A[r][k] * x[k];
+    x[r] = Math.abs(A[r][r]) < 1e-20 ? 0 : s / A[r][r];
+  }
+  return x;
+}
+
+const Circuit = {
+  elements(st, opt = {}) {
+    const E = [], add = (id, a, b, R) => E.push({ id, a, b, R });
+    if (!opt.noSource) add('RB', 'SRC_N', 'EARTH', CFG.R_B);
+    if (st.elbClosed) { add('cL', 'IN_L', 'OUT_L', CFG.R_CONTACT); add('cN', 'IN_N', 'OUT_N', CFG.R_CONTACT); }
+    for (const w of st.wires) {
+      if (w.broken) continue;
+      const a = TERMS[w.a].node, b = TERMS[w.b].node; if (a === b) continue;
+      add('w' + w.id, a, b, w.loose ? CFG.R_LOOSE : CFG.R_WIRE);
+    }
+    if (st.loadOn) add('sw', 'LOAD_L', 'LD_SW', CFG.R_CONTACT);
+    add('heater', 'LD_SW', 'LOAD_N', CFG.R_LOAD);
+    add('insL', 'LOAD_L', 'ENC', CFG.R_INS_OK);
+    add('insN', 'LOAD_N', 'ENC', CFG.R_INS_OK);
+    if (st.fault.active) add('fault', st.fault.loc === 'element' ? 'LD_SW' : 'LOAD_L', 'ENC', Math.max(st.fault.R, 0.5));
+    add('rod', 'ROD', 'EARTH', st.soilRA);
+    if (st.touching) add('person', 'ENC', 'EARTH', CFG.R_PERSON);
+    if (st.leakSim.on) add('leaksim', 'OUT_L', 'GB', CFG.V / (st.leakSim.mA / 1000));
+    if (st.testPressed && st.elbHealth.test) add('test', 'OUT_L', 'IN_N', CFG.R_TEST);
+    return E;
+  },
+  // 일반 해석: 전압원(pos-neg, V) 하나
+  solveNet(E, pos, neg, V, gmin = CFG.GMIN) {
+    const n = NODES.length, m = n + 1;
+    const A = Array.from({ length: m }, () => new Float64Array(m)), z = new Float64Array(m);
+    const ix = k => k === 'EARTH' ? -1 : NI[k];
+    for (let i = 0; i < n; i++) A[i][i] += gmin;
+    for (const e of E) {
+      const a = ix(e.a), b = ix(e.b), g = 1 / e.R;
+      if (a >= 0) A[a][a] += g; if (b >= 0) A[b][b] += g;
+      if (a >= 0 && b >= 0) { A[a][b] -= g; A[b][a] -= g; }
+    }
+    const p = ix(pos), q = ix(neg);
+    if (p >= 0) { A[p][n] += 1; A[n][p] += 1; }
+    if (q >= 0) { A[q][n] -= 1; A[n][q] -= 1; }
+    z[n] = V;
+    const x = gauss(A, z);
+    const Vn = { EARTH: 0 }; NODES.forEach((k, i) => Vn[k] = x[i]);
+    const I = {}; for (const e of E) I[e.id] = (Vn[e.a] - Vn[e.b]) / e.R;
+    return { V: Vn, I, Isrc: -x[n] };
+  },
+  solve(st) {
+    const E = this.elements(st);
+    const r = this.solveNet(E, 'SRC_L', 'SRC_N', st.mccbOn ? CFG.V : 0);
+    const I = r.I;
+    r.E = E;
+    r.iL = I.cL || 0; r.iN = I.cN || 0;
+    r.iDelta = r.iL + r.iN;              // ZCT가 보는 L·N 합성전류
+    r.loadI = I.heater || 0;
+    r.faultI = I.fault || 0; r.personI = I.person || 0;
+    r.rodI = I.rod || 0; r.rbI = I.RB || 0;
+    r.testI = I.test || 0; r.leakSimI = I.leaksim || 0;
+    let srcI = 0; for (const e of E) { if (e.a === 'SRC_L') srcI += I[e.id]; if (e.b === 'SRC_L') srcI -= I[e.id]; }
+    r.srcI = srcI;
+    r.peI = 0; r.nGndI = 0;
+    for (const w of st.wires) {
+      const id = 'w' + w.id; if (!(id in I)) continue;
+      const na = TERMS[w.a].node, nb = TERMS[w.b].node;
+      if ((na === 'ENC' && nb === 'GB') || (na === 'GB' && nb === 'ENC')) r.peI += Math.abs(I[id]);
+      if (w.type === 'N' && (na === 'GB' || nb === 'GB')) r.nGndI += Math.abs(I[id]);
+    }
+    r.encV = r.V.ENC;
+    r.running = Math.abs(r.loadI) > 1;
+    return r;
+  },
+  // 절연저항계/도통 측정: 무전압 상태에서 두 노드 사이 등가저항
+  resistance(st, a, b) {
+    const E = this.elements(st, { noSource: true }).filter(e => !['person', 'leaksim', 'test'].includes(e.id));
+    const r = this.solveNet(E, a, b, 500, 1e-13);
+    const i = Math.abs(r.Isrc);
+    return i < 1e-12 ? Infinity : 500 / i;
+  },
+  wireI(w) { return (S.res && S.res.I['w' + w.id]) || 0; }
+};
+
+/* =====================================================================
+   MODULE 5 · 시뮬레이션 제어 (ELB·MCCB 보호 로직)
+   ===================================================================== */
+const Sim = {
+  run() {
+    S.res = Circuit.solve(S);
+    this.protect();
+    this.track();
+    Bus.emit('update');
+  },
+  protect() {
+    const r = S.res;
+    if (S.mccbOn && Math.abs(r.srcI) > CFG.MCCB_INST) {
+      S.mccbOn = false;
+      Log.add('bad', `단락 전류 ${fmtA(r.srcI)} → 배선용 차단기(MCCB) 순시 트립`);
+      Sound.trip(); S.res = Circuit.solve(S); return;
+    }
+    if (S.elbClosed && !S.pendingTrip) {
+      const id = Math.abs(S.res.iDelta);
+      if (id >= CFG.I_TRIP) {
+        if (S.elbHealth.mech) this.startTrip(id);
+        else if (!S.noTripWarned) {
+          S.noTripWarned = true;
+          Log.add('bad', `누설전류 ${fmtA(id)} — 정격감도전류 이상인데 ELB가 동작하지 않음! (트립 기구 이상)`);
+          Toast.show('⚠ 누전 검출 범위인데 ELB 미동작 — 즉시 상위 전원 차단 필요', 'bad');
+        }
+      } else if (id < CFG.I_NOTRIP) S.noTripWarned = false;
+    }
+    if (S.touching && Math.abs(S.res.personI) > 0.0005) {
+      const mA = Math.abs(S.res.personI) * 1000;
+      if (!S.lastShock || S.lastShock.closed || mA > S.lastShock.mA) {
+        S.lastShock = { mA, V: Math.abs(S.res.encV), cleared: false, closed: false, elbOk: S.elbHealth.mech };
+      }
+    }
+  },
+  tripCause() {
+    const I = S.res.I, a = k => Math.abs(I[k] || 0);
+    if (a('test') > 1e-4) return '시험 버튼(내부 시험회로)';
+    if (a('leaksim') > 1e-4) return '누전 발생 장치 시험전류 주입';
+    if (S.res.nGndI > 1e-3) return '중성선이 접지계통에 오결선 → 부하전류가 대지로 귀로';
+    if (a('person') > 1e-4 && a('person') > S.res.peI) return '인체를 통한 누설전류 (보호접지 미흡)';
+    if (a('fault') > 1e-4) return '기기 절연 고장 → 보호도체(PE)로 고장전류';
+    return 'L/N 전류 불평형';
+  },
+  startTrip(id) {
+    const cause = this.tripCause();
+    const tok = Math.random();
+    S.pendingTrip = { t: performance.now(), iD: id, cause, tok };
+    S.flags.detect = true;
+    Log.add('warn', `ZCT가 불평형 ${fmtA(id)} 검출 (원인: ${cause}) → 트립 코일 여자`);
+    Sound.beep(1200, .12);
+    Bus.emit('tripStart');
+    setTimeout(() => this.doTrip(tok), CFG.TRIP_VIS_MS);
+  },
+  doTrip(tok) {
+    if (!S.pendingTrip || S.pendingTrip.tok !== tok) return;
+    const p = S.pendingTrip; S.pendingTrip = null;
+    S.elbClosed = false; S.elbTripped = true; S.testPressed = false;
+    S.flags.trip = true; S.flags.tripCause = p.cause;
+    if (S.lastShock && !S.lastShock.closed) { S.lastShock.cleared = true; S.lastShock.closed = true; }
+    Sound.trip();
+    Log.add('bad', `누전차단기 트립 — 검출 ${fmtA(p.iD)} · 원인: ${p.cause} · (실제 동작시간 ≤ ${CFG.T_TRIP_REAL} s)`);
+    this.run();
+    Bus.emit('trip', p);
+  },
+  track() {
+    const r = S.res, f = S.flags;
+    if (r.peI > 1e-3) f.peFlow = true;
+    if (S.fault.active && Math.abs(r.encV) > 50 && !S.touching) f.encDanger = true;
+    if (S.touching && Math.abs(r.personI) > 5e-4) f.touch = true;
+    if (r.running) f.ran = true;
+    if (r.running && Math.abs(r.iDelta) < 1e-3) f.balanced = true;
+  },
+  groundStatus(st = S) {
+    const pe1 = st.wires.find(w => (TERMS[w.a].node === 'ENC' && TERMS[w.b].node === 'GB') || (TERMS[w.b].node === 'ENC' && TERMS[w.a].node === 'GB'));
+    const pe2 = st.wires.find(w => (TERMS[w.a].node === 'GB' && TERMS[w.b].node === 'ROD') || (TERMS[w.b].node === 'GB' && TERMS[w.a].node === 'ROD'));
+    if (!pe1 || !pe2) return { code: 'none', text: '미결선', dot: 'r' };
+    if (pe1.broken || pe2.broken) return { code: 'open', text: '단선', dot: 'r' };
+    if (pe1.loose || pe2.loose) return { code: 'loose', text: '연결 불량', dot: 'y' };
+    if (st.soilRA > 100) return { code: 'high', text: `고저항 ${st.soilRA} Ω`, dot: 'y' };
+    return { code: 'ok', text: `정상 ${st.soilRA} Ω`, dot: 'g' };
+  }
+};
+
+/* =====================================================================
+   MODULE 6 · 사용자 조작(Action)
+   ===================================================================== */
+const Act = {
+  canPower() {
+    if (S.wiringSource !== 'user') return true;
+    const c = Wiring.check(S.wires);
+    if (!c.pass) { Toast.show('배선 검사를 통과해야 전원을 투입할 수 있습니다 (배선 확인 버튼)', 'bad'); Log.add('warn', '오배선 상태에서 전원 투입 시도 → 인터록으로 차단'); return false; }
+    return true;
+  },
+  mccb(on) {
+    if (on === undefined) on = !S.mccbOn;
+    if (on && !this.canPower()) return;
+    S.mccbOn = on; Sound.click();
+    Log.add(on ? 'ok' : 'info', on ? '주 전원(MCCB) 투입 — 단상 220 V 공급' : '주 전원(MCCB) 개방');
+    Sim.run();
+  },
+  elbHandle() {
+    if (S.pendingTrip) return;
+    if (S.elbTripped) return UI.reclose();
+    if (S.elbClosed) { S.elbClosed = false; Log.add('info', '누전차단기 수동 개방(OFF)'); }
+    else { if (!this.canPower()) return; S.elbClosed = true; Log.add('ok', '누전차단기 투입(ON)'); }
+    Sound.click(); Sim.run();
+  },
+  elbReclose() {
+    S.elbTripped = false; S.elbClosed = true; S.noTripWarned = false; Sound.click();
+    Log.add('info', '점검 후 누전차단기 재투입'); Sim.run();
+    if (S.pendingTrip) { Log.add('bad', '재투입 즉시 재트립 — 고장 원인이 아직 제거되지 않았습니다'); Toast.show('재투입 즉시 재트립: 고장 원인을 먼저 찾아 제거하세요', 'bad'); }
+  },
+  elbResetOff() { S.elbTripped = false; S.elbClosed = false; Sound.click(); Log.add('info', '트립 표시 해제(핸들 OFF 위치로 리셋)'); Sim.run(); },
+  test() {
+    if (S.pendingTrip) return;
+    if (!S.mccbOn || !S.elbClosed) { Toast.show('시험 버튼은 전원이 공급되고 ELB가 투입된 상태에서 동작합니다', 'warn'); return; }
+    S.testPressed = true; S.flags.testPress = true; Sound.click(); Log.add('info', '누전차단기 시험(TEST) 버튼 누름');
+    Sim.run(); Bus.emit('testBtn');
+    setTimeout(() => {
+      const tripped = S.elbTripped || S.pendingTrip;
+      S.testPressed = false;
+      if (!tripped) {
+        Log.add('bad', '시험 버튼을 눌렀으나 트립되지 않음 → 시험회로 또는 트립 기구 불량. 사용 중지·교체 대상');
+        Toast.show('시험 버튼 무반응: ELB 불량 의심', 'bad');
+      } else S.flags.testOk = true;
+      Sim.run();
+    }, CFG.TRIP_VIS_MS + 150);
+  },
+  load(on) { if (on === undefined) on = !S.loadOn; S.loadOn = on; Sound.click(); Log.add('info', on ? '부하 스위치 ON' : '부하 스위치 OFF'); Sim.run(); },
+  fault(on, R) {
+    if (on === undefined) on = !S.fault.active;
+    if (R !== undefined) S.fault.R = R;
+    S.fault.active = on; if (on) S.fault.loc = S.fault.loc || 'terminal';
+    Sound.click();
+    Log.add(on ? 'bad' : 'ok', on ? `기기 내부 절연 고장 발생 (L–외함, 고장저항 ${fmtR(S.fault.R)})` : '절연 고장 해제(수리)');
+    Sim.run();
+  },
+  touch(on) {
+    if (on === undefined) on = !S.touching;
+    S.touching = on;
+    if (on) Log.add('warn', '[교육용 시각화] 인체가 기기 외함에 접촉한 상황 재현');
+    else { Log.add('info', '[교육용 시각화] 접촉 해제'); if (S.lastShock) S.lastShock.closed = true; }
+    Sim.run();
+  },
+  leakSim(on, mA) {
+    if (mA) S.leakSim.mA = mA;
+    if (on === undefined) on = !S.leakSim.on;
+    S.leakSim.on = on; Sound.click();
+    if (on) Log.add('warn', `누전 발생 시험기: ELB 부하측 L → PE 로 ${S.leakSim.mA} mA 주입`);
+    Sim.run();
+    if (on) setTimeout(() => { S.leakSim.on = false; Sim.run(); }, CFG.TRIP_VIS_MS + 400);
+  }
+};
+
+/* =====================================================================
+   MODULE 7 · 배선 관리 및 자동 평가
+   ===================================================================== */
+const Wiring = {
+  make(a, b, type, extra = {}) { return { id: S.wireSeq++, a, b, type, broken: false, loose: false, ...extra }; },
+  correctSet() { return CORRECT.map(([a, b, t]) => this.make(a, b, t)); },
+  setPreset(wires) { S.wires = wires || this.correctSet(); S.wiringSource = 'preset'; Bus.emit('wires'); },
+  find(a, b) { return S.wires.find(w => (w.a === a && w.b === b) || (w.a === b && w.b === a)); },
+  add(a, b, type) {
+    if (a === b) return;
+    if (S.mode !== 'wiring') { Toast.show('배선 편집은 ③ 배선 실습 모드에서 할 수 있습니다', 'warn'); return; }
+    if (S.mccbOn) { Toast.show('전원이 투입된 상태에서는 배선할 수 없습니다 — 먼저 MCCB를 개방하세요', 'bad'); Log.add('warn', '활선 상태 배선 시도 차단 (전원 차단 후 작업 원칙)'); return; }
+    if (this.find(a, b)) { Toast.show('이미 연결된 단자입니다', 'warn'); return; }
+    const w = this.make(a, b, type || S.wireType);
+    S.wires.push(w); S.userWires = S.wires; S.wiringSource = 'user';
+    Sound.click(); Log.add('info', `배선 연결: ${lab(a)} ↔ ${lab(b)} (${WT[w.type].name}, ${WT[w.type].kec})`);
+    Bus.emit('wires'); Sim.run();
+  },
+  remove(id) {
+    if (S.mode !== 'wiring') return;
+    if (S.mccbOn) { Toast.show('전원 투입 중에는 배선을 제거할 수 없습니다', 'bad'); return; }
+    const w = S.wires.find(x => x.id === id); if (!w) return;
+    S.wires = S.wires.filter(x => x.id !== id); S.userWires = S.wires; S.selWire = null;
+    Log.add('info', `배선 제거: ${lab(w.a)} ↔ ${lab(w.b)}`); Bus.emit('wires'); Sim.run();
+  },
+  clear() { if (S.mccbOn) { Toast.show('전원을 먼저 차단하세요', 'bad'); return; } S.wires = []; S.userWires = S.wires; S.wiringSource = 'user'; Bus.emit('wires'); Sim.run(); },
+  check(wires) {
+    const errs = [], key = (a, b) => [a, b].sort().join('|'), map = new Map();
+    const E = (item, t, at, why) => errs.push({ item, t, at, why });
+    for (const w of wires) {
+      const k = key(w.a, w.b);
+      if (map.has(k)) E(null, '중복 배선', `${lab(w.a)} ↔ ${lab(w.b)}`, '같은 단자 사이에 전선이 두 번 연결되었습니다. 불필요한 배선은 제거합니다.');
+      map.set(k, w);
+    }
+    for (const w of wires) {
+      const A = TERMS[w.a], B = TERMS[w.b], at = `${lab(w.a)} ↔ ${lab(w.b)}`;
+      const sides = [A.side, B.side], funcs = [A.func, B.func];
+      const elbSide = s => s === 'in' || s === 'out';
+      if (funcs.includes('PE') && (elbSide(A.side) || elbSide(B.side))) {
+        E(6, '보호도체(PE)를 누전차단기 극에 접속', at, '누전차단기의 극(L/N)과 ZCT는 부하전류 도체 전용입니다. PE를 차단기에 통과시키면 고장전류가 ZCT를 왕복해 상쇄되어 누전을 검출하지 못하거나, 차단 시 보호접지까지 끊깁니다. PE는 차단기를 거치지 않고 접지 단자대로 직접 연결합니다.');
+        continue;
+      }
+      if (A.func !== B.func) {
+        const p = [A.func, B.func].sort().join('-');
+        if (p === 'N-PE') E(4, '중성선(N)과 보호도체(PE) 혼용', at, '중성선은 정상 부하전류가 돌아오는 통전 도체이고, PE는 고장 시에만 전류가 흐르는 보호 경로입니다. ELB 부하측에서 N과 PE를 연결하면 부하전류 일부가 대지로 귀로해 ZCT가 불평형으로 판단(불필요 트립)하고, 외함에 전압이 나타날 수 있습니다.');
+        else if (p === 'L-N') E(1, 'L–N 극성 오류 (단락 위험)', at, 'L 단자와 N 단자를 서로 연결하면 극성이 바뀌거나 전원 투입 시 단락이 됩니다. L은 L끼리, N은 N끼리 연결합니다.');
+        else E(6, '활선(L)을 접지 계통에 접속', at, '활선을 외함·접지 단자에 연결하면 전원 투입 즉시 지락이 되어 외함이 충전되고 차단기가 트립합니다. 보호접지 배선과 전원 배선은 분리합니다.');
+      } else if (w.type !== A.func) {
+        E(4, '전선 종류(색상) 불일치', at, `${A.func} 기능 단자에는 ${WT[A.func].kec} ${WT[A.func].name} 전선을 사용합니다. (현재 ${WT[w.type].kec} ${w.type}) — KEC 전선 식별: L 갈색, N 청색, PE 녹색-노란색.`);
+      }
+      if ((sides.includes('src') && sides.includes('out')) || (sides.includes('load') && sides.includes('in')))
+        E(5, '누전차단기 전원측/부하측 역접속', at, '전원은 ELB의 전원측(LINE, 상단) 단자에, 부하는 부하측(LOAD, 하단) 단자에 연결합니다. 역접속하면 차단 후에도 "부하측" 단자에 전압이 남아 점검자가 감전될 수 있고, 제품에 따라 시험·트립 회로가 정상 동작하지 않습니다.');
+      if (sides.includes('src') && sides.includes('load'))
+        E(5, '누전차단기 우회 배선', at, '전원에서 부하로 직접 연결하면 누전차단기를 거치지 않아 누전 보호가 전혀 되지 않습니다.');
+      if (sides.includes('in') && sides.includes('out') && A.func === B.func)
+        E(5, '차단기 접점 단락(우회)', at, '같은 극의 전원측과 부하측을 직접 연결하면 차단기를 개방해도 전류가 흐릅니다.');
+      if (A.side === B.side && ['src', 'in', 'out', 'load'].includes(A.side) && A.func !== B.func) { /* L-N 처리됨 */ }
+      if ((A.side === 'enc' && B.side === 'rod') || (A.side === 'rod' && B.side === 'enc'))
+        E(3, '접지 단자대 미경유', at, '교육 과제 기준: 기기 외함 PE는 접지 단자대(주접지단자)에 모은 뒤 접지도체로 접지극에 연결합니다. 단자대를 거쳐야 점검·측정 시 분리와 확인이 쉽습니다.');
+    }
+    const has = (a, b, t) => { const w = map.get(key(a, b)); return w && (!t || w.type === t); };
+    const req = [
+      [1, 'SRC_L', 'ELB_IN_L', '전원 L → ELB 전원측 L'], [1, 'ELB_OUT_L', 'LOAD_L', 'ELB 부하측 L → 부하 L'],
+      [2, 'SRC_N', 'ELB_IN_N', '전원 N → ELB 전원측 N'], [2, 'ELB_OUT_N', 'LOAD_N', 'ELB 부하측 N → 부하 N']
+    ];
+    for (const [it, a, b, d] of req) if (!map.has(key(a, b))) E(it, '미결선', d, `${d} 배선이 없습니다.`);
+    const pe1 = has('LOAD_PE', 'GB_1', 'PE') || has('LOAD_PE', 'GB_2', 'PE');
+    const pe2 = has('GB_1', 'ROD', 'PE') || has('GB_2', 'ROD', 'PE');
+    if (!pe1) E(3, has('LOAD_PE', 'GB_1') || has('LOAD_PE', 'GB_2') ? '보호도체(PE) 전선 미사용' : '미결선', '기기 외함 접지단자 → 접지 단자대', '기기 외함은 녹색-노란색 PE 전선으로 접지 단자대에 연결해야 합니다. 연결되지 않으면 절연 고장 시 외함이 충전되어 감전 위험이 커집니다.');
+    if (!pe2) E(3, has('GB_1', 'ROD') || has('GB_2', 'ROD') ? '보호도체(PE) 전선 미사용' : '미결선', '접지 단자대 → 접지극', '접지 단자대와 접지극은 PE(접지도체)로 연결합니다. 없으면 고장전류가 대지로 흐를 경로가 없습니다.');
+    const names = ['L선의 올바른 연결', 'N선의 올바른 연결', 'PE 접지선의 올바른 연결', '접지선과 중성선의 구분(색상·기능)', '누전차단기 입력·출력 방향', '보호접지와 부하전원 배선의 분리'];
+    const items = names.map((n, i) => ({ n: i + 1, name: n, ok: !errs.some(e => e.item === i + 1) }));
+    return { pass: errs.length === 0, items, errs };
+  }
+};
+
+/* =====================================================================
+   MODULE 8 · 로그 / 토스트
+   ===================================================================== */
+const Log = {
+  list: [],
+  add(level, msg) {
+    const t = new Date(); const ts = t.toTimeString().slice(0, 8);
+    this.list.unshift({ level, msg, ts });
+    if (this.list.length > 200) this.list.pop();
+    Bus.emit('log');
+  }
+};
+const Toast = {
+  show(msg, kind = '') {
+    const d = document.createElement('div'); d.className = 'toast ' + kind; d.textContent = msg;
+    $('#toast').appendChild(d); setTimeout(() => d.remove(), 3200);
+  }
+};
+
+/* =====================================================================
+   MODULE 9 · Web Audio (차단음·경보음·험 노이즈)
+   ===================================================================== */
+const Sound = {
+  ctx: null, on: true, master: null, hum: null, alarmTimer: null,
+  init() {
+    if (this.ctx) return;
+    try {
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      this.master = this.ctx.createGain(); this.master.gain.value = .5; this.master.connect(this.ctx.destination);
+    } catch (e) { this.ctx = null; }
+  },
+  ok() { if (!this.on) return false; this.init(); if (!this.ctx) return false; if (this.ctx.state === 'suspended') this.ctx.resume(); return true; },
+  click() {
+    if (!this.ok()) return; const c = this.ctx, t = c.currentTime;
+    const o = c.createOscillator(), g = c.createGain(); o.type = 'square'; o.frequency.value = 1800;
+    g.gain.setValueAtTime(.08, t); g.gain.exponentialRampToValueAtTime(.0001, t + .04);
+    o.connect(g).connect(this.master); o.start(t); o.stop(t + .05);
+  },
+  beep(f = 1000, d = .15, v = .12) {
+    if (!this.ok()) return; const c = this.ctx, t = c.currentTime;
+    const o = c.createOscillator(), g = c.createGain(); o.type = 'square'; o.frequency.value = f;
+    g.gain.setValueAtTime(v, t); g.gain.setValueAtTime(v, t + d * .8); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+    o.connect(g).connect(this.master); o.start(t); o.stop(t + d + .02);
+  },
+  trip() {
+    if (!this.ok()) return; const c = this.ctx, t = c.currentTime;
+    const len = .12 * c.sampleRate, buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 4);
+    const n = c.createBufferSource(); n.buffer = buf;
+    const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2400; bp.Q.value = .8;
+    const g = c.createGain(); g.gain.value = .9; n.connect(bp).connect(g).connect(this.master); n.start(t);
+    const o = c.createOscillator(), og = c.createGain(); o.type = 'sine';
+    o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(45, t + .18);
+    og.gain.setValueAtTime(.7, t); og.gain.exponentialRampToValueAtTime(.0001, t + .22);
+    o.connect(og).connect(this.master); o.start(t); o.stop(t + .25);
+  },
+  setHum(on) {
+    if (!this.ctx || !this.on) { if (this.hum) { this.hum.o.stop(); this.hum = null; } return; }
+    if (on && !this.hum) {
+      const c = this.ctx, o = c.createOscillator(), g = c.createGain(); o.type = 'sawtooth'; o.frequency.value = 120;
+      const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 300;
+      g.gain.value = .015; o.connect(lp).connect(g).connect(this.master); o.start(); this.hum = { o, g };
+    } else if (!on && this.hum) { this.hum.o.stop(); this.hum = null; }
+  },
+  setAlarm(on) {
+    if (on && !this.alarmTimer && this.on) {
+      this.beep(880, .18, .1);
+      this.alarmTimer = setInterval(() => { this.beep(880, .18, .1); setTimeout(() => this.beep(660, .18, .1), 240); }, 900);
+    } else if (!on && this.alarmTimer) { clearInterval(this.alarmTimer); this.alarmTimer = null; }
+  }
+};
+
+/* =====================================================================
+   MODULE 10 · 3D 실습실 (Three.js)
+   ===================================================================== */
+const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
+const canvasEl = $('#view');
+const renderer = new THREE.WebGLRenderer({ canvas: canvasEl, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.xr.enabled = true;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xdfe6ee);
+scene.fog = new THREE.Fog(0xdfe6ee, 9, 18);
+const camera = new THREE.PerspectiveCamera(50, 1, 0.02, 60);
+const rig = new THREE.Group(); rig.add(camera); scene.add(rig);
+camera.position.set(0.3, 1.9, 4.6);
+
+const interactables = [];
+const labelGroup = new THREE.Group(); scene.add(labelGroup);
+const TERM3D = {};
+
+/* ---------- 재질 ---------- */
+const MS = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: .55, metalness: .1, ...o });
+const M = {
+  panel: MS(0xf4f6f8, { roughness: .8 }), frame: MS(0xa9b3be, { metalness: .7, roughness: .35 }),
+  steel: MS(0xc4ccd5, { metalness: .65, roughness: .32 }), dark: MS(0x2a2f36, { roughness: .6 }),
+  plastic: MS(0xf1efe8, { roughness: .45 }), gray: MS(0x8f98a3), brass: MS(0xd8aa3e, { metalness: .85, roughness: .3 }),
+  copper: MS(0xc8733a, { metalness: .85, roughness: .3 }), pcb: MS(0x1f7a3a, { roughness: .5 }),
+  ferrite: MS(0x3a3d42, { roughness: .7 }), rubber: MS(0x1b1d20, { roughness: .9 }),
+  beige: MS(0xd9c8a3), wood: MS(0xb88a5a, { roughness: .8 }), skin: MS(0xc9cdd3, { roughness: .7 }),
+  yellow: MS(0xf2c230), orange: MS(0xf07a1a), red: MS(0xd63a2f), blue: MS(0x1f5fd6), brown: MS(0x8b4a1e), green: MS(0x2f9e3a)
+};
+function add(m, p) { m.castShadow = true; m.receiveShadow = true; (p || scene).add(m); return m; }
+function box(w, h, d, mat, x, y, z, p) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); return add(m, p); }
+function cyl(r1, r2, h, mat, x, y, z, p, seg = 24) { const m = new THREE.Mesh(new THREE.CylinderGeometry(r1, r2, h, seg), mat); m.position.set(x, y, z); return add(m, p); }
+function sph(r, mat, x, y, z, p) { const m = new THREE.Mesh(new THREE.SphereGeometry(r, 20, 14), mat); m.position.set(x, y, z); return add(m, p); }
+
+/* ---------- 텍스트 텍스처 ---------- */
+const FONT = '"Pretendard","Noto Sans KR","Malgun Gothic",sans-serif';
+function textCanvas(lines, o = {}) {
+  const fs = o.fs || 44, pad = o.pad ?? 14, c = document.createElement('canvas'), x = c.getContext('2d');
+  lines = [].concat(lines);
+  x.font = `${o.bold === false ? '' : 'bold '}${fs}px ${FONT}`;
+  const w = Math.max(...lines.map(l => x.measureText(l).width)) + pad * 2, h = lines.length * fs * 1.25 + pad * 1.4;
+  c.width = Math.ceil(w); c.height = Math.ceil(h);
+  x.font = `${o.bold === false ? '' : 'bold '}${fs}px ${FONT}`;
+  if (o.bg) { x.fillStyle = o.bg; const r = Math.min(18, h / 3); x.beginPath(); x.roundRect(0, 0, c.width, c.height, r); x.fill(); }
+  if (o.border) { x.strokeStyle = o.border; x.lineWidth = 4; x.beginPath(); x.roundRect(2, 2, c.width - 4, c.height - 4, 14); x.stroke(); }
+  x.fillStyle = o.color || '#fff'; x.textBaseline = 'middle'; x.textAlign = 'center';
+  lines.forEach((l, i) => x.fillText(l, c.width / 2, pad * .7 + fs * 1.25 * (i + .5)));
+  return c;
+}
+function label(text, pos, o = {}) {
+  const c = textCanvas(text, { bg: o.bg ?? '#14202ed9', color: o.color, fs: o.fs || 40 });
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: o.depthTest ?? true, transparent: true }));
+  const h = (o.h || .045) * 1.35; sp.scale.set(h * c.width / c.height, h, 1); sp.position.copy(pos);
+  sp.renderOrder = 10; (o.parent || labelGroup).add(sp); return sp;
+}
+function plate(text, w, h, o = {}) {
+  const c = textCanvas(text, { bg: o.bg || '#ffffff', color: o.color || '#14202e', fs: o.fs || 44, border: o.border });
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+  const hh = h || w * c.height / c.width;
+  return new THREE.Mesh(new THREE.PlaneGeometry(w, hh), new THREE.MeshBasicMaterial({ map: tex, transparent: true }));
+}
+function lcd(w, h, cw = 256, ch = 128) {
+  const c = document.createElement('canvas'); c.width = cw; c.height = ch;
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: tex }));
+  return { c, x: c.getContext('2d'), tex, mesh, last: '' };
+}
+function drawLCD(L, lines, o = {}) {
+  const key = lines.join('|') + (o.bg || ''); if (key === L.last) return; L.last = key;
+  const { c, x } = L; x.fillStyle = o.bg || '#16261b'; x.fillRect(0, 0, c.width, c.height);
+  x.fillStyle = o.color || '#8dff8d'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  const n = lines.length;
+  lines.forEach((l, i) => {
+    let fs = i === 0 && n > 1 ? c.height * .3 : c.height * (n > 1 ? .2 : .5);
+    x.font = `bold ${fs}px ui-monospace,Consolas,monospace`;
+    const w = x.measureText(l).width; if (w > c.width * .92) { fs *= c.width * .92 / w; x.font = `bold ${fs}px ui-monospace,Consolas,monospace`; }
+    x.fillText(l, c.width / 2, n === 1 ? c.height * .52 : c.height * (i === 0 ? .26 : .26 + .25 * i + .05));
+  });
+  L.tex.needsUpdate = true;
+}
+function inter(mesh, data) { mesh.userData = { ...mesh.userData, ...data }; interactables.push(mesh); return mesh; }
+
+/* ---------- 실내 공간 ---------- */
+const Room = {
+  build() {
+    scene.add(new THREE.HemisphereLight(0xffffff, 0xaeb6c0, 1.0));
+    const sun = new THREE.DirectionalLight(0xffffff, 1.5); sun.position.set(3, 6, 5); sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -4, right: 4, top: 4, bottom: -2, near: .5, far: 20 }); sun.shadow.bias = -.0004;
+    scene.add(sun);
+    const fill = new THREE.PointLight(0xfff6e8, 6, 12, 1.6); fill.position.set(-2, 2.8, 2.5); scene.add(fill);
+    // 바닥 타일
+    const tc = document.createElement('canvas'); tc.width = tc.height = 256; const tx = tc.getContext('2d');
+    tx.fillStyle = '#d7dce2'; tx.fillRect(0, 0, 256, 256); tx.fillStyle = '#cdd3da'; tx.fillRect(0, 0, 128, 128); tx.fillRect(128, 128, 128, 128);
+    tx.strokeStyle = '#b9c0c8'; tx.lineWidth = 2; tx.strokeRect(0, 0, 256, 256); tx.strokeRect(0, 0, 128, 128); tx.strokeRect(128, 128, 128, 128);
+    const ft = new THREE.CanvasTexture(tc); ft.wrapS = ft.wrapT = THREE.RepeatWrapping; ft.colorSpace = THREE.SRGBColorSpace;
+    const floorPiece = (x0, x1, z0, z1) => {
+      const t = ft.clone(); t.needsUpdate = true; t.repeat.set((x1 - x0) / 1.2, (z1 - z0) / 1.2);
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0), MS(0xffffff, { map: t, roughness: .85 }));
+      m.rotation.x = -Math.PI / 2; m.position.set((x0 + x1) / 2, 0, (z0 + z1) / 2); m.receiveShadow = true; scene.add(m);
+    };
+    // 접지극 점검 피트(0.25~0.85) 개구부를 남기고 바닥 구성
+    floorPiece(-7, .25, -2, 7); floorPiece(.85, 7, -2, 7); floorPiece(.25, .85, -2, .25); floorPiece(.25, .85, .85, 7);
+    // 벽·천장
+    const wallM = MS(0xeef1f4, { roughness: .95 });
+    box(14, 3.6, .1, wallM, 0, 1.8, -2.05);
+    box(.1, 3.6, 9, wallM, -7, 1.8, 2.5); box(.1, 3.6, 9, wallM, 7, 1.8, 2.5);
+    box(14, .06, .12, MS(0x9aa4ae), 0, .06, -1.98); // 걸레받이
+    const ceil = new THREE.Mesh(new THREE.PlaneGeometry(14, 9), MS(0xf8f9fa)); ceil.rotation.x = Math.PI / 2; ceil.position.set(0, 3.6, 2.5); scene.add(ceil);
+    for (const x of [-3, 0, 3]) for (const z of [-.5, 2.5]) { const l = box(1.2, .03, .3, new THREE.MeshBasicMaterial({ color: 0xffffff }), x, 3.58, z); l.castShadow = false; }
+    // 벽 안전 포스터
+    const p1 = plate(['⚠ 전기 안전 수칙', '전원 차단 → 검전 → 접지 → 작업', '트립 후 원인 확인 전 재투입 금지'], 1.5, null, { bg: '#fff4cc', fs: 40, border: '#e39b00' });
+    p1.position.set(-3.6, 2.2, -1.99); scene.add(p1);
+    const p2 = plate(['전선 식별 (KEC)', 'L 갈색 · N 청색 · PE 녹색-노란색'], 1.4, null, { bg: '#eaf3ff', fs: 40, border: '#0f6fd6' });
+    p2.position.set(3.6, 2.2, -1.99); scene.add(p2);
+    // 접지 피트 + 대지 단면
+    const pitM = MS(0x9a9fa6, { roughness: .95 });
+    box(.62, .25, .04, pitM, .55, -.125, .23); box(.04, .25, .62, pitM, .23, -.125, .55); box(.04, .25, .62, pitM, .87, -.125, .55);
+    const soil = new THREE.Mesh(new THREE.BoxGeometry(.6, 1.6, .6), new THREE.MeshStandardMaterial({ color: 0x7a5232, transparent: true, opacity: .42, depthWrite: false, roughness: 1 }));
+    soil.position.set(.55, -1.05, .55); scene.add(soil);
+    const soilTop = new THREE.Mesh(new THREE.PlaneGeometry(.6, .6), MS(0x6b4528, { roughness: 1 })); soilTop.rotation.x = -Math.PI / 2; soilTop.position.set(.55, -.25, .55);
+    soilTop.material.transparent = true; soilTop.material.opacity = .55; scene.add(soilTop);
+    label('대지(Earth) 단면 — 교육용 시각화', V3(.55, -.35, .9), { h: .04, bg: '#5a3a1ee6' });
+  }
+};
+
+/* ---------- 단자 ---------- */
+const FUNC_COL = { L: 0x8b4a1e, N: 0x1f5fd6, PE: 0x2f9e3a };
+function makeTerminal(id, pos, normal = V3(0, 0, 1), parent) {
+  const T = TERMS[id], g = new THREE.Group(); g.position.copy(pos);
+  g.quaternion.setFromUnitVectors(V3(0, 0, 1), normal.clone().normalize());
+  box(.06, .06, .03, M.dark, 0, 0, -.012, g);
+  const ringM = MS(FUNC_COL[T.func], { emissive: 0x000000 });
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(.022, .006, 8, 20), ringM); ring.position.z = .006; g.add(ring);
+  const screw = cyl(.015, .015, .014, M.brass.clone(), 0, 0, .008, g); screw.rotation.x = Math.PI / 2;
+  const slot = box(.022, .004, .004, M.dark, 0, 0, .016, g);
+  const hit = new THREE.Mesh(new THREE.SphereGeometry(.045, 10, 8), new THREE.MeshBasicMaterial({ visible: false }));
+  g.add(hit);
+  inter(hit, { kind: 'term', id, tip: `<b>${T.label}</b><br>기능: ${T.func === 'L' ? '활선(L)' : T.func === 'N' ? '중성선(N)' : '보호접지(PE)'}<br><span style="opacity:.75">배선 실습 모드: 드래그 또는 두 단자 클릭으로 연결</span>` });
+  (parent || scene).add(g);
+  const short = id === 'ROD' ? '접지극' : id.startsWith('GB') ? 'PE' + id.slice(-1) : id === 'LOAD_PE' ? 'PE' : T.func;
+  label(short, V3(0, .052, .02).applyQuaternion(g.quaternion).add(pos), { h: .03, bg: '#' + FUNC_COL[T.func].toString(16).padStart(6, '0') + 'e6' });
+  const wpos = pos.clone().add(normal.clone().normalize().multiplyScalar(.016));
+  TERM3D[id] = { g, screw, ring, normal: normal.clone().normalize(), pos: wpos };
+}
+
+/* ---------- 장비 ---------- */
+const EQ = {};
+const Equip = {
+  build() {
+    // 실습 패널(트레이닝 보드)
+    box(3.6, 2.2, .05, M.panel, 0, 1.3, -.025);
+    for (const [w, h, x, y] of [[3.7, .05, 0, 2.425], [3.7, .05, 0, .175], [.05, 2.3, -1.825, 1.3], [.05, 2.3, 1.825, 1.3]]) box(w, h, .07, M.frame, x, y, 0);
+    for (const x of [-1.7, 1.7]) { box(.06, .2, .06, M.frame, x, .1, 0); box(.06, .04, .6, M.frame, x, .02, .1); }
+    // DIN 레일·덕트
+    box(3.3, .035, .02, M.steel, 0, 1.86, .01); box(3.3, .06, .05, MS(0xd5d9de), 0, .85, .025);
+    const title = plate(['접지·누전차단기 배선 실습 패널', 'GROUNDING & RCD WIRING TRAINER'], 1.3, null, { bg: '#14202e', color: '#fff', fs: 40 });
+    title.position.set(.75, 2.3, .005); scene.add(title);
+
+    this.threePhase(); this.source(); this.elb(); this.lamps(); this.meterPanel(); this.leakSim();
+    this.groundBar(); this.rod(); this.shelfAndLoad(); this.person(); this.instTable(); this.systemGround();
+  },
+  threePhase() {
+    const g = new THREE.Group(); g.position.set(-1.25, 2.07, 0); scene.add(g);
+    box(.66, .34, .14, MS(0xdfe3e8, { metalness: .3 }), 0, 0, .07, g);
+    const p = plate(['3상 4선식 전원 380/220 V'], .5, null, { bg: '#14202e', color: '#fff', fs: 36 }); p.position.set(0, .12, .142); g.add(p);
+    const cols = [0x8b4a1e, 0x222222, 0x8f8f8f, 0x1f5fd6], names = ['L1', 'L2', 'L3', 'N'];
+    EQ.p3lamps = cols.map((c, i) => {
+      const m = sph(.022, new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: .0 }), -.21 + i * .14, -.02, .145, g);
+      label(names[i], V3(-1.25 - .21 + i * .14, 2.07 - .08, .16), { h: .028 }); return m;
+    });
+    const L = lcd(.18, .07); L.mesh.position.set(.2, -.1, .142); g.add(L.mesh); EQ.p3lcd = L;
+    drawLCD(L, ['380 V'], {});
+    inter(g.children[0], { kind: 'part', id: 'p3', tip: '<b>3상 전원 공급 장치</b><br>3상 4선식 380/220 V. 본 실습의 단상 220 V는 L1–N에서 인출합니다(참고용, 상시 가압).' });
+    // 단상 전원부로 가는 인입 케이블
+    const cv = new THREE.CatmullRomCurve3([V3(-1.25, 1.9, .1), V3(-1.25, 1.82, .14), V3(-1.25, 1.75, .12)]);
+    add(new THREE.Mesh(new THREE.TubeGeometry(cv, 12, .012, 8), M.rubber));
+  },
+  source() {
+    const g = new THREE.Group(); g.position.set(-1.25, 1.42, 0); scene.add(g); EQ.src = g;
+    const body = box(.66, .58, .16, MS(0xe8e3d6, { metalness: .2 }), 0, 0, .08, g);
+    inter(body, { kind: 'part', id: 'src1', tip: '<b>단상 전원 공급 장치</b><br>AC 220 V / 60 Hz (L1–N). 전원측 중성점은 계통접지(R<sub>B</sub>)된 것으로 가정(TT 계통).' });
+    const p = plate(['단상 전원 AC 220 V 60 Hz'], .5, null, { bg: '#14202e', color: '#fff', fs: 36 }); p.position.set(0, .24, .162); g.add(p);
+    EQ.srcLcd = lcd(.24, .1); EQ.srcLcd.mesh.position.set(-.15, .08, .162); g.add(EQ.srcLcd.mesh);
+    label('전압계', V3(-1.4, 1.42 + .16, .18), { h: .024 });
+    // MCCB 2P
+    const mc = new THREE.Group(); mc.position.set(.17, .02, .16); g.add(mc);
+    box(.16, .24, .06, M.dark, 0, 0, 0, mc);
+    const mp = plate(['MCCB', '2P 20A'], .1, null, { bg: '#2a2f36', color: '#fff', fs: 34 }); mp.position.set(0, -.07, .031); mc.add(mp);
+    const hp = new THREE.Group(); hp.position.set(0, .03, .03); mc.add(hp);
+    const handle = box(.05, .075, .03, MS(0x111111), 0, .03, .01, hp);
+    EQ.mccbHandle = hp;
+    inter(handle, { kind: 'btn', id: 'mccb', tip: '<b>배선용 차단기(MCCB)</b><br>클릭: 주 전원 ON/OFF<br>과부하·단락 보호용 — 누전(지락) 검출 기능은 없음', act: () => Act.mccb() });
+    inter(mc.children[0], { kind: 'btn', id: 'mccb', tip: '<b>배선용 차단기(MCCB)</b> — 클릭하여 ON/OFF', act: () => Act.mccb() });
+    // 전원 표시등
+    EQ.srcLamp = sph(.022, new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xff3b2f, emissiveIntensity: 0 }), -.22, -.16, .17, g);
+    label('전원', V3(-1.47, 1.42 - .21, .19), { h: .024 });
+    // 단자대
+    box(.34, .08, .05, M.dark, -.02, -.36, .03, g);
+    label('단상 전원부', V3(-1.25, 1.78, .2), { h: .04, bg: '#0f6fd6e6' });
+    makeTerminal('SRC_L', V3(-1.35, 1.06, .07)); makeTerminal('SRC_N', V3(-1.19, 1.06, .07));
+  },
+  systemGround() {
+    // 전원측 계통접지 개념선 (변압기 중성점 접지 R_B)
+    const pts = [V3(-1.19, 1.0, .07), V3(-1.05, .95, .09), V3(-1.05, .2, .09), V3(-1.05, .02, .2), V3(-1.05, -.4, .2)];
+    EQ.rbCurve = new THREE.CatmullRomCurve3(pts);
+    const m = new THREE.Mesh(new THREE.TubeGeometry(EQ.rbCurve, 40, .004, 6), new THREE.MeshBasicMaterial({ color: 0x2f9e3a, transparent: true, opacity: .5 }));
+    scene.add(m);
+    label(['전원측 계통접지 R_B', '(변압기 중성점 · 개념 표시)'], V3(-.78, .3, .12), { h: .055, bg: '#2f6b37d9' });
+  },
+  elb() {
+    const g = new THREE.Group(); g.position.set(-.3, 1.45, 0); scene.add(g); EQ.elb = g;
+    EQ.elbBodyMat = MS(0xf3f1ea, { roughness: .4, transparent: true, opacity: 1 });
+    const body = box(.26, .42, .15, EQ.elbBodyMat, 0, 0, .075, g);
+    inter(body, { kind: 'part', id: 'elb', tip: '<b>누전차단기 ELB/RCD (2P, 30 mA, 0.03 s)</b><br>L·N 전류의 차이(불평형)를 ZCT로 검출해 차단합니다.<br>"ELB 내부 보기"로 구조를 확인하세요.' });
+    box(.27, .06, .155, M.gray, 0, .19, .075, g); box(.27, .06, .155, M.gray, 0, -.19, .075, g);
+    const p = plate(['ELB 2P', '30mA · 0.03s'], .14, null, { bg: '#ffffff', color: '#14202e', fs: 30 }); p.position.set(.0, -.1, .152); g.add(p);
+    const p2 = plate(['LINE(전원측)'], .16, null, { bg: '#14202e', color: '#fff', fs: 30 }); p2.position.set(0, .14, .152); g.add(p2);
+    const p3 = plate(['LOAD(부하측)'], .16, null, { bg: '#14202e', color: '#fff', fs: 30 }); p3.position.set(0, -.15, .152); g.add(p3);
+    // 핸들
+    const hp = new THREE.Group(); hp.position.set(-.03, .04, .15); g.add(hp);
+    box(.09, .05, .02, M.dark, 0, 0, -.005, hp);
+    const handle = box(.06, .09, .035, MS(0x1d2026), 0, .035, .012, hp);
+    EQ.elbHandle = hp;
+    inter(handle, { kind: 'btn', id: 'elbH', tip: '<b>ELB 조작 핸들</b><br>클릭: 투입/개방 · 트립 후에는 점검 확인 후 재투입', act: () => Act.elbHandle() });
+    // 시험 버튼
+    EQ.testBtn = cyl(.016, .016, .02, MS(0xf2c230), .085, .03, .155, g); EQ.testBtn.rotation.x = Math.PI / 2;
+    inter(EQ.testBtn, { kind: 'btn', id: 'test', tip: '<b>시험(TEST) 버튼</b><br>내부 시험회로로 의도적 불평형 전류를 흘려 트립 여부를 확인합니다 (월 1회 이상 권장).', act: () => Act.test() });
+    label('TEST', V3(-.3 + .085, 1.45 + .065, .17), { h: .022, bg: '#7a5600e6' });
+    // 누전 표시 버튼(트립 시 돌출)
+    EQ.tripInd = box(.03, .022, .02, MS(0x777777), .085, -.035, .15, g);
+    label('누전표시', V3(-.3 + .085, 1.45 - .062, .17), { h: .02 });
+    label('누전차단기 (ELB/RCD)', V3(-.3, 1.75, .2), { h: .04, bg: '#0f6fd6e6' });
+    makeTerminal('ELB_IN_L', V3(-.36, 1.69, .14)); makeTerminal('ELB_IN_N', V3(-.24, 1.69, .14));
+    makeTerminal('ELB_OUT_L', V3(-.36, 1.21, .14)); makeTerminal('ELB_OUT_N', V3(-.24, 1.21, .14));
+    this.elbInternal();
+  },
+  elbInternal() {
+    // 확대 내부 구조 (내부 보기 시 표시)
+    const g = new THREE.Group(); g.position.set(-.3, 1.45, .5); g.visible = false; scene.add(g); EQ.int = g;
+    const back = new THREE.Mesh(new THREE.PlaneGeometry(.78, .66), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .82 }));
+    back.position.z = -.06; g.add(back);
+    const cL = MS(0x8b4a1e, { metalness: .5, roughness: .35 }), cN = MS(0x1f5fd6, { metalness: .5, roughness: .35 });
+    // 도체 (상부 고정, 하부 가동측)
+    for (const [x, m] of [[-.06, cL], [.06, cN]]) { box(.018, .07, .018, m, x, .265, 0, g); box(.018, .34, .018, m, x, -.06, 0, g); }
+    EQ.fixC = [-.06, .06].map(x => box(.032, .012, .03, M.steel, x, .225, 0, g));
+    EQ.movC = new THREE.Group(); g.add(EQ.movC);
+    [-.06, .06].forEach(x => box(.032, .012, .03, M.steel, x, .205, 0, EQ.movC));
+    box(.17, .01, .012, M.gray, 0, .205, -.02, EQ.movC);
+    // ZCT
+    EQ.zctMat = MS(0x3a3d42, { emissive: 0x000000, roughness: .6 });
+    const zct = new THREE.Mesh(new THREE.TorusGeometry(.115, .024, 14, 48), EQ.zctMat); zct.rotation.x = Math.PI / 2; zct.position.y = -.04; g.add(zct);
+    for (let i = 0; i < 9; i++) { const r = new THREE.Mesh(new THREE.TorusGeometry(.03, .004, 6, 14), M.copper); const a = -.5 + i * .12; r.position.set(Math.cos(a) * .115, -.04, Math.sin(a) * .115); r.rotation.y = -a; g.add(r); }
+    // 자속 화살표 (L: 시계, N: 반시계)
+    const mkArrows = (rad, col) => { const grp = new THREE.Group(); grp.position.y = -.04; g.add(grp); for (let i = 0; i < 10; i++) { const c = new THREE.Mesh(new THREE.ConeGeometry(.012, .03, 8), new THREE.MeshBasicMaterial({ color: col })); const a = i / 10 * Math.PI * 2; c.position.set(Math.cos(a) * rad, 0, Math.sin(a) * rad); c.rotation.set(Math.PI / 2, 0, -a); grp.add(c); } return grp; };
+    EQ.fluxL = mkArrows(.155, 0xc0672a); EQ.fluxN = mkArrows(.075, 0x4a86ff);
+    // 검출·증폭 회로 / 트립 코일 / 플런저
+    box(.1, .07, .012, M.pcb, .25, -.04, 0, g);
+    const wl = new THREE.CatmullRomCurve3([V3(.15, -.04, 0), V3(.2, -.04, .01)]); g.add(new THREE.Mesh(new THREE.TubeGeometry(wl, 4, .003, 5), M.copper));
+    cyl(.035, .035, .08, M.copper, .25, .1, 0, g);
+    EQ.plunger = cyl(.012, .012, .1, M.steel, .25, .12, 0, g);
+    const link = new THREE.CatmullRomCurve3([V3(.25, .17, 0), V3(.22, .2, -.02), V3(.09, .205, -.02)]); g.add(new THREE.Mesh(new THREE.TubeGeometry(link, 8, .004, 5), M.gray));
+    // 시험회로: 부하측 L → 저항 → 시험버튼 → 전원측 N (ZCT 우회)
+    const tc = new THREE.CatmullRomCurve3([V3(-.06, -.15, .02), V3(-.2, -.15, .03), V3(-.22, -.05, .03), V3(-.22, .1, .03), V3(-.1, .15, .05), V3(.06, .15, .02)]);
+    EQ.testWireMat = new THREE.MeshBasicMaterial({ color: 0x888888 });
+    g.add(new THREE.Mesh(new THREE.TubeGeometry(tc, 40, .004, 6), EQ.testWireMat)); EQ.testCurve = tc;
+    const res = cyl(.014, .014, .06, M.beige, -.22, .0, .03, g); [-.015, 0, .015].forEach((d, i) => cyl(.0145, .0145, .006, MS([0x8b4a1e, 0xd63a2f, 0xf07a1a][i]), -.22, d, .03, g));
+    EQ.intTest = cyl(.016, .016, .02, MS(0xf2c230), -.22, .1, .04, g); EQ.intTest.rotation.x = Math.PI / 2;
+    // 라벨
+    const LL = (t, x, y, c) => label(t, V3(-.3 + x, 1.45 + y, .58), { h: .028, bg: c || '#14202ee6', depthTest: false });
+    EQ.intLabels = [LL('LINE(전원측)', 0, .34), LL('LOAD(부하측)', 0, -.25), LL('주접점 L·N', -.2, .23), LL('ZCT(영상변류기)', -.02, .06, '#7a2b9ce6'),
+      LL('2차권선', .18, -.12), LL('검출·증폭', .28, -.1), LL('트립 코일', .32, .16), LL('시험저항', -.31, .0), LL('TEST', -.31, .1, '#7a5600e6')];
+    EQ.intLabels.forEach(s => { labelGroup.remove(s); g.add(s); s.position.sub(g.position); s.visible = true; });
+    EQ.intInfo = label('L·N 합성자속 = 0 (평형)', V3(-.3, 1.45 - .33, .58), { h: .034, bg: '#0d7a43e6', depthTest: false });
+    labelGroup.remove(EQ.intInfo); g.add(EQ.intInfo); EQ.intInfo.position.sub(g.position);
+    // 내부 전류 경로 (월드 좌표 곡선)
+    const wp = (x, y) => V3(-.3 + x, 1.45 + y, .5);
+    EQ.intCurveL = new THREE.LineCurve3(wp(-.06, .3), wp(-.06, -.23));
+    EQ.intCurveN = new THREE.LineCurve3(wp(.06, .3), wp(.06, -.23));
+    EQ.intTestCurve = new THREE.CatmullRomCurve3(tc.points.map(p => p.clone().add(g.position)));
+  },
+  lamps() {
+    const g = new THREE.Group(); g.position.set(.3, 2.07, 0); scene.add(g);
+    box(.62, .3, .06, M.dark, 0, 0, .03, g);
+    const mk = (x, col, name) => { cyl(.04, .04, .02, M.steel, x, .02, .065, g).rotation.x = Math.PI / 2; const m = sph(.032, new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 0, roughness: .3 }), x, .02, .08, g); label(name, V3(.3 + x, 2.07 - .1, .1), { h: .026 }); return m; };
+    EQ.lampPow = mk(-.19, 0xffffff, '전원');
+    EQ.lampRun = mk(0, 0x22dd66, '정상운전');
+    EQ.lampLeak = mk(.19, 0xff3322, '누전·트립');
+    inter(g.children[0], { kind: 'part', id: 'lamps', tip: '<b>전원·누전 표시등</b><br>흰색: 전원 / 녹색: 정상 운전 / 적색: 누전 검출·트립' });
+  },
+  meterPanel() {
+    const g = new THREE.Group(); g.position.set(.3, 1.55, 0); scene.add(g);
+    box(.62, .44, .05, M.dark, 0, 0, .025, g);
+    EQ.meterLcd = lcd(.56, .36, 512, 330); EQ.meterLcd.mesh.position.z = .052; g.add(EQ.meterLcd.mesh);
+    inter(g.children[0], { kind: 'part', id: 'meter', tip: '<b>전류 측정 장치(계기 패널)</b><br>ELB 부하측 L·N 전류와 불평형(누설) 전류를 실시간 표시합니다. (교육용 가상값)' });
+    label('전류 측정 장치', V3(.3, 1.8, .08), { h: .032, bg: '#0f6fd6e6' });
+  },
+  leakSim() {
+    const g = new THREE.Group(); g.position.set(-.3, 2.07, 0); scene.add(g); EQ.leakSimG = g;
+    const b = box(.44, .3, .1, MS(0xf07a1a, { roughness: .5 }), 0, 0, .05, g);
+    inter(b, { kind: 'part', id: 'leaksim', tip: '<b>누전 발생 시뮬레이션 장치</b><br>① 기기 절연고장 스위치  ② 시험 누설전류 주입(ELB 부하측 L→PE)' });
+    const p = plate(['누전 발생 장치'], .3, null, { bg: '#14202e', color: '#fff', fs: 34 }); p.position.set(0, .1, .101); g.add(p);
+    // 절연고장 토글
+    const tg = new THREE.Group(); tg.position.set(-.1, -.04, .1); g.add(tg);
+    box(.06, .08, .02, M.dark, 0, 0, 0, tg);
+    EQ.faultLever = new THREE.Group(); tg.add(EQ.faultLever);
+    const lev = box(.018, .06, .018, MS(0xd63a2f), 0, .03, .015, EQ.faultLever);
+    inter(lev, { kind: 'btn', id: 'faultSw', tip: '<b>절연고장 유발 스위치</b><br>기기 내부 L–외함 사이 절연 파괴를 가상으로 발생시킵니다.', act: () => Act.fault() });
+    label('절연고장', V3(-.4, 2.07 - .12, .13), { h: .022 });
+    // 주입 버튼
+    EQ.injBtn = cyl(.03, .03, .03, MS(0xd63a2f), .1, -.04, .11, g); EQ.injBtn.rotation.x = Math.PI / 2;
+    inter(EQ.injBtn, { kind: 'btn', id: 'inject', tip: '<b>시험 누설전류 주입</b><br>설정값(기본 30 mA)을 ELB 부하측 L → PE로 흘려 ELB 동작을 확인합니다.', act: () => Act.leakSim(true) });
+    label('주입', V3(-.2, 2.07 - .12, .13), { h: .022 });
+    // 시험 리드선 (ELB 부하측 L, 접지 단자대 PE-1)
+    const lead = (pts, col) => { const c = new THREE.CatmullRomCurve3(pts); scene.add(new THREE.Mesh(new THREE.TubeGeometry(c, 40, .003, 6), new THREE.MeshBasicMaterial({ color: col }))); return c; };
+    EQ.leadL = lead([V3(-.18, 1.95, .1), V3(-.12, 1.6, .26), V3(-.3, 1.25, .25), V3(-.36, 1.21, .16)], 0xd63a2f);
+    EQ.leadPE = lead([V3(-.42, 1.95, .1), V3(-.62, 1.4, .28), V3(-.1, .75, .3), V3(.4, .64, .12)], 0x3bb54a);
+    EQ.leakCurve = new THREE.CatmullRomCurve3([...EQ.leadL.points].reverse().concat(EQ.leadPE.points));
+  },
+  groundBar() {
+    const g = new THREE.Group(); g.position.set(.15, .62, 0); scene.add(g);
+    for (const x of [-.36, .36]) cyl(.025, .025, .05, M.dark, x, 0, .03, g).rotation.x = Math.PI / 2;
+    const bar = box(.8, .05, .015, M.copper, 0, 0, .06, g);
+    inter(bar, { kind: 'part', id: 'gbar', tip: '<b>접지 단자대 (주접지단자 MET)</b><br>기기 외함 PE를 모아 접지도체로 접지극에 연결합니다. 중성선(N)을 연결하면 안 됩니다.' });
+    for (const x of [-.3, -.1, .1, .3]) { if (Math.abs(x - .25) < .06 || Math.abs(x + .2) < .06) continue; cyl(.012, .012, .012, M.brass, x, 0, .072, g).rotation.x = Math.PI / 2; }
+    const sticker = plate(['⏚ 접지'], .1, null, { bg: '#2f9e3a', color: '#fff', fs: 34 }); sticker.position.set(0, .07, .01); g.add(sticker);
+    label('접지 단자대 (MET)', V3(.15, .74, .1), { h: .036, bg: '#2f9e3ae6' });
+    makeTerminal('GB_1', V3(.4, .62, .07)); makeTerminal('GB_2', V3(-.05, .62, .07));
+  },
+  rod() {
+    const x = .55, z = .55;
+    cyl(.012, .012, 1.62, M.copper, x, -.78, z); // 동복강봉
+    const tip = new THREE.Mesh(new THREE.ConeGeometry(.012, .05, 12), M.copper); tip.position.set(x, -1.615, z); tip.rotation.x = Math.PI; scene.add(tip);
+    box(.06, .04, .05, M.brass, x, .02, z); // 클램프
+    inter(cyl(.03, .03, .3, new THREE.MeshBasicMaterial({ visible: false }), x, -.1, z), { kind: 'part', id: 'rod', tip: '<b>접지봉(Ground Rod)</b><br>동복강봉을 대지에 매설해 고장전류를 대지로 방류합니다. 접지저항은 토양·매설깊이에 따라 달라집니다.' });
+    makeTerminal('ROD', V3(x, .06, z), V3(0, 1, 0));
+    label('접지극(접지봉)', V3(x + .2, .16, z), { h: .034, bg: '#2f9e3ae6' });
+    // 대지 확산 링
+    EQ.earthRings = [0, 1, 2].map(i => { const m = new THREE.Mesh(new THREE.SphereGeometry(.1, 20, 12), new THREE.MeshBasicMaterial({ color: 0x55ff77, transparent: true, opacity: 0, depthWrite: false })); m.position.set(x, -1.2 + i * .35, z); scene.add(m); return m; });
+    EQ.rodCurve = new THREE.LineCurve3(V3(x, .05, z), V3(x, -1.58, z));
+  },
+  shelfAndLoad() {
+    box(.85, .03, .5, M.steel, 1.17, .95, .25); box(.03, .25, .03, M.frame, .78, .82, .45); box(.03, .25, .03, M.frame, 1.56, .82, .45);
+    const g = new THREE.Group(); g.position.set(1.2, 1.24, .24); scene.add(g); EQ.load = g;
+    EQ.encMat = MS(0xaeb8c2, { metalness: .65, roughness: .38, emissive: 0x000000 });
+    const enc = box(.62, .55, .38, EQ.encMat, 0, 0, 0, g);
+    inter(enc, { kind: 'person-target', id: 'enc', tip: '<b>전기기기(부하) 금속 외함</b><br>1 kW 송풍·히터 부하. 외함은 PE로 접지되어야 합니다.' });
+    // 팬 가드 + 블레이드
+    const guard = new THREE.Mesh(new THREE.TorusGeometry(.15, .008, 8, 40), M.dark); guard.position.set(.07, .02, .192); g.add(guard);
+    for (let r = .05; r < .15; r += .05) { const t = new THREE.Mesh(new THREE.TorusGeometry(r, .003, 6, 30), M.dark); t.position.copy(guard.position); g.add(t); }
+    EQ.fan = new THREE.Group(); EQ.fan.position.set(.07, .02, .185); g.add(EQ.fan);
+    for (let i = 0; i < 4; i++) { const b = box(.05, .12, .006, MS(0x5d6670), 0, .065, 0, EQ.fan); b.geometry.translate(0, 0, 0); const pv = new THREE.Group(); pv.rotation.z = i * Math.PI / 2; pv.add(b); EQ.fan.add(pv); b.rotation.y = .4; }
+    cyl(.025, .025, .02, M.dark, 0, 0, 0, EQ.fan).rotation.x = Math.PI / 2;
+    // 운전 램프, 부하 스위치
+    EQ.loadLamp = sph(.016, new THREE.MeshStandardMaterial({ color: 0x22dd66, emissive: 0x22dd66, emissiveIntensity: 0 }), .25, .2, .195, g);
+    const sw = new THREE.Group(); sw.position.set(.25, .1, .195); g.add(sw);
+    box(.05, .07, .015, M.dark, 0, 0, 0, sw);
+    EQ.loadRocker = box(.036, .055, .015, MS(0xd63a2f), 0, 0, .01, sw);
+    inter(EQ.loadRocker, { kind: 'btn', id: 'loadSw', tip: '<b>부하 스위치</b><br>클릭: 부하 운전/정지', act: () => Act.load() });
+    const np = plate(['송풍·히터 부하 1 kW', '금속 외함 (접지 필요)'], .26, null, { bg: '#ffffff', fs: 30 }); np.position.set(-.16, .2, .191); g.add(np);
+    // 단자부
+    box(.27, .09, .02, M.dark, -.17, -.13, .2, g);
+    makeTerminal('LOAD_L', V3(1.2 - .26, 1.24 - .13, .45)); makeTerminal('LOAD_N', V3(1.2 - .17, 1.24 - .13, .45)); makeTerminal('LOAD_PE', V3(1.2 - .08, 1.24 - .13, .45));
+    label('전기 부하 장치', V3(1.2, 1.6, .3), { h: .04, bg: '#0f6fd6e6' });
+    // 위험 경고, 절연파괴 스파크
+    EQ.encWarn = label('⚠ 외함 전압', V3(1.2, 1.66, .5), { h: .05, bg: '#d63a2ff0', depthTest: false }); EQ.encWarn.visible = false;
+    EQ.spark = label('⚡ 절연 파괴', V3(.98, 1.02, .5), { h: .04, bg: '#f07a1af0', depthTest: false }); EQ.spark.visible = false;
+    EQ.sparkLight = new THREE.PointLight(0xffaa33, 0, .8); EQ.sparkLight.position.set(1.0, 1.05, .5); scene.add(EQ.sparkLight);
+  },
+  person() {
+    const g = new THREE.Group(); g.position.set(1.95, 0, .45); g.rotation.y = -Math.PI / 2; scene.add(g); EQ.person = g;
+    EQ.personMat = MS(0xc9cdd3, { roughness: .7, emissive: 0x000000 });
+    const pm = EQ.personMat;
+    const cap = (r, h, x, y, z, p) => { const m = new THREE.Mesh(new THREE.CapsuleGeometry(r, h, 6, 12), pm); m.position.set(x, y, z); return add(m, p || g); };
+    cap(.055, .7, -.09, .43, 0); cap(.055, .7, .09, .43, 0);
+    cap(.15, .42, 0, 1.13, 0); sph(.11, pm, 0, 1.6, 0, g);
+    cap(.045, .55, -.21, 1.12, 0);
+    EQ.arm = new THREE.Group(); EQ.arm.position.set(.21, 1.38, 0); g.add(EQ.arm);
+    cap(.045, .55, 0, -.3, 0, EQ.arm);
+    g.traverse(o => { if (o.isMesh) inter(o, { kind: 'btn', id: 'person', tip: '<b>인체 모형 (교육용 시각화)</b><br>클릭: 외함 접촉 재현/해제', act: () => Act.touch() }); });
+    inter(g.children[2], { kind: 'btn', id: 'person', tip: '<b>인체 모형 (교육용 시각화)</b><br>클릭: 외함 접촉 재현/해제<br>실제 감전 실험을 대신하는 위험 경로 설명용입니다.', act: () => Act.touch() });
+    EQ.personLabel = label('인체 모형', V3(1.95, 1.85, .45), { h: .036 });
+    EQ.personCurve = new THREE.CatmullRomCurve3([V3(1.5, 1.3, .63), V3(1.72, 1.38, .64), V3(1.95, 1.25, .5), V3(1.95, .6, .5), V3(1.95, .02, .5)]);
+  },
+  instTable() {
+    const g = new THREE.Group(); g.position.set(-2.5, 0, .9); scene.add(g);
+    box(1.3, .04, .7, M.wood, 0, .8, 0, g);
+    for (const [x, z] of [[-.6, -.3], [.6, -.3], [-.6, .3], [.6, .3]]) box(.04, .8, .04, M.frame, x, .4, z, g);
+    label('측정 장비', V3(-2.5, 1.32, .9), { h: .04, bg: '#0f6fd6e6' });
+    EQ.inst = {};
+    const mk = (id, x, z, col, name, w, h, d) => {
+      const ig = new THREE.Group(); ig.position.set(x, .82 + h / 2, z); g.add(ig);
+      const b = box(w, h, d, MS(col, { roughness: .5 }), 0, 0, 0, ig); ig.rotation.x = -.25;
+      const L = lcd(w * .7, h * .28, 256, 96); L.mesh.position.set(0, h * .22, d / 2 + .001); ig.add(L.mesh); drawLCD(L, ['----']);
+      inter(b, { kind: 'inst', id, tip: `<b>${name}</b><br>클릭하여 측정 장비로 선택` });
+      label(name, V3(-2.5 + x, .82 + h + .08, .9 + z), { h: .028 });
+      EQ.inst[id] = { g: ig, L, body: b }; return ig;
+    };
+    mk('dmm', -.45, .05, 0xf2c230, '디지털 멀티미터', .14, .24, .05);
+    const cm = mk('clamp', -.15, .05, 0xd63a2f, '누설전류 클램프', .12, .26, .05);
+    const jaw = new THREE.Mesh(new THREE.TorusGeometry(.05, .014, 8, 24, Math.PI * 1.7), M.dark); jaw.position.set(0, .17, 0); jaw.rotation.z = Math.PI * .65; cm.add(jaw);
+    mk('megger', .17, .05, 0xf07a1a, '절연저항계', .22, .17, .12);
+    mk('earth', .47, .05, 0xf2d34a, '접지저항계', .22, .17, .12);
+    // 접지저항 측정용 보조극(P, C)
+    for (const [x, n] of [[2.0, 'P(보조극)'], [2.6, 'C(보조극)']]) { cyl(.006, .006, .3, M.steel, x, .1, 1.6); label(n, V3(x, .32, 1.6), { h: .025 }); }
+  }
+};
+
+/* ---------- 3D 전선 ---------- */
+let peTex = null;
+function peTexture() {
+  if (peTex) return peTex;
+  const c = document.createElement('canvas'); c.width = 64; c.height = 4; const x = c.getContext('2d');
+  x.fillStyle = '#2f9e3a'; x.fillRect(0, 0, 64, 4); x.fillStyle = '#e8c800'; x.fillRect(0, 0, 24, 4);
+  peTex = new THREE.CanvasTexture(c); peTex.wrapS = peTex.wrapT = THREE.RepeatWrapping; peTex.colorSpace = THREE.SRGBColorSpace; return peTex;
+}
+function wireCurve(a, b) {
+  const A = TERM3D[a], B = TERM3D[b];
+  const pa = A.pos, pb = B.pos, d = pa.distanceTo(pb);
+  const off = Math.min(.12, .05 + d * .05);
+  const p1 = pa.clone().add(A.normal.clone().multiplyScalar(off)), p3 = pb.clone().add(B.normal.clone().multiplyScalar(off));
+  const mid = p1.clone().lerp(p3, .5); mid.y -= .03 + d * .08; mid.z += .06 + d * .04;
+  return new THREE.CatmullRomCurve3([pa, p1, mid, p3, pb], false, 'centripetal');
+}
+const Wires3D = {
+  objs: new Map(), group: new THREE.Group(),
+  init() { scene.add(this.group); },
+  rebuild() {
+    for (let i = interactables.length - 1; i >= 0; i--) if (interactables[i].userData.kind === 'wire') interactables.splice(i, 1);
+    this.group.clear(); this.objs.clear(); this.looseMark = null;
+    for (const w of S.wires) this.create(w);
+  },
+  create(w) {
+    const curve = wireCurve(w.a, w.b), len = curve.getLength();
+    let mat;
+    if (w.type === 'PE') { const t = peTexture().clone(); t.needsUpdate = true; t.repeat.set(len * 22, 1); mat = MS(0xffffff, { map: t, roughness: .5, emissive: 0x000000 }); }
+    else mat = MS(WT[w.type].hex, { roughness: .45, emissive: 0x000000 });
+    const grp = new THREE.Group(); this.group.add(grp);
+    const seg = (t0, t1) => {
+      const pts = []; for (let i = 0; i <= 30; i++) pts.push(curve.getPointAt(t0 + (t1 - t0) * i / 30));
+      const c = new THREE.CatmullRomCurve3(pts);
+      const m = new THREE.Mesh(new THREE.TubeGeometry(c, Math.max(20, Math.round(len * 60)), .0085, 8), mat); m.castShadow = true; grp.add(m);
+      inter(m, { kind: 'wire', id: w.id, tip: `<b>${WT[w.type].name} (${WT[w.type].kec})</b><br>${lab(w.a)} ↔ ${lab(w.b)}${w.broken ? '<br><b style="color:#ff8a80">단선</b>' : w.loose ? '<br><b style="color:#ffd27a">접속 불량</b>' : ''}` });
+      return m;
+    };
+    if (w.broken) {
+      seg(0, .44); seg(.56, 1);
+      const p = curve.getPointAt(.5); label('✕ 단선', p.clone().add(V3(0, .05, 0)), { h: .035, bg: '#d63a2ff0', parent: grp, depthTest: false });
+    } else seg(0, 1);
+    if (w.loose) { const p = curve.getPointAt(.04); const s = sph(.02, new THREE.MeshBasicMaterial({ color: 0xffa000 }), p.x, p.y, p.z, grp); label('접속 불량', p.clone().add(V3(0, .05, 0)), { h: .03, bg: '#e39b00f0', parent: grp, depthTest: false }); this.looseMark = s; }
+    this.objs.set(w.id, { w, curve, grp, mat });
+  },
+  highlight() {
+    for (const [id, o] of this.objs) o.mat.emissive.setHex(id === S.selWire ? 0x3355ff : 0x000000);
+  }
+};
+
+/* ---------- 전류 흐름 입자 ---------- */
+const Flow = {
+  max: 2600, phase: new Map(),
+  init() {
+    this.mesh = new THREE.InstancedMesh(new THREE.SphereGeometry(.0075, 8, 6), new THREE.MeshBasicMaterial({ toneMapped: false }), this.max);
+    this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); this.mesh.frustumCulled = false; this.mesh.count = 0; scene.add(this.mesh);
+    this.col = new THREE.Color(); this.m4 = new THREE.Matrix4(); this.p = new THREE.Vector3(); this.q = new THREE.Quaternion(); this.sc = new THREE.Vector3();
+  },
+  list() {
+    const r = S.res; if (!r) return [];
+    const out = [], hot = Math.abs(r.iDelta) > 1e-3 || Math.abs(r.faultI) > 1e-3;
+    for (const [id, o] of Wires3D.objs) {
+      const I = Circuit.wireI(o.w);
+      const c = o.w.type === 'PE' ? (Math.abs(I) > 1e-4 ? 0xff3b2f : 0x55ff66) : o.w.type === 'N' ? 0x4f9bff : 0xffa64d;
+      out.push({ k: 'w' + id, curve: o.curve, I, c, big: o.w.type === 'PE' });
+    }
+    out.push({ k: 'rb', curve: EQ.rbCurve, I: r.rbI, c: hot ? 0xff6a50 : 0x55ff66 });
+    out.push({ k: 'rod', curve: EQ.rodCurve, I: r.rodI, c: 0xff3b2f, big: true });
+    out.push({ k: 'person', curve: EQ.personCurve, I: r.personI, c: 0xff2020, big: true });
+    out.push({ k: 'leak', curve: EQ.leakCurve, I: r.leakSimI, c: 0xffd000, big: true });
+    if (S.view.internal) {
+      out.push({ k: 'iL', curve: EQ.intCurveL, I: r.iL, c: 0xffa64d }, { k: 'iN', curve: EQ.intCurveN, I: r.iN, c: 0x4f9bff });
+      out.push({ k: 'iT', curve: EQ.intTestCurve, I: -r.testI, c: 0xffd000, big: true });
+    }
+    return out;
+  },
+  update(dt) {
+    if (!this.mesh) return;
+    if (!S.view.flow) { this.mesh.count = 0; return; }
+    let k = 0;
+    for (const f of this.list()) {
+      const a = Math.abs(f.I); if (a < 2e-4 || !f.curve) continue;
+      const len = f.curve.getLength();
+      const n = Math.min(60, Math.max(5, Math.round(len / .05)));
+      const speed = (.1 + .16 * Math.log10(1 + a * 1000)) / len;
+      const ph = ((this.phase.get(f.k) || 0) + Math.sign(f.I) * speed * dt) % 1;
+      this.phase.set(f.k, ph);
+      const s = f.big ? 1.6 : 1;
+      this.col.setHex(f.c);
+      for (let j = 0; j < n && k < this.max; j++) {
+        let t = (j / n + ph) % 1; if (t < 0) t += 1;
+        f.curve.getPointAt(t, this.p);
+        this.sc.set(s, s, s); this.m4.compose(this.p, this.q, this.sc);
+        this.mesh.setMatrixAt(k, this.m4); this.mesh.setColorAt(k, this.col); k++;
+      }
+    }
+    this.mesh.count = k; this.mesh.instanceMatrix.needsUpdate = true; if (this.mesh.instanceColor) this.mesh.instanceColor.needsUpdate = true;
+  }
+};
+
+/* ---------- 3D 상태 동기화 ---------- */
+const Scene3D = {
+  t: { mccb: .6, elb: .6, rocker: 0, arm: 0, plunger: 0, contact: 0 }, fanSpeed: 0,
+  sync() {
+    const r = S.res; if (!r) return;
+    this.t.mccb = S.mccbOn ? -.55 : .55;
+    this.t.elb = S.elbClosed ? -.55 : S.elbTripped ? 0 : .55;
+    this.t.rocker = S.loadOn ? -.35 : .35;
+    this.t.arm = S.touching ? 1 : 0;
+    this.t.contact = S.elbClosed ? 0 : 1;
+    this.t.plunger = (S.pendingTrip || S.elbTripped) ? 1 : 0;
+    const powered = S.mccbOn;
+    EQ.srcLamp.material.emissiveIntensity = powered ? 2.5 : 0;
+    EQ.lampPow.material.emissiveIntensity = powered ? 1.6 : 0;
+    const normal = S.elbClosed && r.running && Math.abs(r.iDelta) < CFG.I_NOTRIP;
+    EQ.lampRun.material.emissiveIntensity = normal ? 2.2 : 0;
+    EQ.loadLamp.material.emissiveIntensity = r.running ? 2.5 : 0;
+    EQ.p3lamps.forEach(m => m.material.emissiveIntensity = 1.2);
+    EQ.tripInd.material.color.setHex(S.elbTripped ? 0xf2c230 : 0x777777);
+    EQ.tripInd.position.z = S.elbTripped ? .165 : .15;
+    EQ.faultLever.rotation.x = S.fault.active ? .6 : -.6;
+    drawLCD(EQ.srcLcd, [powered ? `${Math.abs(r.V.SRC_L - r.V.SRC_N).toFixed(1)} V` : '0.0 V'], {});
+    const id = Math.abs(r.iDelta);
+    drawLCD(EQ.meterLcd, [`IΔ ${(id * 1000).toFixed(1)} mA`, `L  ${Math.abs(r.iL).toFixed(2)} A`, `N  ${Math.abs(r.iN).toFixed(2)} A`],
+      { color: id >= CFG.I_TRIP ? '#ff8a80' : id >= .005 ? '#ffd27a' : '#8dff8d' });
+    const ev = Math.abs(r.encV);
+    EQ.encWarn.visible = ev > 25 && S.fault.active;
+    if (EQ.encWarn.visible) {
+      const c = textCanvas([`⚠ 외함 대지전위 ${ev.toFixed(0)} V`, ev > 50 ? '허용 접촉전압 50 V 초과' : '주의'], { bg: ev > 50 ? '#d63a2ff0' : '#e39b00f0', fs: 40 });
+      EQ.encWarn.material.map.image = c; EQ.encWarn.material.map.needsUpdate = true; EQ.encWarn.scale.set(.085 * c.width / c.height, .085, 1);
+    }
+    EQ.spark.visible = S.fault.active && Math.abs(r.faultI) > 1e-4;
+    Wires3D.highlight();
+    for (const id in TERM3D) TERM3D[id].screw.material.emissive.setHex(id === S.selTerm ? 0x2266ff : 0x000000);
+    Instruments3D.sync();
+  },
+  animate(dt, time) {
+    const L = (cur, tgt, k = 10) => cur + (tgt - cur) * Math.min(1, dt * k);
+    EQ.mccbHandle.rotation.x = L(EQ.mccbHandle.rotation.x, this.t.mccb);
+    EQ.elbHandle.rotation.x = L(EQ.elbHandle.rotation.x, this.t.elb, S.elbTripped ? 25 : 10);
+    EQ.loadRocker.rotation.x = L(EQ.loadRocker.rotation.x, this.t.rocker);
+    EQ.arm.rotation.x = L(EQ.arm.rotation.x, this.t.arm ? -1.35 : 0, 5);
+    EQ.movC.position.y = L(EQ.movC.position.y, this.t.contact ? -.045 : 0, 14);
+    EQ.plunger.position.y = L(EQ.plunger.position.y, this.t.plunger ? .16 : .12, 18);
+    EQ.testBtn.position.z = L(EQ.testBtn.position.z, S.testPressed ? .145 : .155, 20);
+    EQ.intTest.position.z = EQ.testBtn.position.z - .115;
+    EQ.testWireMat.color.setHex(S.testPressed && S.elbHealth.test ? 0xffd000 : S.elbHealth.test ? 0x888888 : 0x552222);
+    const r = S.res; if (!r) return;
+    this.fanSpeed = L(this.fanSpeed, r.running ? 18 : 0, 1.5); EQ.fan.rotation.z -= this.fanSpeed * dt;
+    // ZCT 자속 화살표: L·N 자속이 서로 반대 방향
+    const sL = Math.abs(r.iL), sN = Math.abs(r.iN);
+    EQ.fluxL.rotation.y -= Math.min(4, sL * .8) * dt; EQ.fluxN.rotation.y += Math.min(4, sN * .8) * dt;
+    EQ.fluxL.visible = sL > 1e-4; EQ.fluxN.visible = sN > 1e-4;
+    const id = Math.abs(r.iDelta), blink = (Math.sin(time * 14) > 0);
+    EQ.zctMat.emissive.setHex(id >= CFG.I_TRIP ? 0xff2200 : id > .002 ? 0xffaa00 : (sL > .01 ? 0x00aa44 : 0x000000));
+    EQ.zctMat.emissiveIntensity = id >= CFG.I_TRIP ? (blink ? 1.2 : .4) : .6;
+    const leakLamp = S.elbTripped || S.pendingTrip || (S.elbClosed && id >= CFG.I_NOTRIP);
+    EQ.lampLeak.material.emissiveIntensity = leakLamp ? (S.pendingTrip || !S.elbTripped ? (blink ? 2.5 : .3) : 2.2) : 0;
+    const ev = Math.abs(r.encV);
+    EQ.encMat.emissive.setHex(ev > 50 ? 0xff1100 : ev > 25 ? 0xff8800 : 0x000000);
+    EQ.encMat.emissiveIntensity = ev > 25 ? .25 + .25 * Math.sin(time * 6) : 0;
+    EQ.personMat.emissive.setHex(Math.abs(r.personI) > 5e-4 ? 0xff0000 : 0x000000);
+    EQ.personMat.emissiveIntensity = Math.abs(r.personI) > 5e-4 ? .35 + .3 * Math.sin(time * 12) : 0;
+    EQ.sparkLight.intensity = EQ.spark.visible ? (Math.random() > .5 ? 1.5 : .3) : 0;
+    EQ.earthRings.forEach((m, i) => { const on = Math.abs(r.rodI) > 1e-3; const ph = (time * .7 + i / 3) % 1; m.material.opacity = on ? .35 * (1 - ph) : 0; m.scale.setScalar(.4 + ph * 3); });
+    const intTxt = id >= CFG.I_TRIP ? `불평형 ${(id * 1000).toFixed(1)} mA → 2차 유도 → 트립` : sL > .01 ? 'L·N 자속 상쇄 → 합성자속 0 (평형)' : '무전류';
+    if (EQ.intInfo.userData.t !== intTxt) {
+      EQ.intInfo.userData.t = intTxt; const c = textCanvas([intTxt], { bg: id >= CFG.I_TRIP ? '#d63a2fe6' : '#0d7a43e6', fs: 40 });
+      EQ.intInfo.material.map.image = c; EQ.intInfo.material.map.needsUpdate = true; EQ.intInfo.scale.set(.046 * c.width / c.height, .046, 1);
+    }
+    if (Wires3D.looseMark) Wires3D.looseMark.visible = Math.sin(time * 9) > -.3;
+    Flow.update(dt);
+  },
+  setInternal(on) {
+    S.view.internal = on; EQ.int.visible = on;
+    EQ.elbBodyMat.opacity = on ? .35 : 1; EQ.elbBodyMat.depthWrite = !on;
+    $('#tglInternal').classList.toggle('on', on);
+    if (on) Cam.go('elbInt');
+  }
+};
+
+/* ---------- 측정 장비 3D (LCD·프로브) ---------- */
+const Instruments3D = {
+  probes: new THREE.Group(), init() { scene.add(this.probes); },
+  sync() {
+    for (const id in EQ.inst) {
+      const sel = Meter.inst === id, o = EQ.inst[id];
+      o.body.material.emissive?.setHex(sel ? 0x113355 : 0x000000);
+      drawLCD(o.L, [sel && Meter.reading ? Meter.reading.big : '----']);
+    }
+  },
+  showProbes(points) {
+    this.probes.clear(); if (!points || !Meter.inst) return;
+    const o = EQ.inst[Meter.inst]; const from = new THREE.Vector3(); o.g.getWorldPosition(from);
+    points.forEach((pt, i) => {
+      if (!pt) return;
+      const end = pt.clone(); const mid = from.clone().lerp(end, .5); mid.y += .3; mid.z += .5;
+      const c = new THREE.CatmullRomCurve3([from.clone().add(V3(i ? .03 : -.03, .1, 0)), mid, end]);
+      this.probes.add(new THREE.Mesh(new THREE.TubeGeometry(c, 40, .004, 6), new THREE.MeshBasicMaterial({ color: i ? 0x111111 : 0xd63a2f })));
+      const tip = new THREE.Mesh(new THREE.SphereGeometry(.018, 12, 8), new THREE.MeshBasicMaterial({ color: i ? 0x111111 : 0xd63a2f })); tip.position.copy(end); this.probes.add(tip);
+    });
+  }
+};
+
+/* ---------- 카메라 ---------- */
+const VIEWS = {
+  all: [V3(.4, 1.95, 4.7), V3(0, 1.15, .2)], panel: [V3(0, 1.45, 2.5), V3(0, 1.3, 0)],
+  elb: [V3(-.15, 1.6, 1.3), V3(-.3, 1.45, .15)], elbInt: [V3(.05, 1.58, 2.05), V3(-.3, 1.45, .5)],
+  ground: [V3(2.0, -.35, 2.75), V3(.55, -.75, .55)], load: [V3(2.3, 1.7, 2.0), V3(1.25, 1.1, .3)],
+  inst: [V3(-1.5, 1.7, 2.4), V3(-2.45, .9, .9)]
+};
+let controls;
+const Cam = {
+  tw: null,
+  go(name) {
+    const v = VIEWS[name]; if (!v) return;
+    const p1 = v[0].clone(), t1 = v[1].clone();
+    if (camera.aspect < 1.3) p1.sub(t1).multiplyScalar(Math.min(2.4, Math.pow(1.3 / camera.aspect, .85))).add(t1);
+    this.tw = { p0: camera.position.clone(), t0: controls.target.clone(), p1, t1, k: 0 };
+    $$('#viewBtns button').forEach(b => b.classList.toggle('on', b.dataset.v === name || (name === 'elbInt' && b.dataset.v === 'elb')));
+  },
+  update(dt) {
+    if (!this.tw) return; const t = this.tw; t.k = Math.min(1, t.k + dt / .9); const e = 1 - Math.pow(1 - t.k, 3);
+    camera.position.lerpVectors(t.p0, t.p1, e); controls.target.lerpVectors(t.t0, t.t1, e);
+    if (t.k >= 1) this.tw = null;
+  }
+};
+
+/* ---------- 상호작용 (마우스·터치·VR) ---------- */
+const Pick = {
+  ray: new THREE.Raycaster(), ndc: new THREE.Vector2(), drag: null, down: null, hover: null,
+  tmpLine: null,
+  init() {
+    const g = new THREE.BufferGeometry().setFromPoints([V3(0, 0, 0), V3(0, 0, 0)]);
+    this.tmpLine = new THREE.Line(g, new THREE.LineBasicMaterial({ color: 0x0f6fd6, linewidth: 2, depthTest: false }));
+    this.tmpLine.visible = false; this.tmpLine.renderOrder = 20; scene.add(this.tmpLine);
+    canvasEl.addEventListener('pointerdown', e => this.onDown(e));
+    canvasEl.addEventListener('pointermove', e => this.onMove(e));
+    canvasEl.addEventListener('pointerup', e => this.onUp(e));
+    canvasEl.addEventListener('pointerleave', () => { $('#tip').style.display = 'none'; });
+    addEventListener('keydown', e => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+      if ((e.key === 'Delete' || e.key === 'Backspace') && S.selWire) Wiring.remove(S.selWire);
+      if (S.mode === 'wiring' && ['1', '2', '3'].includes(e.key)) UI.setWireType(['L', 'N', 'PE'][+e.key - 1]);
+      if (e.key === 'Escape') { S.selTerm = null; S.selWire = null; Bus.emit('update'); }
+    });
+  },
+  cast(e) {
+    const r = canvasEl.getBoundingClientRect();
+    this.ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+    this.ray.setFromCamera(this.ndc, camera);
+    const hits = this.ray.intersectObjects(interactables.filter(o => o.visible !== false && this.visibleChain(o)), false);
+    return hits[0] || null;
+  },
+  visibleChain(o) { while (o) { if (o.visible === false) return false; o = o.parent; } return true; },
+  onDown(e) {
+    Sound.init();
+    const h = this.cast(e); this.down = { x: e.clientX, y: e.clientY, h };
+    if (h && h.object.userData.kind === 'term' && S.mode === 'wiring') {
+      this.drag = { from: h.object.userData.id, moved: false }; controls.enabled = false;
+      canvasEl.setPointerCapture(e.pointerId);
+    }
+  },
+  planePoint(e) {
+    const r = canvasEl.getBoundingClientRect();
+    this.ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+    this.ray.setFromCamera(this.ndc, camera);
+    const p = new THREE.Vector3(); this.ray.ray.intersectPlane(new THREE.Plane(V3(0, 0, 1), -.15), p); return p;
+  },
+  onMove(e) {
+    if (this.drag) {
+      if (this.down && Math.hypot(e.clientX - this.down.x, e.clientY - this.down.y) > 6) this.drag.moved = true;
+      if (this.drag.moved) {
+        const p = this.planePoint(e), a = TERM3D[this.drag.from].pos;
+        this.tmpLine.geometry.setFromPoints([a, p]); this.tmpLine.visible = true;
+        this.tmpLine.material.color.set(WT[S.wireType].css);
+      }
+    }
+    const h = this.cast(e), tip = $('#tip');
+    if (h && h.object.userData.tip) {
+      tip.innerHTML = h.object.userData.tip; tip.style.display = 'block';
+      const r = canvasEl.getBoundingClientRect();
+      tip.style.left = Math.min(r.width - 270, e.clientX - r.left + 14) + 'px'; tip.style.top = (e.clientY - r.top + 14) + 'px';
+      canvasEl.style.cursor = ['btn', 'term', 'inst', 'wire'].includes(h.object.userData.kind) ? 'pointer' : 'default';
+    } else { tip.style.display = 'none'; canvasEl.style.cursor = 'grab'; }
+  },
+  onUp(e) {
+    const moved = this.down && Math.hypot(e.clientX - this.down.x, e.clientY - this.down.y) > 6;
+    if (this.drag) {
+      const h = this.cast(e), from = this.drag.from;
+      this.tmpLine.visible = false; controls.enabled = true;
+      if (this.drag.moved) { if (h && h.object.userData.kind === 'term' && h.object.userData.id !== from) Wiring.add(from, h.object.userData.id); }
+      else UI.termClick(from);
+      this.drag = null; this.down = null; return;
+    }
+    if (!moved && this.down && this.down.h) this.activate(this.down.h.object.userData);
+    else if (!moved && this.down && !this.down.h && S.selWire) { S.selWire = null; Bus.emit('update'); }
+    this.down = null;
+  },
+  activate(u) {
+    Sound.init();
+    if (u.kind === 'btn' && u.act) u.act();
+    else if (u.kind === 'term') UI.termClick(u.id);
+    else if (u.kind === 'wire') { if (S.mode === 'wiring') { S.selWire = u.id; Bus.emit('update'); Toast.show('선택한 배선: Delete 키 또는 우측 목록에서 삭제'); } }
+    else if (u.kind === 'inst') Meter.select(u.id);
+    else if (u.kind === 'part' || u.kind === 'person-target') UI.showPart(u.id);
+  }
+};
+
+const XR = {
+  ctrls: [], tmp: new THREE.Matrix4(), drag: null,
+  init() {
+    const btn = VRButton.createButton(renderer); $('#vrSlot').appendChild(btn);
+    renderer.xr.addEventListener('sessionstart', () => { rig.position.set(0, 0, 1.25); controls.enabled = false; Log.add('info', 'VR 세션 시작 — 컨트롤러 트리거로 단자·스위치 조작'); });
+    renderer.xr.addEventListener('sessionend', () => { rig.position.set(0, 0, 0); controls.enabled = true; });
+    for (let i = 0; i < 2; i++) {
+      const c = renderer.xr.getController(i); rig.add(c);
+      const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([V3(0, 0, 0), V3(0, 0, -1)]), new THREE.LineBasicMaterial({ color: 0x66aaff }));
+      line.scale.z = 3; c.add(line);
+      c.addEventListener('selectstart', () => this.start(c));
+      c.addEventListener('selectend', () => this.end(c));
+      this.ctrls.push(c);
+    }
+  },
+  cast(c) {
+    this.tmp.identity().extractRotation(c.matrixWorld);
+    Pick.ray.ray.origin.setFromMatrixPosition(c.matrixWorld); Pick.ray.ray.direction.set(0, 0, -1).applyMatrix4(this.tmp);
+    return Pick.ray.intersectObjects(interactables, false)[0] || null;
+  },
+  start(c) {
+    const h = this.cast(c); if (!h) return; const u = h.object.userData;
+    if (u.kind === 'term' && S.mode === 'wiring') this.drag = { from: u.id, c };
+    else Pick.activate(u);
+  },
+  end(c) {
+    if (!this.drag) return; const h = this.cast(c);
+    if (h && h.object.userData.kind === 'term' && h.object.userData.id !== this.drag.from) Wiring.add(this.drag.from, h.object.userData.id);
+    else if (!h) { } else UI.termClick(this.drag.from);
+    this.drag = null; Pick.tmpLine.visible = false;
+  },
+  update() {
+    if (!this.drag) return; const c = this.drag.c; const h = this.cast(c);
+    const end = h ? h.point : Pick.ray.ray.at(.6, new THREE.Vector3());
+    Pick.tmpLine.geometry.setFromPoints([TERM3D[this.drag.from].pos, end]); Pick.tmpLine.visible = true;
+  }
+};
+
+/* =====================================================================
+   MODULE 11 · 가상 측정 장비
+   ===================================================================== */
+const VT = t => S.res ? S.res.V[TERMS[t].node] : 0;
+const tpos = t => TERM3D[t] ? TERM3D[t].pos.clone() : null;
+function wireMid(a, b) { const w = Wiring.find(a, b); if (!w) return tpos(a); const o = Wires3D.objs.get(w.id); return o ? o.curve.getPointAt(.5) : tpos(a); }
+const Meter = {
+  inst: null, loc: 'load', item: null, reading: null,
+  INST: {
+    dmm: { name: '디지털 멀티미터', ic: '🟨', items: ['V_LN', 'V_LPE', 'V_NPE', 'V_ENC', 'R_PE'] },
+    clamp: { name: '누설전류 클램프미터', ic: '🟥', items: ['I_L', 'I_N', 'I_LEAK', 'I_PE'] },
+    megger: { name: '절연저항계 (DC 500 V)', ic: '🟧', items: ['IR_LPE', 'IR_NPE', 'IR_LN'] },
+    earth: { name: '접지저항계 (3전극법)', ic: '🟡', items: ['RE_ROD', 'RE_BAR'] }
+  },
+  LOCS: { src: ['SRC_L', 'SRC_N', 'GB_1', '전원 단자'], elbIn: ['ELB_IN_L', 'ELB_IN_N', 'GB_1', 'ELB 전원측(LINE)'], elbOut: ['ELB_OUT_L', 'ELB_OUT_N', 'GB_1', 'ELB 부하측(LOAD)'], load: ['LOAD_L', 'LOAD_N', 'LOAD_PE', '부하 단자'] },
+  NAMES: { V_LN: 'L–N 전압', V_LPE: 'L–PE 전압', V_NPE: 'N–PE 전압', V_ENC: '외함–대지 전압(접촉전압)', R_PE: 'PE 도통저항(외함↔단자대)', I_L: 'L선 전류', I_N: 'N선 전류', I_LEAK: '누설전류(L+N 일괄)', I_PE: 'PE선 전류', IR_LPE: '절연저항 L–PE', IR_NPE: '절연저항 N–PE', IR_LN: '절연저항 L–N', RE_ROD: '접지극 접지저항', RE_BAR: '접지저항(단자대·접지선 포함)' },
+  select(id) {
+    this.inst = id; this.item = null; this.reading = null; Sound.click();
+    UI.renderMeter(); Instruments3D.showProbes(null); Instruments3D.sync();
+    if (innerWidth <= 760) $('#right').classList.add('open');
+  },
+  measure(item) { this.item = item; this.compute(true); UI.renderMeter(); },
+  dead(pts) { return pts.every(t => Math.abs(VT(t)) < 5) && Math.abs(VT(pts[0]) - VT(pts[1])) < 5; },
+  compute(logIt) {
+    const it = this.item; if (!it || !S.res) { this.reading = null; return; }
+    const [lt, nt, pt, locName] = this.LOCS[this.loc]; let R = { big: '', sm: '', judge: '', pts: [] };
+    const r = S.res;
+    switch (it) {
+      case 'V_LN': { const v = Math.abs(VT(lt) - VT(nt)); R = { big: v.toFixed(1) + ' V', sm: `${locName} L–N · 정상 약 220 V`, judge: v > 200 ? 'ok' : v > 5 ? 'warn' : '', pts: [tpos(lt), tpos(nt)] }; break; }
+      case 'V_LPE': { const v = Math.abs(VT(lt) - VT(pt)); R = { big: v.toFixed(1) + ' V', sm: `${locName} L–PE · 정상 약 220 V (TT: L–대지 전압)`, judge: v > 200 ? 'ok' : '', pts: [tpos(lt), tpos(pt)] }; break; }
+      case 'V_NPE': { const v = Math.abs(VT(nt) - VT(pt)); R = { big: v.toFixed(1) + ' V', sm: `${locName} N–PE · 정상 수 V 이하. 200 V대이면 L/N 오결선 의심`, judge: v > 50 ? 'bad' : v > 10 ? 'warn' : 'ok', pts: [tpos(nt), tpos(pt)] }; break; }
+      case 'V_ENC': { const v = Math.abs(r.encV); R = { big: v.toFixed(1) + ' V', sm: `외함 ↔ 보조접지극(대지) · 허용 접촉전압 50 V`, judge: v > 50 ? 'bad' : v > 25 ? 'warn' : 'ok', pts: [tpos('LOAD_PE'), V3(2.0, .1, 1.6)] }; break; }
+      case 'R_PE': {
+        if (S.mccbOn) { R = { big: 'ERR', sm: '저항(도통) 측정은 전원을 차단한 뒤 측정합니다', judge: 'bad', pts: [] }; break; }
+        const x = Circuit.resistance(S, 'ENC', 'GB'); const v = x > 4e7 ? Infinity : x;
+        R = { big: fmtR(v), sm: 'PE 도통: 수 Ω 이하 양호 · OL은 단선', judge: !isFinite(v) ? 'bad' : v > 1 ? 'warn' : 'ok', pts: [tpos('LOAD_PE'), tpos('GB_1')] }; break;
+      }
+      case 'I_L': R = { big: fmtA(r.iL), sm: 'ELB 부하측 L선 클램프', judge: '', pts: [wireMid('ELB_OUT_L', 'LOAD_L')] }; break;
+      case 'I_N': R = { big: fmtA(r.iN), sm: 'ELB 부하측 N선 클램프', judge: '', pts: [wireMid('ELB_OUT_N', 'LOAD_N')] }; break;
+      case 'I_LEAK': { const a = Math.abs(r.iDelta); R = { big: fmtA(a), sm: 'L·N 일괄 클램프 = 영상(누설)전류 · 부동작 15 mA / 감도 30 mA', judge: a >= CFG.I_TRIP ? 'bad' : a >= .005 ? 'warn' : 'ok', pts: [wireMid('ELB_OUT_L', 'LOAD_L'), wireMid('ELB_OUT_N', 'LOAD_N')] }; break; }
+      case 'I_PE': R = { big: fmtA(r.peI), sm: 'PE선 클램프 · 정상 운전 시 ≈ 0', judge: r.peI > .005 ? 'bad' : r.peI > 5e-4 ? 'warn' : 'ok', pts: [wireMid('LOAD_PE', 'GB_1')] }; break;
+      case 'IR_LPE': case 'IR_NPE': case 'IR_LN': {
+        const pts = ['LOAD_L', 'LOAD_N', 'LOAD_PE'];
+        if (!this.dead(pts) || (S.mccbOn && S.elbClosed)) { R = { big: '활선!', sm: '⚠ 절연저항 측정은 반드시 전원 차단 후 실시합니다 (ELB 또는 MCCB 개방)', judge: 'bad', pts: [] }; if (logIt) Log.add('warn', '활선 상태에서 절연저항 측정 시도 → 측정 거부'); break; }
+        const [a, b] = it === 'IR_LPE' ? ['LOAD_L', 'ENC'] : it === 'IR_NPE' ? ['LOAD_N', 'ENC'] : ['LOAD_L', 'LOAD_N'];
+        let x = Circuit.resistance(S, a, b); const ms = x / 1e6;
+        const big = x > 1.9e9 ? '> 2000 MΩ' : ms >= 1 ? ms.toFixed(ms >= 100 ? 0 : 1) + ' MΩ' : ms.toFixed(3) + ' MΩ';
+        let sm = `DC 500 V 인가 · 판정 기준 1.0 MΩ 이상 (KEC 저압 500 V 이하)`; let judge = ms >= 1 ? 'ok' : 'bad';
+        if (it === 'IR_LN' && S.loadOn) { sm = '부하가 접속(스위치 ON)되어 L–N은 부하저항이 측정됨 → 부하 분리 후 측정'; judge = 'warn'; }
+        if (it !== 'IR_LN' && !S.loadOn && S.fault.active && S.fault.loc === 'element' && it === 'IR_LPE') sm += ' · 부하 스위치 OFF 상태: 스위치 이후 부분은 L측에서 측정되지 않음';
+        R = { big, sm, judge, pts: [tpos(it === 'IR_NPE' ? 'LOAD_N' : 'LOAD_L'), tpos(it === 'IR_LN' ? 'LOAD_N' : 'LOAD_PE')] }; break;
+      }
+      case 'RE_ROD': R = { big: (S.soilRA * 1.012).toFixed(1) + ' Ω', sm: '접지극 단독(접지선 분리) · 교육용 양호 기준 ≤ 100 Ω', judge: S.soilRA <= 100 ? 'ok' : 'bad', pts: [tpos('ROD'), V3(2.6, .1, 1.6)] }; break;
+      case 'RE_BAR': {
+        const w = S.wires.find(w => { const n = [TERMS[w.a].node, TERMS[w.b].node]; return n.includes('GB') && n.includes('ROD'); });
+        const v = !w || w.broken ? Infinity : (w.loose ? CFG.R_LOOSE : 0) + S.soilRA * 1.012 + .05;
+        R = { big: fmtR(v), sm: '접지 단자대에서 측정(접지도체+접지극) · OL = 접지선 단선', judge: !isFinite(v) ? 'bad' : v <= 100 ? 'ok' : 'bad', pts: [tpos('GB_2'), V3(2.6, .1, 1.6)] }; break;
+      }
+    }
+    this.reading = R;
+    if (logIt) { Log.add('info', `측정 [${this.INST[this.inst].name}] ${this.NAMES[it]}${['V_LN', 'V_LPE', 'V_NPE'].includes(it) ? ' @' + locName : ''} = ${R.big}`); if (S.diag) S.diag.measured.add(it); }
+    Instruments3D.showProbes(R.pts);
+  }
+};
+
+/* =====================================================================
+   MODULE 12 · 2D 결선도 (SVG) — 3D 상태와 실시간 동기화
+   ===================================================================== */
+const SCH = { SRC_L: [150, 80], SRC_N: [150, 140], ELB_IN_L: [250, 80], ELB_IN_N: [250, 140], ELB_OUT_L: [400, 80], ELB_OUT_N: [400, 140], LOAD_L: [555, 80], LOAD_N: [555, 140], LOAD_PE: [650, 216], GB_1: [650, 282], GB_2: [460, 282], ROD: [460, 316] };
+const NS = 'http://www.w3.org/2000/svg';
+class Schematic {
+  constructor(svg, o = {}) { this.svg = svg; this.o = o; this.flows = []; this.build(); }
+  el(tag, at, p) { const e = document.createElementNS(NS, tag); for (const k in at) e.setAttribute(k, at[k]); (p || this.svg).appendChild(e); return e; }
+  txt(x, y, t, at = {}, p) { const e = this.el('text', { x, y, 'font-size': 12, fill: '#2c3846', 'font-family': 'Pretendard,Noto Sans KR,sans-serif', ...at }, p); e.textContent = t; return e; }
+  build() {
+    const s = this.svg; s.innerHTML = '';
+    const defs = this.el('defs', {});
+    defs.innerHTML = `<pattern id="peP" width="12" height="4" patternUnits="userSpaceOnUse"><rect width="12" height="4" fill="#2f9e3a"/></pattern>`;
+    this.el('rect', { x: 0, y: 0, width: 900, height: 370, fill: '#fbfcfe' });
+    // 대지
+    this.el('rect', { x: 20, y: 346, width: 860, height: 20, fill: '#efe3d6' });
+    this.txt(30, 361, '대지 (Earth)', { 'font-size': 11, fill: '#7a5232' });
+    // 전원
+    this.el('circle', { cx: 80, cy: 110, r: 24, fill: '#fff', stroke: '#14202e', 'stroke-width': 2 });
+    this.el('path', { d: 'M66 110 q7 -12 14 0 t14 0', fill: 'none', stroke: '#14202e', 'stroke-width': 2 });
+    this.txt(46, 160, '단상 220 V', { 'font-size': 11 }); this.txt(50, 30, '전원·MCCB', { 'font-weight': 700 });
+    this.mccbTxt = this.txt(104, 30, '', { 'font-size': 11, 'font-weight': 700 });
+    // R_B
+    this.el('path', { d: 'M120 228 l6 4 -12 8 12 8 -12 8 12 8 -6 4', fill: 'none', stroke: '#2f9e3a', 'stroke-width': 2 });
+    this.txt(130, 262, 'R_B 계통접지', { 'font-size': 10.5, fill: '#2f6b37' });
+    this.earth(120, 336);
+    // ELB
+    this.el('rect', { x: 228, y: 44, width: 194, height: 150, rx: 10, fill: '#f3f6fa', stroke: '#14202e', 'stroke-width': 1.5 });
+    this.txt(234, 38, '누전차단기 ELB (30 mA)', { 'font-weight': 700 });
+    this.zct = this.el('ellipse', { cx: 280, cy: 110, rx: 11, ry: 46, fill: 'none', stroke: '#5a5f66', 'stroke-width': 5 });
+    this.txt(262, 186, 'ZCT', { 'font-size': 11, 'font-weight': 700 });
+    this.coil = this.el('rect', { x: 300, y: 50, width: 46, height: 14, rx: 3, fill: '#fff', stroke: '#c8733a', 'stroke-width': 2 });
+    this.txt(305, 61, '트립코일', { 'font-size': 9.5 });
+    this.el('path', { d: 'M323 64 V146', stroke: '#888', 'stroke-dasharray': '3 3', fill: 'none' });
+    this.el('path', { d: 'M292 116 h10 V57 h-2', stroke: '#999', fill: 'none', 'stroke-width': 1 });
+    this.testT = this.txt(296, 180, '시험회로(TEST)', { 'font-size': 10, fill: '#7a5600' });
+    // 부하·외함
+    this.encRect = this.el('rect', { x: 535, y: 44, width: 240, height: 172, rx: 8, fill: '#f6f8fa', stroke: '#8f98a3', 'stroke-width': 2, 'stroke-dasharray': '7 4' });
+    this.txt(600, 38, '전기기기 (금속 외함)', { 'font-weight': 700 });
+    this.el('path', { d: 'M700 95 l8 3 -16 5 16 5 -16 5 16 5 -8 2', fill: 'none', stroke: '#14202e', 'stroke-width': 2 });
+    this.txt(712, 114, '부하 1 kW', { 'font-size': 10.5 });
+    this.encV = this.txt(560, 205, '', { 'font-size': 11, 'font-weight': 700 });
+    // 접지 단자대 + 접지극
+    this.el('rect', { x: 436, y: 278, width: 236, height: 9, rx: 3, fill: '#c8733a' });
+    this.txt(500, 302, '접지 단자대', { 'font-size': 11, fill: '#7a3c12', 'font-weight': 700 });
+    this.earth(460, 336); this.txt(470, 333, 'R_A 접지극', { 'font-size': 10.5, fill: '#2f6b37' });
+    // 인체
+    this.person = this.el('g', { opacity: .35 });
+    this.el('circle', { cx: 835, cy: 214, r: 10, fill: 'none', stroke: '#14202e', 'stroke-width': 2 }, this.person);
+    this.el('path', { d: 'M835 224 V290 M835 240 L812 252 M835 290 l-12 40 M835 290 l12 40', stroke: '#14202e', 'stroke-width': 2, fill: 'none' }, this.person);
+    this.txt(805, 200, '인체', { 'font-size': 11 }, this.person);
+    // 레이어
+    this.gFixed = this.el('g', {}); this.gWires = this.el('g', {}); this.gFlow = this.el('g', {}); this.gTerm = this.el('g', {}); this.gTxt = this.el('g', {});
+    // 고정 경로
+    const F = (id, d, kind, at = {}) => { const p = this.el('path', { d, fill: 'none', stroke: '#999', 'stroke-width': 3, 'stroke-linecap': 'round', ...at }, this.gFixed); this.flows.push({ id, el: p, d, kind }); return p; };
+    F('srcL', 'M80 86 V80 H112', 'L'); F('srcL2', 'M136 80 H150', 'L'); F('srcN', 'M80 134 V140 H112', 'N'); F('srcN2', 'M136 140 H150', 'N');
+    this.mccbL = this.el('path', { d: '', stroke: '#14202e', 'stroke-width': 3, fill: 'none' }); this.mccbN = this.el('path', { d: '', stroke: '#14202e', 'stroke-width': 3, fill: 'none' });
+    F('rb', 'M120 140 V228 M120 268 V336', 'PE');
+    F('cL1', 'M250 80 H305', 'L'); F('cL2', 'M341 80 H400', 'L'); F('cN1', 'M250 140 H305', 'N'); F('cN2', 'M341 140 H400', 'N');
+    this.cL = this.el('path', { d: '', stroke: '#14202e', 'stroke-width': 3, fill: 'none' }); this.cN = this.el('path', { d: '', stroke: '#14202e', 'stroke-width': 3, fill: 'none' });
+    F('test', 'M388 80 V168 H262 V140', 'T', { 'stroke-width': 1.6, 'stroke-dasharray': '4 3' });
+    this.el('rect', { x: 330, y: 163, width: 26, height: 10, fill: '#fff', stroke: '#7a5600' });
+    F('ldL', 'M555 80 H608', 'L'); F('ldL2', 'M640 80 H700 V95', 'L'); F('ldN', 'M700 125 V140 H555', 'N');
+    this.sw = this.el('path', { d: '', stroke: '#14202e', 'stroke-width': 3, fill: 'none' });
+    this.txt(606, 70, '부하 SW', { 'font-size': 10 });
+    this.faultT = F('faultT', 'M585 80 V118 l-8 10 16 6 -8 12 V216', 'F', { 'stroke-width': 2.5 });
+    this.faultE = F('faultE', 'M700 110 H728 l8 -8 6 14 8 -8 H775', 'F', { 'stroke-width': 2.5 });
+    F('rod', 'M460 316 V336', 'PE');
+    F('earthA', 'M460 346 H120', 'E', { 'stroke-width': 2 });
+    F('earthB', 'M835 346 H460', 'E', { 'stroke-width': 2 });
+    this.personPath = F('person', 'M775 120 H800 L812 252 L835 240 V290 L835 346', 'P', { 'stroke-width': 2.5 });
+    this.leakP = F('leaksim', 'M400 80 C 430 90, 430 200, 470 282', 'S', { 'stroke-width': 2, 'stroke-dasharray': '6 4' });
+    // 단자
+    for (const id in SCH) {
+      const [x, y] = SCH[id], c = { L: '#8b4a1e', N: '#1f5fd6', PE: '#2f9e3a' }[TERMS[id].func];
+      const g = this.el('g', { style: 'cursor:pointer' }, this.gTerm);
+      const ci = this.el('circle', { cx: x, cy: y, r: 6.5, fill: '#fff', stroke: c, 'stroke-width': 3 }, g);
+      this.el('circle', { cx: x, cy: y, r: 14, fill: 'transparent' }, g);
+      const tl = this.el('title', {}, g); tl.textContent = TERMS[id].label;
+      if (this.o.interactive) g.addEventListener('click', () => UI.termClick(id));
+      (this.termEls ||= {})[id] = ci;
+    }
+    const sl = (id, t, dx, dy) => this.txt(SCH[id][0] + dx, SCH[id][1] + dy, t, { 'font-size': 10, fill: '#5d6b7c' });
+    sl('ELB_IN_L', 'LINE', -2, -10); sl('ELB_OUT_L', 'LOAD', -26, -10); sl('LOAD_PE', 'PE', 10, 4); sl('GB_1', 'PE-1', 8, -8); sl('GB_2', 'PE-2', -36, -8);
+    // 값 표시
+    this.vL = this.txt(160, 70, '', { 'font-size': 11, 'font-weight': 700, fill: '#8b4a1e' });
+    this.vN = this.txt(160, 158, '', { 'font-size': 11, 'font-weight': 700, fill: '#1f5fd6' });
+    this.vD = this.txt(232, 214, '', { 'font-size': 12, 'font-weight': 800 });
+    this.vPE = this.txt(662, 255, '', { 'font-size': 11, 'font-weight': 700, fill: '#2f6b37' });
+    this.vP = this.txt(780, 330, '', { 'font-size': 11, 'font-weight': 700, fill: '#d63a2f' });
+    this.vState = this.txt(440, 236, '', { 'font-size': 12, 'font-weight': 800 });
+  }
+  earth(x, y) { this.el('path', { d: `M${x - 12} ${y} h24 M${x - 8} ${y + 4} h16 M${x - 4} ${y + 8} h8`, stroke: '#2f6b37', 'stroke-width': 2, fill: 'none' }); }
+  route(a, b) {
+    const [x1, y1] = SCH[a], [x2, y2] = SCH[b];
+    if (x1 === x2 || y1 === y2) return `M${x1} ${y1} L${x2} ${y2}`;
+    const peish = t => ['LOAD_PE', 'GB_1', 'GB_2', 'ROD'].includes(t);
+    if (peish(a) || peish(b)) { const [ax, ay, bx, by] = peish(a) ? [x1, y1, x2, y2] : [x2, y2, x1, y1]; return `M${ax} ${ay} V${by} H${bx}`; }
+    const mx = (x1 + x2) / 2 + (y1 > y2 ? 6 : -6);
+    return `M${x1} ${y1} H${mx} V${y2} H${x2}`;
+  }
+  setWires(wires) {
+    this.gWires.innerHTML = ''; this.flows = this.flows.filter(f => !f.wire);
+    for (const w of wires) {
+      const d = this.route(w.a, w.b), col = WT[w.type].css;
+      const g = this.el('g', {}, this.gWires);
+      const base = this.el('path', { d, fill: 'none', stroke: col, 'stroke-width': 4, 'stroke-linejoin': 'round', 'stroke-dasharray': w.broken ? '1000' : 'none' }, g);
+      if (w.type === 'PE') this.el('path', { d, fill: 'none', stroke: '#e8c800', 'stroke-width': 4, 'stroke-dasharray': '6 6' }, g);
+      if (w.broken) {
+        const len = base.getTotalLength(), p = base.getPointAtLength(len / 2);
+        base.setAttribute('stroke-dasharray', `${len / 2 - 9} 18 ${len}`); g.lastChild.setAttribute('opacity', .9);
+        if (w.type === 'PE') g.lastChild.setAttribute('stroke-dasharray', `6 6`);
+        this.txt(p.x - 7, p.y + 5, '✕', { fill: '#d63a2f', 'font-size': 16, 'font-weight': 900 }, g);
+        if (w.type === 'PE') { g.lastChild.previousSibling.remove(); }
+      }
+      if (w.loose) { const [x, y] = SCH[w.a]; this.el('circle', { cx: x, cy: y, r: 11, fill: 'none', stroke: '#e39b00', 'stroke-width': 3, 'stroke-dasharray': '3 3' }, g); }
+      const sel = S.selWire === w.id; if (sel) base.setAttribute('stroke-width', 7);
+      if (this.o.interactive) { g.style.cursor = 'pointer'; g.addEventListener('click', () => { if (S.mode === 'wiring') { S.selWire = w.id; Bus.emit('update'); } }); }
+      this.flows.push({ id: 'w' + w.id, el: base, d, kind: w.type, wire: w, base });
+    }
+    this.gFlow.innerHTML = '';
+    for (const f of this.flows) { f.ov = this.el('path', { d: f.d, fill: 'none', stroke: '#fff', 'stroke-width': 2, 'stroke-dasharray': '3 9', 'stroke-linecap': 'round', opacity: 0 }, this.gFlow); f.off = 0; }
+  }
+  update(st, r) {
+    if (!r) return;
+    this.st = st; this.r = r;
+    const I = r.I, g = k => I[k] || 0;
+    const cur = {
+      srcL: r.srcI, srcL2: r.srcI, srcN: -r.srcI, srcN2: -r.srcI, rb: r.rbI,
+      cL1: r.iL, cL2: r.iL, cN1: r.iN, cN2: r.iN, test: r.testI,
+      ldL: g('sw') + g('insL') + (st.fault.loc === 'terminal' ? g('fault') : 0), ldL2: g('sw'), ldN: g('heater'),
+      faultT: st.fault.loc === 'terminal' ? g('fault') : 0, faultE: st.fault.loc === 'element' ? g('fault') : 0,
+      rod: r.rodI, earthA: r.rodI + r.personI, earthB: r.personI, person: r.personI, leaksim: r.leakSimI
+    };
+    const nodeV = { srcL: 'SRC_L', srcL2: 'SRC_L', srcN: 'SRC_N', srcN2: 'SRC_N', cL1: 'IN_L', cL2: 'OUT_L', cN1: 'IN_N', cN2: 'OUT_N', ldL: 'LOAD_L', ldL2: 'LD_SW', ldN: 'LOAD_N' };
+    const live = st.mccbOn;
+    for (const f of this.flows) {
+      let i = f.wire ? (I['w' + f.wire.id] || 0) : (cur[f.id] || 0);
+      f.i = i;
+      const vol = f.wire ? Math.abs(r.V[TERMS[f.wire.a].node]) : nodeV[f.id] ? Math.abs(r.V[nodeV[f.id]]) : 0;
+      const active = Math.abs(i) > 2e-4 || vol > 5;
+      if (!f.wire) {
+        const col = { L: '#8b4a1e', N: '#1f5fd6', PE: '#2f9e3a', T: '#c79a00', F: '#d63a2f', E: '#a0703f', P: '#d63a2f', S: '#f07a1a' }[f.kind];
+        f.el.setAttribute('stroke', col);
+        f.el.setAttribute('opacity', active ? 1 : (['F', 'P', 'S', 'T'].includes(f.kind) ? .15 : .35));
+      } else { f.el.parentNode.setAttribute('opacity', active ? 1 : .55); f.el.setAttribute('stroke-width', active ? 5 : 4); }
+      const fault = ['F', 'P', 'E', 'S'].includes(f.kind) || (f.kind === 'PE' && Math.abs(i) > 1e-4) || f.id === 'rod';
+      f.ov.setAttribute('stroke', fault ? '#ffecec' : '#ffffff');
+      if (fault && Math.abs(i) > 2e-4) f.ov.setAttribute('stroke', '#ff2d20');
+      f.ov.setAttribute('opacity', Math.abs(i) > 2e-4 ? .95 : 0);
+      f.ov.setAttribute('stroke-width', fault ? 3 : 2);
+    }
+    this.faultT.style.display = st.fault.active && st.fault.loc === 'terminal' ? '' : 'none';
+    this.faultE.style.display = st.fault.active && st.fault.loc === 'element' ? '' : 'none';
+    this.leakP.style.display = st.leakSim.on ? '' : 'none';
+    this.personPath.style.display = st.touching ? '' : 'none';
+    this.person.setAttribute('opacity', st.touching ? 1 : .3);
+    const sw = (open, x1, y, x2) => open ? `M${x1} ${y} L${x2 - 4} ${y - 16}` : `M${x1} ${y} L${x2} ${y}`;
+    this.cL.setAttribute('d', sw(!st.elbClosed, 305, 80, 341)); this.cN.setAttribute('d', sw(!st.elbClosed, 305, 140, 341));
+    this.mccbL.setAttribute('d', sw(!st.mccbOn, 112, 80, 136)); this.mccbN.setAttribute('d', sw(!st.mccbOn, 112, 140, 136));
+    this.sw.setAttribute('d', sw(!st.loadOn, 608, 80, 640));
+    this.mccbTxt.textContent = st.mccbOn ? 'ON' : 'OFF'; this.mccbTxt.setAttribute('fill', st.mccbOn ? '#0d7a43' : '#888');
+    const id = Math.abs(r.iDelta);
+    this.zct.setAttribute('stroke', id >= CFG.I_TRIP ? '#d63a2f' : id > .002 ? '#e39b00' : Math.abs(r.iL) > .01 ? '#14a05a' : '#5a5f66');
+    this.coil.setAttribute('fill', (st.pendingTrip || st.elbTripped) ? '#ffd6cf' : '#fff');
+    this.testT.setAttribute('fill', st.elbHealth.test ? '#7a5600' : '#d63a2f'); this.testT.textContent = st.elbHealth.test ? '시험회로(TEST)' : '시험회로 단선';
+    const ev = Math.abs(r.encV);
+    this.encRect.setAttribute('stroke', ev > 50 ? '#d63a2f' : ev > 25 ? '#e39b00' : '#8f98a3');
+    this.encRect.setAttribute('fill', ev > 50 ? '#fdecea' : '#f6f8fa');
+    this.encV.textContent = `외함 대지전위 ${ev.toFixed(ev < 10 ? 1 : 0)} V`; this.encV.setAttribute('fill', ev > 50 ? '#d63a2f' : '#2c3846');
+    this.vL.textContent = `I_L ${fmtA(r.iL)}`; this.vN.textContent = `I_N ${fmtA(r.iN)}`;
+    this.vD.textContent = `I_Δ = ${fmtA(r.iDelta)}`; this.vD.setAttribute('fill', id >= CFG.I_TRIP ? '#d63a2f' : id > .002 ? '#b07400' : '#0d7a43');
+    this.vPE.textContent = r.peI > 1e-4 ? `I_PE ${fmtA(r.peI)}` : 'I_PE ≈ 0';
+    this.vP.textContent = st.touching ? `인체 ${fmtA(r.personI)}` : '';
+    this.vState.textContent = st.pendingTrip ? '▶ 누전 검출 — 트립 진행' : st.elbTripped ? '■ ELB 트립(차단)' : st.elbClosed ? '● ELB 투입' : '○ ELB 개방';
+    this.vState.setAttribute('fill', st.pendingTrip || st.elbTripped ? '#d63a2f' : st.elbClosed ? '#0d7a43' : '#5d6b7c');
+    for (const t in this.termEls) { const e = this.termEls[t]; e.setAttribute('r', S.selTerm === t && this.o.interactive ? 9 : 6.5); e.setAttribute('fill', S.selTerm === t && this.o.interactive ? '#cfe2ff' : '#fff'); }
+  }
+  animate(dt) {
+    for (const f of this.flows) {
+      if (!f.ov || !f.i || Math.abs(f.i) < 2e-4) continue;
+      const sp = 14 + 22 * Math.log10(1 + Math.abs(f.i) * 1000);
+      f.off -= Math.sign(f.i) * sp * dt; f.ov.setAttribute('stroke-dashoffset', f.off.toFixed(1));
+    }
+  }
+}
+
+/* =====================================================================
+   MODULE 13 · 프리셋 · 고장 주입 · 접지 비교
+   ===================================================================== */
+const Preset = {
+  base(o = {}) {
+    Scn.cancel();
+    S.wireSeq = S.wireSeq || 1; S.wires = Wiring.correctSet(); S.wiringSource = 'preset';
+    S.elbHealth = { test: true, mech: true };
+    S.fault = { active: false, R: S.fault.R || 1000, loc: 'terminal' };
+    S.soilRA = CFG.R_A; S.touching = false; S.leakSim.on = false; S.testPressed = false; S.pendingTrip = null;
+    S.elbTripped = false; S.mccbOn = !!o.power; S.elbClosed = !!o.elb; S.loadOn = o.load !== false;
+    S.flags = {}; S.lastShock = null; S.selTerm = null; S.selWire = null; S.noTripWarned = false;
+    Bus.emit('wires'); Sim.run();
+  },
+  pe(st = S) {
+    const f = (x, y) => st.wires.find(w => { const n = [TERMS[w.a].node, TERMS[w.b].node]; return n.includes(x) && n.includes(y); });
+    return { pe1: f('ENC', 'GB'), pe2: f('GB', 'ROD') };
+  },
+  ground(code, st = S) {
+    const { pe1, pe2 } = this.pe(st);
+    [pe1, pe2].forEach(w => { if (w) { w.broken = false; w.loose = false; } }); st.soilRA = CFG.R_A;
+    if (code === 'open' && pe2) pe2.broken = true;
+    if (code === 'noPE' && pe1) pe1.broken = true;
+    if (code === 'high') st.soilRA = CFG.R_A_HIGH;
+    if (code === 'loose' && pe1) pe1.loose = true;
+    if (st === S) Bus.emit('wires');
+  }
+};
+const GSTATES = {
+  ok: { name: '정상 접지', path: 'L → 절연고장 → 외함 → PE → 단자대 → 접지극 → 대지 → R_B → N(전원)' },
+  open: { name: '접지선 단선', path: '보호 경로 없음 → 외함 충전 잠복 · 접촉 시 L → 외함 → 인체 → 대지' },
+  high: { name: '접지 저항 높음', path: 'PE 경로는 있으나 접지극 저항(300 Ω)이 커서 외함 전위 상승' },
+  loose: { name: '접지 단자 연결 불량', path: 'PE 접속부 접촉저항(150 Ω) 경유 → 외함 전위 상승·발열' }
+};
+function cloneState(over = {}) {
+  const st = JSON.parse(JSON.stringify({ ...S, res: null, diag: null, quiz: null, pendingTrip: null }));
+  return Object.assign(st, over);
+}
+function compareRow(code, elbOk) {
+  const st = cloneState({ wires: Wiring.correctSet(), mccbOn: true, elbClosed: true, loadOn: true, touching: false, leakSim: { on: false, mA: 30 }, testPressed: false });
+  st.fault = { active: true, R: S.fault.R, loc: 'terminal' }; st.elbHealth = { test: true, mech: elbOk };
+  Preset.ground(code, st);
+  const r1 = Circuit.solve(st); st.touching = true; const r2 = Circuit.solve(st);
+  const leak = Math.abs(r1.iDelta), ev = Math.abs(r1.encV), ip = Math.abs(r2.personI);
+  const trip1 = elbOk && leak >= CFG.I_TRIP, trip2 = elbOk && Math.abs(r2.iDelta) >= CFG.I_TRIP;
+  let elb, risk, res;
+  if (trip1) { elb = `<span class="pill g">즉시 트립</span><br>고장전류 ${fmtA(leak)}`; }
+  else if (trip2) elb = `<span class="pill y">접촉 시 트립</span><br>(인체 경유 ${fmtA(ip)})`;
+  else elb = `<span class="pill r">미동작</span>${!elbOk ? '<br>(ELB 고장)' : `<br>누설 ${fmtA(leak)}`}`;
+  const lvl = ev > 50 ? 'r' : ev > 25 ? 'y' : 'g';
+  if (trip1) { risk = `<span class="pill ${lvl === 'r' ? 'y' : 'g'}">${lvl === 'r' ? '중간' : '낮음'}</span> 차단 전 순간 ${ev.toFixed(0)} V`; res = '접촉 전에 고장 회로 차단'; }
+  else if (trip2) { risk = `<span class="pill r">높음</span> 외함 ${ev.toFixed(0)} V 잠복`; res = '감전이 시작된 뒤 0.03 s 이내 차단(추가 보호)'; }
+  else { risk = `<span class="pill r">매우 높음</span> 외함 ${ev.toFixed(0)} V${ip > 0 ? ` · 접촉 시 ${fmtA(ip)}` : ''}`; res = '보호 실패 — 지속 감전 위험'; }
+  const mccb = Math.abs(r1.srcI) < CFG.MCCB_INST ? 'MCCB 미동작(지락전류 < 순시 트립치)' : 'MCCB 트립';
+  return { code, ev, leak, ip, elb, risk, res, mccb };
+}
+
+const FAULTS = [
+  { id: 'peOpen', name: '접지선 단선', complaint: '정기 안전점검 의뢰: "기기는 정상 작동합니다. 접지 상태를 점검해 주세요."',
+    inject() { Preset.ground('open'); }, explain: '접지 단자대–접지극 사이 접지도체가 단선되었습니다. 평상시에는 증상이 없지만 절연 고장 시 외함이 충전된 채 남고 ELB도 동작하지 않습니다. 접지저항계를 단자대에서 측정하면 OL, 접지극 단독은 정상값이 나옵니다.' },
+  { id: 'peLoose', name: '접지 단자 연결 불량', complaint: '정기 안전점검 의뢰: "외함 접지 단자 부근이 헐거워 보인다는 보고가 있습니다."',
+    inject() { Preset.ground('loose'); }, explain: '기기 외함 PE 단자 접속이 불량(접촉저항 150 Ω)합니다. 멀티미터 PE 도통저항이 수 Ω 이하가 아닌 150 Ω대로 측정됩니다. 고장 시 외함 전위가 상승하고 접속부가 발열합니다. 단자를 재체결합니다.' },
+  { id: 'nMiswire', name: '중성선 오결선 (N을 접지 단자대에 접속)', complaint: '"부하 스위치를 켜기만 하면 누전차단기가 떨어집니다."',
+    inject() { S.wires = S.wires.filter(w => !(w.a === 'ELB_OUT_N' && w.b === 'LOAD_N')); S.wires.push(Wiring.make('LOAD_N', 'GB_1', 'N')); Bus.emit('wires'); },
+    explain: '부하 N이 ELB 부하측 N이 아닌 접지 단자대에 연결되어 부하전류가 대지로 귀로합니다. ZCT에는 L 전류만 지나가므로 부하 전류 전체가 불평형으로 검출되어 트립합니다. 클램프로 I_N ≈ 0, 결선 육안 점검으로 확인합니다.' },
+  { id: 'elbReverse', name: '누전차단기 입력·출력 오배선', complaint: '"차단기를 내렸는데 차단기 아래쪽(LOAD) 단자에서 검전기가 반응합니다."',
+    inject() { S.wires = S.wires.filter(w => !['ELB_IN_L', 'ELB_IN_N', 'ELB_OUT_L', 'ELB_OUT_N'].some(t => w.a === t || w.b === t)); [['SRC_L', 'ELB_OUT_L', 'L'], ['SRC_N', 'ELB_OUT_N', 'N'], ['ELB_IN_L', 'LOAD_L', 'L'], ['ELB_IN_N', 'LOAD_N', 'N']].forEach(([a, b, t]) => S.wires.push(Wiring.make(a, b, t))); Bus.emit('wires'); },
+    explain: '전원이 ELB 부하측(LOAD) 단자로 공급되는 역접속입니다. 정상 동작처럼 보이지만 ELB를 개방해도 "LOAD" 표기 단자에 220 V가 남아 작업자가 감전될 수 있습니다. ELB 개방 상태에서 ELB 부하측 L–N(또는 L–PE) 전압을 측정하면 220 V가 나옵니다.' },
+  { id: 'imbalance', name: 'L/N 전류 불평형 (경미한 누설, 미트립)', complaint: '"차단기는 떨어지지 않는데, 누설전류 모니터에 늘 몇 mA가 표시됩니다."',
+    inject() { S.fault = { active: true, R: 20000, loc: 'terminal' }; }, explain: '기기 절연이 열화되어 약 11 mA가 상시 누설됩니다. 부동작전류(15 mA) 미만이라 트립하지 않지만 화재·감전 위험이 커지는 전조입니다. 클램프 누설전류 ≈ 11 mA, 절연저항 L–PE ≈ 0.02 MΩ(기준 1 MΩ 미달).' },
+  { id: 'insulation', name: '전기기기 내부 절연 불량 (단자부 지락)', complaint: '"누전차단기를 올리면 부하 스위치와 관계없이 바로 떨어집니다."',
+    inject() { S.fault = { active: true, R: 1500, loc: 'terminal' }; }, explain: '기기 전원 단자부(L)와 외함 사이 절연이 파괴되었습니다. 부하 스위치와 무관하게 ELB 투입 즉시 트립합니다. 전원 차단 후 절연저항 L–PE가 1 MΩ 미만(≈0.0015 MΩ)입니다.' },
+  { id: 'tripLoad', name: '누전차단기 트립 (부하 운전 시 발열체 누전)', complaint: '"차단기가 내려가 있습니다. 올리면 괜찮다가 부하 스위치를 켜면 떨어집니다."',
+    inject() { S.fault = { active: true, R: 1500, loc: 'element' }; }, explain: '부하 스위치 이후의 발열체(히터)와 외함 사이 절연이 파괴되었습니다. 부하 OFF 상태로는 재투입이 유지되지만 부하 ON 시 트립합니다. 절연저항 측정 시 부하 스위치 상태에 따라 결과가 달라지므로 스위치를 ON으로 두고(전원 차단 상태) 측정하거나 N–PE를 측정해야 합니다.' },
+  { id: 'testFail', name: '테스트 버튼 작동 불량 (시험회로 단선)', complaint: '"월간 점검 때 시험 버튼을 눌러도 차단기가 떨어지지 않습니다."',
+    inject() { S.elbHealth.test = false; }, explain: 'ELB 내부 시험회로(저항·접점)가 단선되었습니다. 시험 버튼은 무반응이지만, 누전 발생 장치로 30 mA 이상을 주입하면 정상 트립합니다(트립 기구는 정상). 그래도 자가 점검이 불가능하므로 교체 대상입니다.' },
+  { id: 'noTrip', name: '누전차단기 미동작 (트립 기구 고착)', complaint: '"월간 점검 때 시험 버튼을 눌러도 차단기가 떨어지지 않습니다."',
+    inject() { S.elbHealth.mech = false; }, explain: '트립 기구가 고착되어 시험 버튼뿐 아니라 실제 누설전류(누전 발생 장치 30·50 mA 주입)에도 동작하지 않습니다. 누전 보호 기능이 상실된 매우 위험한 상태로 즉시 교체해야 합니다.' }
+];
+const Diag = {
+  start(id) {
+    const f = id === 'random' ? FAULTS[Math.floor(Math.random() * FAULTS.length)] : FAULTS.find(x => x.id === id);
+    Preset.base({ power: true, elb: true, load: true });
+    f.inject(); Bus.emit('wires');
+    S.diag = { f, t0: Date.now(), tries: 0, solved: false, measured: new Set(), last: null };
+    Log.add('warn', `[고장 진단] 새 고장 상황 출제 — ${f.complaint}`);
+    Sim.run(); UI.renderMode();
+  },
+  submit(ans) {
+    const d = S.diag; if (!d || d.solved) return;
+    d.tries++; const ok = ans === d.f.id;
+    d.last = { ans, ok };
+    if (ok) { d.solved = true; Log.add('ok', `[고장 진단] 정답: ${d.f.name} (시도 ${d.tries}회, 측정 ${d.measured.size}항목)`); Toast.show('정확한 진단입니다! 수리하여 복구하세요', 'ok'); }
+    else Log.add('warn', `[고장 진단] 오진: ${(FAULTS.find(x => x.id === ans) || { name: '이상 없음' }).name}`);
+    if (S.quiz.diagTask && !S.quiz.diag) S.quiz.diag = { first: ok, tries: d.tries, name: d.f.name, solved: ok };
+    if (S.quiz.diagTask && ok) { S.quiz.diag = { first: d.tries === 1, tries: d.tries, name: d.f.name, solved: true }; S.quiz.diagTask = false; }
+    UI.renderMode();
+  },
+  repair() { const n = S.diag.f.name; Preset.base({ power: false }); S.diag = null; Log.add('ok', `[수리 완료] ${n} → 정상 상태로 복구. 전원 투입 후 시험 버튼으로 동작을 확인하세요.`); UI.renderMode(); }
+};
+
+/* ---------- 시나리오 자동 실행 ---------- */
+const Scn = {
+  tok: 0, cur: 'A',
+  cancel() { this.tok++; },
+  sleep(ms) { return new Promise(r => setTimeout(r, ms)); },
+  async run(id) {
+    this.cur = id; const my = ++this.tok, alive = () => my === this.tok;
+    Preset.base({ power: false }); this.tok = my;
+    if (id === 'B') Preset.ground('noPE');
+    if (id === 'B' && S._elbFailAssume) S.elbHealth.mech = false;
+    UI.renderMode();
+    await this.sleep(600); if (!alive()) return; Act.mccb(true);
+    await this.sleep(700); if (!alive()) return; Act.elbHandle();
+    await this.sleep(1300); if (!alive()) return;
+    if (id === 'A') { Act.fault(true); }
+    if (id === 'B') {
+      Act.fault(true); Toast.show('외함에 고장 전압 발생 — 누설 경로가 없어 ELB는 동작하지 않습니다', 'warn');
+      await this.sleep(2800); if (!alive()) return; Act.touch(true);
+      await this.sleep(2600); if (!alive()) return; if (S.touching) Act.touch(false);
+    }
+    if (id === 'C') Act.test();
+  }
+};
+
+/* =====================================================================
+   MODULE 14 · 학습 콘텐츠 (부품 · 원리 · 안전)
+   ===================================================================== */
+const PARTS = [
+  ['src1', '🔌', '단상 전원 공급 장치', 'AC 220 V 60 Hz 단상 전원. L1–N 인출', '3상 4선식 380/220 V 계통의 한 상(L1)과 중성선(N)에서 단상 220 V를 공급합니다. 전원측 중성점은 변압기에서 계통접지(R_B)된 TT 계통으로 가정합니다.', 'panel'],
+  ['p3', '🏭', '3상 전원 공급 장치', '3상 4선식 380/220 V (참고용)', '선간전압 380 V, 상전압 220 V. KEC 상 식별색: L1 갈색, L2 흑색, L3 회색, N 청색. 본 실습은 단상 회로 중심이며 3상 장치는 상시 가압 상태로 표시만 합니다.', 'panel'],
+  ['mccb', '🔲', '배선용 차단기 (MCCB)', '과부하·단락 보호, 주 전원 개폐', '과전류(과부하·단락)를 차단합니다. 지락(누전) 전류는 대개 정격전류보다 작아 MCCB만으로는 감전 보호가 되지 않습니다. 3D에서 MCCB 핸들을 클릭하면 주 전원이 ON/OFF 됩니다.', 'panel'],
+  ['elb', '🛡️', '누전차단기 (ELB/RCD)', 'L·N 전류 차를 검출해 차단', 'ZCT(영상변류기)로 L·N 합성전류(=누설전류)를 검출해 정격감도전류(30 mA) 이상이면 트립코일이 접점을 엽니다. 고감도 고속형은 0.03 s 이내 동작합니다.', 'elb'],
+  ['zct', '🧲', '영상변류기 (ZCT)', 'L·N을 함께 관통하는 환상 철심', 'L과 N이 같은 철심을 관통하므로 정상 시 두 전류의 자속이 상쇄됩니다. 누설이 생기면 차이만큼 자속이 남아 2차 권선에 전압이 유기되고, 검출·증폭 회로가 트립코일을 구동합니다.', 'elb'],
+  ['gbar', '🟫', '접지 단자대 (MET)', '외함 PE를 모으는 주접지단자', '기기 외함의 보호도체(PE)를 모아 접지도체로 접지극에 연결합니다. 중성선(N)과 섞어 연결하면 안 됩니다.', 'ground'],
+  ['rod', '📍', '접지봉 (Ground Rod)', '대지에 매설한 접지극', '고장전류를 대지로 방류합니다. 접지저항은 토양 저항률·매설 깊이·수분에 따라 달라지며 접지저항계(3전극법)로 측정합니다.', 'ground'],
+  ['wPE', '🟩', '접지선 (PE)', '녹색-노란색 · 보호도체', '정상 운전 중에는 전류가 흐르지 않고, 절연 고장 시 고장전류가 흐르는 보호 경로입니다. 차단기 극을 거치지 않습니다.', 'panel'],
+  ['wN', '🟦', '중성선 (N)', '청색 · 부하전류 귀로', '부하전류가 전원으로 돌아오는 통전 도체입니다. 접지된 계통의 중성선이라도 PE 대신 사용하면 안 됩니다.', 'panel'],
+  ['wL', '🟫', '활선 (L)', '갈색 · 전원 공급선', '대지에 대해 약 220 V 전위를 갖는 전원선입니다. 단상은 갈색(L1)을 사용합니다.', 'panel'],
+  ['enc', '🌀', '전기 부하 장치 (금속 외함)', '1 kW 송풍·히터 부하', '금속 외함 기기는 PE로 접지해야 합니다. 부하 스위치(적색 로커)로 운전/정지, 운전 시 팬이 회전합니다.', 'load'],
+  ['leaksim', '🟧', '누전 발생 시뮬레이션 장치', '절연고장 스위치 + 시험전류 주입', '① 절연고장 스위치: 기기 내부 L–외함 절연 파괴를 가상 발생 ② 주입 버튼: 설정한 누설전류(15/30/50/100 mA)를 ELB 부하측 L→PE로 주입해 실제 누전 상황에서의 동작을 시험합니다.', 'panel'],
+  ['meter', '📟', '전류 측정 장치', 'L·N·IΔ 실시간 표시 계기', 'ELB 부하측 L·N 전류와 그 차(누설전류)를 표시합니다. 정상 시 I_L ≈ I_N, IΔ ≈ 0입니다.', 'panel'],
+  ['test', '🟡', '누전차단기 테스트 버튼', '시험회로로 트립 확인', '시험 버튼을 누르면 ZCT를 우회하는 시험 저항을 통해 의도적 불평형 전류가 흘러 트립 기구를 점검합니다. 제품마다 시험회로 구조는 다릅니다.', 'elb'],
+  ['earth', '🟡', '접지저항 측정 장치', '3전극법(P·C 보조극)', '접지극과 보조극(P, C) 사이 전압·전류로 접지저항을 구합니다. 우측 측정 패널에서 선택하세요.', 'inst'],
+  ['megger', '🟧', '절연저항 측정기', 'DC 500 V 메거', '전원을 차단한 뒤 L–PE, N–PE, L–N 절연저항을 측정합니다. 저압 500 V 이하 회로는 DC 500 V, 1.0 MΩ 이상이 기준(KEC)입니다.', 'inst'],
+  ['lamps', '💡', '전원·누전 표시등', '흰색 전원 · 녹색 정상 · 적색 누전', '전원 공급, 정상 운전, 누전 검출·트립 상태를 표시합니다. ELB 본체에도 누전표시 버튼이 트립 시 돌출됩니다.', 'panel'],
+  ['person', '🧍', '인체 모형 (교육용)', '감전 위험 경로 시각화', '실제 감전 실험이 아닌 위험 경로 설명용입니다. 인체 저항은 교육용 대표값 1 kΩ으로 가정합니다.', 'load']
+];
+const THEORY = `
+<div class="card"><h3>① 접지의 목적</h3><ul>
+<li>절연 고장 시 외함 전위 상승을 억제하고 <b>고장전류가 흐를 보호 경로</b>를 만든다.</li>
+<li>고장전류가 흐르게 해 <b>보호장치(ELB·차단기)를 신속히 동작</b>시킨다.</li>
+<li>뇌서지·정전기 등 이상전압을 대지로 방류한다.</li></ul></div>
+<div class="card"><h3>② PE와 N은 다르다</h3>
+<table class="cmp"><tr><th></th><th>중성선 N</th><th>보호도체 PE</th></tr>
+<tr><td>역할</td><td>부하전류의 귀로 (통전 도체)</td><td>고장 시 보호 경로</td></tr>
+<tr><td>정상 시 전류</td><td>부하전류 = I_L</td><td>≈ 0</td></tr>
+<tr><td>ELB 통과</td><td>통과(ZCT 관통)</td><td><b>통과 금지</b></td></tr>
+<tr><td>색상(KEC)</td><td>청색</td><td>녹색-노란색</td></tr></table>
+<div class="note red">ELB 부하측에서 N과 PE를 연결하면 부하전류 일부가 대지로 귀로 → 불필요 트립 / 외함 전위 발생.</div></div>
+<div class="card"><h3>③ 누전차단기 구조와 원리</h3>
+<p>L·N이 함께 ZCT를 관통 → 정상 시 <b>I<sub>L</sub> − I<sub>N</sub> = 0</b> (자속 상쇄).<br>누설 발생 → <b>I<sub>Δ</sub> = I<sub>L</sub> − I<sub>N</sub> ≠ 0</b> → 2차 권선 유기 → 검출·증폭 → 트립코일 → 접점 개방.</p>
+<ul><li>정격감도전류 I<sub>Δn</sub> 30 mA, 정격부동작전류 15 mA(50 %)</li><li>고감도 고속형 동작시간 0.03 s 이내</li><li>시험 버튼: 시험저항으로 ZCT 우회 불평형 생성</li></ul>
+<p class="muted">"ELB 내부 보기"로 ZCT 자속(갈색: L, 청색: N)이 서로 반대로 도는 모습과 트립 동작을 확인하세요.</p></div>
+<div class="card"><h3>④ 정상전류와 누설전류</h3><p>정상전류: L로 나가 N으로 돌아오는 부하전류. 누설전류: 절연 불량 부위를 통해 L에서 외함·대지로 빠져나가 <b>N으로 돌아오지 않는 전류</b>. ELB는 이 차이만 본다.</p></div>
+<div class="card"><h3>⑤ 본 실습의 계통 모델 (TT 가정)</h3>
+<p>고장전류 I<sub>f</sub> = U<sub>0</sub> / (R<sub>f</sub> + R<sub>A</sub> + R<sub>B</sub>)<br>외함 대지전위 U<sub>E</sub> = I<sub>f</sub> × R<sub>A</sub></p>
+<p class="muted">U<sub>0</sub> 220 V, R<sub>A</sub>(기기 접지) 10 Ω, R<sub>B</sub>(계통 접지) 5 Ω. 완전 지락(R<sub>f</sub>≈0) 시 I<sub>f</sub> ≈ 14.7 A로 MCCB(20 A)가 즉시 동작하지 않을 수 있음 → TT 계통에서 ELB가 필요한 이유.</p>
+<div class="note blue">IEC 60364 기반 TT 계통 보호 조건 예: R<sub>A</sub> × I<sub>Δn</sub> ≤ 50 V</div></div>
+<div class="card"><h3>⑥ 교육용 가정 vs 실제 기준</h3>
+<table class="cmp"><tr><th>항목</th><th>본 시뮬레이션(가정)</th><th>실제 설비</th></tr>
+<tr><td>회로 해석</td><td>교류를 실효값 저항 회로로 단순화</td><td>임피던스·위상·과도현상 존재</td></tr>
+<tr><td>ELB 동작</td><td>22 mA 이상 트립, 0.65 s로 느리게 표시</td><td>15~30 mA 사이 동작, ≤ 0.03 s</td></tr>
+<tr><td>인체 저항</td><td>1 kΩ 고정</td><td>피부 상태·접촉면·경로에 따라 수백 Ω~수 kΩ</td></tr>
+<tr><td>접지저항</td><td>R<sub>A</sub> 10 Ω, R<sub>B</sub> 5 Ω 고정</td><td>토양·계절에 따라 변동, 계통 방식(TN/TT) 따라 판단</td></tr>
+<tr><td>판정 기준</td><td>접지극 ≤ 100 Ω 양호(교육용)</td><td>KEC·설계조건(접촉전압·보호협조)에 따름</td></tr>
+<tr><td>배선 순서</td><td>단자 간 1:1 연결</td><td>정전·잠금·검전 후 시공, 규격 전선·단자 사용</td></tr></table></div>`;
+const SAFETY = `
+<div class="note">본 시스템은 <b>교육용 가상 시뮬레이션</b>입니다. 실제 활선 배선이나 감전 실험을 대체하지 않으며, 실제 작업은 자격자가 관련 법규·안전수칙에 따라 수행해야 합니다.</div>
+<div class="card"><h3>접지와 누전차단기의 차이</h3><table class="cmp"><tr><th></th><th>보호접지</th><th>누전차단기</th></tr>
+<tr><td>원리</td><td>고장전류 경로 제공, 외함 전위 억제</td><td>L·N 불평형 검출 후 전원 차단</td></tr>
+<tr><td>혼자서는</td><td>TT 계통에서 위험 전압이 남을 수 있음</td><td>접지 없으면 인체를 통해서야 검출</td></tr></table>
+<div class="note red"><b>접지와 ELB는 서로 대체할 수 없는 별개의 보호수단</b>이며 함께 적용해야 합니다.</div></div>
+<div class="card"><h3>누전차단기가 보호하는 범위와 한계</h3><ul>
+<li>보호: 지락(누전)에 의한 감전·누전화재 위험 감소</li>
+<li>한계 ① 인체가 <b>L과 N에 동시에 접촉</b>하면 L/N 평형 → 검출 불가</li>
+<li>한계 ② 감도 미만 누설(예: 10 mA)은 계속 흐를 수 있음</li>
+<li>한계 ③ 과부하·단락은 별도의 과전류 보호 필요(겸용형 제외)</li>
+<li>한계 ④ 고장난 ELB는 동작하지 않음 → <b>정기 시험 버튼 점검</b></li></ul></div>
+<div class="card"><h3>접지선·중성선 혼용 금지</h3><p>N은 통전 도체입니다. 기기 외함을 N에 연결하면 N 단선·역결선 시 외함이 그대로 충전되고, ELB 부하측 N–PE 연결은 불필요 트립을 일으킵니다.</p></div>
+<div class="card"><h3>누전 발생 시 안전한 대응 절차</h3><ol>
+<li>기기·외함 접촉 금지, 주변 인원 접근 통제</li><li>상위 차단기 개방 확인 (가능하면 잠금·표찰)</li>
+<li>감전자 발생 시: 맨손으로 만지지 말고 전원부터 차단 → 119 신고 → 필요 시 심폐소생술</li>
+<li>원인 기기 분리 후 검전기로 무전압 확인</li><li>절연저항·접지 상태 측정으로 원인 확인</li>
+<li>수리 후 재투입, 시험 버튼으로 동작 확인</li></ol></div>
+<div class="card"><h3>트립 후 무조건 재투입하면 안 되는 이유</h3><p>트립은 누설 경로가 존재한다는 신호입니다. 원인 확인 없이 재투입을 반복하면 손상된 절연부의 아크·발열로 화재가 커지거나, 누군가 외함을 만지고 있는 상태에서 다시 충전될 수 있습니다. 본 실습에서도 트립 후에는 점검 확인 창이 나타납니다.</p></div>
+<div class="card"><h3>감전 사고 예방 방법</h3><ul><li>정전 작업 원칙: 차단 → 잠금·표찰 → 검전 → (필요 시) 단락접지</li><li>금속 외함 기기 보호접지, 물기 있는 장소 고감도 ELB</li><li>절연 장갑·안전화 등 보호구 착용, 젖은 손 조작 금지</li><li>월 1회 이상 ELB 시험 버튼 점검, 정기 절연저항 측정</li></ul></div>
+<div class="card"><h3>인체 통전 전류의 영향 (개략)</h3><table class="cmp"><tr><th>전류(교류)</th><th>영향(개략)</th></tr>
+<tr><td>~ 0.5 mA</td><td>대부분 감지 못함</td></tr><tr><td>0.5 ~ 5 mA</td><td>찌릿함 감지</td></tr>
+<tr><td>5 ~ 10 mA</td><td>고통, 근육 경련 시작</td></tr><tr><td>10 ~ 30 mA</td><td>이탈 곤란, 호흡 곤란 가능</td></tr>
+<tr><td>30 mA 이상</td><td>통전 시간에 따라 심실세동 위험</td></tr></table>
+<p class="muted">IEC 60479-1 개념을 교육용으로 단순화한 표이며, 실제 영향은 통전 경로·시간·개인차에 따라 다릅니다.</p></div>`;
+
+const QUIZ = [
+  ['보호접지의 주된 목적으로 옳은 것은?', ['정상 부하전류의 귀로를 확보한다', '절연 고장 시 외함 전위 상승을 억제하고 고장전류 경로를 제공한다', '선로 전압강하를 줄인다', '역률을 개선한다'], 1, '접지는 고장 시 보호 경로를 만들어 외함 전위를 낮추고 보호장치가 동작하도록 합니다. 부하전류 귀로는 N의 역할입니다.'],
+  ['단상 2선식 회로에서 중성선(N)의 역할은?', ['고장 시에만 전류가 흐르는 보호도체', '부하전류가 전원으로 돌아오는 통전 도체', '항상 대지보다 높은 전위를 공급하는 선', '누전차단기를 우회하는 선'], 1, 'N은 정상 운전 시 부하전류가 흐르는 귀로 도체입니다. L은 전원 공급선(갈색), N은 귀로(청색)입니다.'],
+  ['정상 운전 중 보호도체(PE)에 흐르는 전류는?', ['부하전류와 같다', '부하전류의 절반이다', '원칙적으로 거의 0이며 고장 시에만 고장전류가 흐른다', 'N과 같은 크기로 반대 방향이다'], 2, 'PE는 부하전류 경로가 아닙니다. 정상 시 ≈ 0, 절연 고장 시에만 고장전류가 흐릅니다.'],
+  ['누전차단기가 트립을 판단하는 기준은?', ['L선 전류가 정격전류를 초과할 때', 'L과 N 전류의 차(영상전류)가 감도전류 이상일 때', '전원 전압이 정격보다 낮을 때', 'PE 단자 전압이 상승할 때'], 1, 'ELB는 L·N 합성전류 I_Δ = I_L − I_N을 ZCT로 검출합니다.'],
+  ['ZCT(영상변류기)의 역할로 옳은 것은?', ['과전류를 검출한다', 'L·N 도체를 함께 관통시켜 두 전류의 불평형(합성자속)을 검출한다', '전압을 변환해 계기에 공급한다', '접점 개방 시 아크를 소호한다'], 1, 'L·N의 자속이 상쇄되다가 누설이 생기면 차이만큼 자속이 남아 2차 권선에 전압이 유기됩니다.'],
+  ['ELB 부하측에서 I_L = 4.550 A, I_N = 4.520 A로 측정되었다. 누설전류는?', ['9.07 A', '30 mA', '4.55 A', '0 mA'], 1, 'I_Δ = 4.550 − 4.520 = 0.030 A = 30 mA. 정격감도 30 mA ELB의 동작 범위입니다.'],
+  ['외함 접지선이 끊긴 상태에서 기기 내부 절연 고장이 생기면?', ['즉시 ELB가 트립한다', '외함이 충전된 채 남고, 사람이 접촉하면 인체를 통해 전류가 흐른다', '외함 전압은 항상 0 V이다', 'MCCB가 즉시 트립한다'], 1, '누설 경로가 없어 ELB가 검출하지 못하고 위험이 잠복합니다. 인체가 접촉해 감도 이상이 흐르면 그때 ELB가 동작할 수 있습니다.'],
+  ['접지가 없더라도 누전차단기가 동작할 수 있는 경우는?', ['인체를 통해 대지로 감도전류 이상의 누설이 흐를 때', '부하 스위치를 끌 때', 'L–N 사이에 인체가 접촉할 때', '전원 전압이 올라갈 때'], 0, '인체를 통한 누설도 N으로 돌아오지 않으므로 불평형으로 검출됩니다. 단, 감전이 이미 시작된 뒤의 보호입니다.'],
+  ['누전차단기 테스트 버튼의 역할은?', ['누설전류의 크기를 측정한다', '시험회로로 의도적 불평형을 만들어 트립 기구 동작을 확인한다', '트립 후 재투입한다', '접지저항을 측정한다'], 1, '시험 버튼은 ZCT를 우회하는 시험저항으로 불평형을 만들어 ELB 자체의 동작을 점검합니다.'],
+  ['누전 발생 시 ELB의 차단 과정 순서로 옳은 것은?', ['ZCT 불평형 검출 → 검출·증폭 → 트립코일 여자 → 접점 개방', '접점 개방 → ZCT 검출 → 트립코일 여자', '트립코일 여자 → ZCT 검출 → 접점 개방', 'MCCB 트립 → ELB 트립 → ZCT 검출'], 0, '검출 → 판단(증폭) → 구동(트립코일) → 차단(접점) 순서입니다.'],
+  ['올바른 보호접지 배선 방법은?', ['외함 PE → 접지 단자대 → 접지극, PE는 ELB를 거치지 않는다', 'PE를 ELB 부하측 N 단자에 연결한다', '외함을 중성선 단자에 연결한다', 'PE를 ELB의 한 극으로 통과시킨다'], 0, 'PE는 차단기 극·ZCT를 통과하지 않고 접지 단자대를 거쳐 접지극에 연결합니다.'],
+  ['접지와 누전차단기의 관계로 옳은 것은?', ['접지만 잘 되어 있으면 ELB는 필요 없다', 'ELB만 있으면 접지는 필요 없다', '서로 대체할 수 없는 별개의 보호수단으로 함께 적용한다', '둘 다 과부하 보호 장치이다'], 2, '접지는 고장 즉시 차단과 외함 전위 억제를, ELB는 소전류 누설 검출을 담당합니다.'],
+  ['누전차단기로 보호할 수 없는 상황은?', ['인체가 L과 N에 동시에 접촉한 경우', '기기 외함 지락', '인체가 L과 대지에 접촉한 경우', '시험 버튼 조작'], 0, 'L→인체→N으로 흐르는 전류는 L/N 평형을 유지하므로 ZCT가 검출하지 못합니다.'],
+  ['ELB가 트립했을 때 올바른 조치는?', ['바로 재투입을 반복한다', '원인(절연저항·접지 등)을 확인한 뒤 재투입한다', '핸들을 고정해 트립되지 않게 한다', '감도전류가 큰 제품으로 바꾼다'], 1, '트립은 누설 경로가 있다는 신호입니다. 원인 제거 전 재투입은 화재·감전 위험을 키웁니다.']
+];
+
+/* =====================================================================
+   MODULE 15 · UI (패널 렌더링, 모드, 평가)
+   ===================================================================== */
+let SchMain, SchCmp = null;
+const UI = {
+  leftTab: 'parts', selPart: null,
+  init() {
+    $$('#modeTabs button').forEach(b => b.onclick = () => this.setMode(b.dataset.mode));
+    $$('#leftTabs button').forEach(b => b.onclick = () => { this.leftTab = b.dataset.t; $$('#leftTabs button').forEach(x => x.classList.toggle('on', x === b)); this.renderLeft(); });
+    $$('#viewBtns button').forEach(b => b.onclick = () => Cam.go(b.dataset.v));
+    $('#tglInternal').onclick = () => Scene3D.setInternal(!S.view.internal);
+    $('#tglFlow').onclick = e => { S.view.flow = !S.view.flow; e.target.classList.toggle('on', S.view.flow); };
+    $('#tglLabels').onclick = e => { S.view.labels = !S.view.labels; labelGroup.visible = S.view.labels; e.target.classList.toggle('on', S.view.labels); };
+    $('#btnSound').onclick = e => { Sound.on = !Sound.on; e.target.textContent = Sound.on ? '🔊 소리' : '🔇 소리'; if (!Sound.on) { Sound.setAlarm(false); Sound.setHum(false); } else Sound.init(); };
+    $('#btnHelp').onclick = () => this.intro();
+    $('#btnLog').onclick = () => $('#logDrawer').classList.toggle('on');
+    $('#logClose').onclick = () => $('#logDrawer').classList.remove('on');
+    $('#logClear').onclick = () => { Log.list = []; Bus.emit('log'); };
+    $('#btnLeft').onclick = () => $('#left').classList.toggle('open');
+    $('#btnRight').onclick = () => $('#right').classList.toggle('open');
+    $$('[data-close]').forEach(b => b.onclick = () => $('#' + b.dataset.close).classList.remove('open'));
+    $('#schLive').onclick = () => this.schView(false); $('#schCmpBtn').onclick = () => this.schView(true);
+    $('#modePanel').addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (b) { Sound.init(); ACTS[b.dataset.act](b.dataset.arg, b); } });
+    $('#modePanel').addEventListener('change', e => { const b = e.target.closest('[data-chg]'); if (b) ACTS[b.dataset.chg](b.value, b); });
+    // 결선도 높이 조절
+    let rs = null; $('#schResize').addEventListener('pointerdown', e => { rs = { y: e.clientY, h: $('#schWrap').offsetHeight }; e.target.setPointerCapture(e.pointerId); });
+    $('#schResize').addEventListener('pointermove', e => { if (!rs) return; const h = Math.max(150, Math.min(innerHeight * .6, rs.h - (e.clientY - rs.y))); document.documentElement.style.setProperty('--schH', h + 'px'); });
+    $('#schResize').addEventListener('pointerup', () => rs = null);
+    const mq = () => { $('#btnRight').style.display = innerWidth <= 760 ? '' : 'none'; };
+    addEventListener('resize', mq); mq();
+    this.renderLeft(); this.renderMeter();
+  },
+  setMode(m) {
+    if (S.quiz.wiringTask && m !== 'wiring') S.quiz.wiringTask = false;
+    S.mode = m; Scn.cancel();
+    $$('#modeTabs button').forEach(b => b.classList.toggle('on', b.dataset.mode === m));
+    if (m === 'wiring') {
+      Preset.base({ power: false }); S.wires = S.userWires; S.wiringSource = 'user'; Bus.emit('wires'); Sim.run(); Cam.go('panel');
+      $('#hint').textContent = '단자를 드래그해 다른 단자에 놓거나, 두 단자를 차례로 클릭하면 선택한 종류의 전선이 연결됩니다';
+    } else {
+      $('#hint').textContent = matchMedia('(pointer:coarse)').matches ? '한 손가락: 회전 · 두 손가락: 확대/이동 · 장비를 탭해 조작하세요' : '마우스: 회전(좌클릭 드래그)·이동(우클릭)·확대(휠) · 장비를 클릭해 조작하세요';
+      if (m === 'normal' || m === 'leak') Preset.base({ power: false });
+      if (m === 'compare') { Preset.base({ power: false }); this.cmpSel = this.cmpSel || 'ok'; }
+      if (m === 'diag') { Preset.base({ power: false }); S.diag = null; }
+      if (m === 'quiz') Preset.base({ power: false });
+    }
+    this.renderMode(); Log.add('info', `모드 전환: ${$(`#modeTabs button[data-mode="${m}"]`).textContent}`);
+  },
+  setWireType(t) { S.wireType = t; $$('.wtype button').forEach(b => b.classList.toggle('on', b.dataset.arg === t)); },
+  termClick(id) {
+    if (S.mode !== 'wiring') { Toast.show(`${lab(id)} — 배선 편집은 ③ 배선 실습 모드에서 가능합니다`); return; }
+    if (S.selTerm && S.selTerm !== id) { const a = S.selTerm; S.selTerm = null; Wiring.add(a, id); }
+    else { S.selTerm = S.selTerm === id ? null : id; Sound.click(); }
+    Bus.emit('update');
+  },
+  showPart(id) {
+    this.leftTab = 'parts'; $$('#leftTabs button').forEach(x => x.classList.toggle('on', x.dataset.t === 'parts'));
+    this.selPart = id; this.renderLeft();
+    const el = $(`.part[data-id="${id}"]`); if (el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    if (innerWidth <= 1100) $('#left').classList.add('open');
+  },
+  renderLeft() {
+    const b = $('#leftBody');
+    if (this.leftTab === 'parts') {
+      b.innerHTML = `<p class="muted" style="margin:0 0 8px">부품을 클릭하면 3D 시점이 이동하고 기능 설명이 열립니다.</p>` + PARTS.map(([id, ic, n, s, d]) =>
+        `<div class="part ${this.selPart === id ? 'sel' : ''}" data-id="${id}"><div class="ic">${ic}</div><div><b>${n}</b><div class="d">${s}</div>${this.selPart === id ? `<div class="partDetail">${d}</div>` : ''}</div></div>`).join('');
+      $$('.part', b).forEach(el => el.onclick = () => { const p = PARTS.find(x => x[0] === el.dataset.id); this.selPart = this.selPart === p[0] ? null : p[0]; Cam.go(p[5]); if (p[0] === 'zct' && !S.view.internal) Scene3D.setInternal(true); if (p[0] === 'earth' || p[0] === 'megger') Meter.select(p[0]); this.renderLeft(); });
+    } else b.innerHTML = this.leftTab === 'theory' ? THEORY : SAFETY;
+  },
+  renderMeter() {
+    $('#instBtns').innerHTML = Object.entries(Meter.INST).map(([id, o]) => `<button data-i="${id}" class="${Meter.inst === id ? 'on' : ''}">${o.ic} ${o.name}</button>`).join('');
+    $$('#instBtns button').forEach(b => b.onclick = () => Meter.select(b.dataset.i));
+    const inst = Meter.INST[Meter.inst];
+    $('#measLoc').innerHTML = Meter.inst === 'dmm' ? `<label class="muted">전압 측정 지점 </label><select id="locSel">${Object.entries(Meter.LOCS).map(([k, v]) => `<option value="${k}" ${Meter.loc === k ? 'selected' : ''}>${v[3]}</option>`).join('')}</select>` : '';
+    if ($('#locSel')) $('#locSel').onchange = e => { Meter.loc = e.target.value; if (Meter.item) Meter.measure(Meter.item); };
+    $('#measItems').innerHTML = inst ? inst.items.map(k => `<button data-k="${k}" class="${Meter.item === k ? 'on' : ''}">${Meter.NAMES[k]}</button>`).join('') : '<span class="muted">먼저 측정 장비를 선택하세요 (3D 측정 테이블의 장비 클릭도 가능)</span>';
+    $$('#measItems button').forEach(b => b.onclick = () => Meter.measure(b.dataset.k));
+    this.renderLCD();
+  },
+  renderLCD() {
+    const R = Meter.reading, L = $('#lcd');
+    if (!R) { L.innerHTML = `<div class="big">----</div><div class="sm">${Meter.inst ? '측정 항목을 선택하세요' : '측정 장비와 측정 항목을 선택하세요'}</div>`; L.style.color = ''; return; }
+    const c = { ok: '#9dff9d', warn: '#ffd27a', bad: '#ff9a8f' }[R.judge] || '#cfe9cf';
+    L.innerHTML = `<div class="big" style="color:${c}">${R.big}</div><div class="sm">${Meter.NAMES[Meter.item]} · ${R.sm}<br><span style="opacity:.7">교육용 가상 수치</span></div>`;
+  },
+  update() {
+    const r = S.res; if (!r) return;
+    const id = Math.abs(r.iDelta), ev = Math.abs(r.encV);
+    const rows = [['L선 전류 I_L', fmtA(r.iL)], ['N선 전류 I_N', fmtA(r.iN)], ['누설전류 I_Δ', fmtA(r.iDelta)], ['PE선 전류', fmtA(r.peI)],
+      ['외함 대지전위', `<span style="color:${ev > 50 ? '#d63a2f' : ev > 25 ? '#b07400' : 'inherit'}">${fmtV(ev)}</span>`], ['부하 전력', (Math.abs(r.loadI) ** 2 * CFG.R_LOAD).toFixed(0) + ' W']];
+    if (S.touching || S.lastShock) rows.push(['인체 전류', `<span style="color:#d63a2f">${S.touching ? fmtA(r.personI) : '최근 ' + S.lastShock.mA.toFixed(0) + ' mA'}</span>`]);
+    $('#liveVals').innerHTML = rows.map(([k, v]) => `<div class="k">${k}</div><div class="v">${v}</div>`).join('');
+    const bar = $('#leakBar'); bar.querySelector('i').style.width = Math.min(100, id / .06 * 100) + '%';
+    if (!bar.querySelector('.mk')) bar.insertAdjacentHTML('beforeend', '<div class="mk" style="left:25%"><span>15 mA</span></div><div class="mk" style="left:50%"><span>30 mA</span></div>');
+    const es = $('#elbState');
+    es.className = 'elbState ' + (S.pendingTrip || S.elbTripped ? 'trip' : S.elbClosed ? 'on' : 'off');
+    es.textContent = S.pendingTrip ? `⚡ 누전 검출 → 트립 동작 중 (${fmtA(S.pendingTrip.iD)})` : S.elbTripped ? `■ ELB 트립 — ${S.flags.tripCause || '누전'}` : S.elbClosed ? (S.elbHealth.mech ? '● ELB 투입 (보호 동작 대기)' : '● ELB 투입 (⚠ 트립 기구 이상)') : '○ ELB 개방';
+    // 하단 상태바
+    const set = (d, s, cls, txt) => { $(d).className = 'dot ' + cls; $(s).textContent = txt; };
+    set('#dPower', '#sPower', S.mccbOn ? 'g' : '', S.mccbOn ? 'ON 220 V' : 'OFF');
+    set('#dElb', '#sElb', S.pendingTrip || S.elbTripped ? 'r' : S.elbClosed ? 'g' : '', S.pendingTrip ? '트립 중' : S.elbTripped ? '트립' : S.elbClosed ? '투입' : '개방');
+    const gs = Sim.groundStatus(); set('#dGnd', '#sGnd', gs.dot, gs.text);
+    const leakTxt = S.elbTripped && S.flags.trip ? '누전 차단됨' : id >= CFG.I_TRIP ? `위험 ${fmtA(id)}` : id >= .002 ? `주의 ${fmtA(id)}` : (S.fault.active && ev > 25) ? `외함 ${ev.toFixed(0)} V` : '없음';
+    set('#dLeak', '#sLeak', id >= CFG.I_NOTRIP || S.elbTripped || ev > 50 ? 'r' : id >= .002 || S.fault.active ? 'y' : 'g', leakTxt);
+    set('#dLoad', '#sLoad', r.running ? 'g' : '', r.running ? '운전 1 kW' : S.loadOn ? '대기(무전압)' : '정지');
+    // 사운드
+    Sound.setAlarm(!!S.pendingTrip || (S.elbClosed && id >= CFG.I_TRIP && !S.elbHealth.mech) || (S.fault.active && ev > 50) || Math.abs(r.personI) > .005);
+    if (Sound.ctx) Sound.setHum(r.running);
+    if (Meter.item) { Meter.compute(false); this.renderLCD(); Instruments3D.sync(); }
+    if (this.dyn) { const d = $('#mpDyn'); if (d) d.innerHTML = this.dyn(); }
+    $('#tripFlash').classList.toggle('on', !!S.pendingTrip);
+  },
+  renderLog() {
+    $('#logCount').textContent = Log.list.length;
+    const l = Log.list[0]; $('#lastLog').textContent = l ? `[${l.ts}] ${l.msg}` : '';
+    $('#logList').innerHTML = Log.list.map(x => `<div class="logItem ${x.level}"><time>${x.ts}</time><span>${x.msg}</span></div>`).join('') || '<p class="muted" style="padding:12px">이력이 없습니다.</p>';
+  },
+  schView(cmp) {
+    $('#schLive').style.cssText = cmp ? '' : 'background:#14202e;color:#fff'; $('#schCmpBtn').style.cssText = cmp ? 'background:#14202e;color:#fff' : '';
+    const body = $('#schBody');
+    if (!cmp) { body.innerHTML = ''; body.appendChild(SchMain.svg); SchCmp = null; return; }
+    body.innerHTML = `<div class="schCmp"><div class="cap" style="color:#0d7a43">정상 운전 — I_L = I_N, I_PE ≈ 0</div><svg id="sA" viewBox="0 0 900 370" preserveAspectRatio="xMidYMid meet" style="flex:1;width:100%"></svg></div>
+      <div class="schCmp"><div class="cap" style="color:#d63a2f">누전 발생(트립 직전) — 고장전류가 PE·대지로</div><svg id="sB" viewBox="0 0 900 370" preserveAspectRatio="xMidYMid meet" style="flex:1;width:100%"></svg></div>`;
+    SchCmp = [new Schematic($('#sA')), new Schematic($('#sB'))]; this.updCmp();
+  },
+  updCmp() {
+    if (!SchCmp) return;
+    const a = cloneState({ wires: Wiring.correctSet(), mccbOn: true, elbClosed: true, loadOn: true, touching: false, testPressed: false, leakSim: { on: false, mA: 30 }, elbTripped: false });
+    a.fault = { active: false, R: S.fault.R, loc: 'terminal' };
+    const b = cloneState({ ...a }); b.fault = { active: true, R: S.fault.R, loc: 'terminal' };
+    [a, b].forEach((st, i) => { SchCmp[i].setWires(st.wires); SchCmp[i].update(st, Circuit.solve(st)); });
+  },
+  modal(html, btns = [['확인', 'pri']]) {
+    $('#modalBox').innerHTML = html + `<div class="row" style="justify-content:flex-end;margin-top:14px">${btns.map(([t, c], i) => `<button class="btn ${c || ''}" data-i="${i}">${t}</button>`).join('')}</div>`;
+    $('#modal').classList.add('on');
+    return new Promise(res => $$('#modalBox button[data-i]').forEach(b => b.onclick = () => { $('#modal').classList.remove('on'); res(+b.dataset.i); }));
+  },
+  async reclose() {
+    const i = await this.modal(`<h2>⚠ 누전차단기가 트립된 상태입니다</h2><p>트립 원인: <b>${S.flags.tripCause || '누전(불평형)'}</b></p>
+      <p>원인을 확인하지 않고 재투입하면 손상된 절연부의 발열·화재나 감전 사고로 이어질 수 있습니다.</p>
+      <ul><li>기기 외함 접촉 인원 없음 확인</li><li>절연저항 측정 등으로 고장 원인 확인·제거</li><li>필요 시 고장 기기를 분리한 뒤 재투입</li></ul>`,
+      [['취소', ''], ['핸들 리셋만 (OFF 위치)', ''], ['점검 완료 — 재투입', 'warn']]);
+    if (i === 1) Act.elbResetOff(); if (i === 2) Act.elbReclose();
+  },
+  intro() {
+    this.modal(`<h2>⚡ 접지·누전차단기 배선 실습 디지털 트윈</h2>
+      <div class="note"><b>교육용 가상 시뮬레이션</b>입니다. 표시되는 전압·전류는 단순화된 회로 모델의 가상 수치이며, 실제 전기설비의 활선 배선이나 감전 실험을 대체하지 않습니다. 실제 작업은 반드시 정전 상태에서 자격자가 수행하세요.</div>
+      <ol><li><b>① 정상 운전</b>: MCCB → ELB → 부하 순으로 투입하고 L/N 전류 균형을 확인</li>
+      <li><b>② 누전 시나리오</b>: 접지 정상(A) · 접지 없음(B) · 시험 버튼(C)</li>
+      <li><b>③ 배선 실습</b>: 전선 종류(L/N/PE)를 고르고 단자를 드래그/클릭해 연결 → 자동 평가</li>
+      <li><b>④ 접지 비교</b>: 정상·단선·고저항·연결불량 비교</li>
+      <li><b>⑤ 고장 진단</b>: 측정 장비로 원인을 찾아 수리</li><li><b>⑥ 학습 평가</b>: 객관식 + 실습형 과제 → 점수·해설</li></ol>
+      <p class="muted">조작: 3D 장비(차단기 핸들·시험 버튼·부하 스위치·누전 발생 장치·인체 모형·측정 장비)를 클릭합니다. VR 기기에서는 우측 상단 VR 버튼으로 진입해 트리거로 조작합니다.</p>`, [['실습 시작', 'pri']]);
+  },
+  renderMode() {
+    const P = PANELS[S.mode]; this.dyn = P.dyn || null;
+    $('#modePanel').innerHTML = `<div class="card">${P.html()}${P.dyn ? '<div id="mpDyn"></div>' : ''}</div>`;
+    if (P.dyn) $('#mpDyn').innerHTML = P.dyn();
+    if (P.after) P.after();
+  }
+};
+const chkList = (arr, ev) => `<ul class="chk">${arr.map(([t, ok], i) => `<li class="${ok ? 'y' : ev ? 'n' : (arr.findIndex(x => !x[1]) === i ? 'cur' : '')}"><span class="m">${ok ? '✓' : ev ? '✗' : i + 1}</span><span>${t}</span></li>`).join('')}</ul>`;
+const ctrlBtns = () => `<div class="grid2" style="margin-top:8px">
+  <button class="btn ${S.mccbOn ? 'ok' : ''}" data-act="mccb">MCCB 전원 ${S.mccbOn ? 'ON' : 'OFF'}</button>
+  <button class="btn ${S.elbTripped ? 'bad' : S.elbClosed ? 'ok' : ''}" data-act="elb">ELB ${S.elbTripped ? '트립 → 재투입' : S.elbClosed ? '투입됨' : '개방'}</button>
+  <button class="btn ${S.loadOn ? 'ok' : ''}" data-act="load">부하 스위치 ${S.loadOn ? 'ON' : 'OFF'}</button>
+  <button class="btn warn" data-act="test">ELB 시험(TEST)</button></div>`;
+const faultSel = () => `<label class="muted">절연 고장 정도(고장저항 R<sub>f</sub>)</label>
+  <select data-chg="faultR" style="width:100%;margin-top:4px">${[[0.5, '0.5 Ω — 완전 지락'], [1000, '1 kΩ — 심한 절연 파괴'], [5000, '5 kΩ — 절연 파괴'], [20000, '20 kΩ — 절연 열화(소전류)'], [100000, '100 kΩ — 경미한 열화']].map(([v, t]) => `<option value="${v}" ${S.fault.R == v ? 'selected' : ''}>${t} (≈ ${fmtA(220 / (v + 15))})</option>`).join('')}</select>`;
+const PANELS = {
+  normal: {
+    html: () => `<h3>① 정상 운전 시뮬레이션</h3><p>전원 L/N → 누전차단기 → 부하 L/N. 보호접지(PE)는 ELB를 거치지 않고 접지 단자대를 통해 외함과 접지극에 연결됩니다.</p>
+      <button class="btn pri" data-act="normalAuto" style="width:100%">▶ 정상 운전 시작 (전원 → ELB → 부하)</button>`,
+    dyn: () => { const r = S.res, f = S.flags; const run = r.running;
+      return ctrlBtns() + chkList([['전원 공급 ON (MCCB)', S.mccbOn], ['누전차단기 투입', S.elbClosed], ['L선을 통해 부하로 전류 공급', Math.abs(r.iL) > 1], ['N선을 통해 전류 복귀', Math.abs(r.iN) > 1],
+        [`L/N 전류 균형 (I_Δ = ${fmtA(r.iDelta)})`, run && Math.abs(r.iDelta) < 1e-3], ['PE에는 정상 부하전류가 흐르지 않음', run && r.peI < 1e-3], ['전기기기 정상 작동 (팬 회전)', run], ['녹색 정상 운전 표시등 점등', run && S.elbClosed && Math.abs(r.iDelta) < CFG.I_NOTRIP]]) +
+        `<div class="note blue">정상 상태: I<sub>L</sub> = ${fmtA(r.iL)}, I<sub>N</sub> = ${fmtA(r.iN)} → ZCT 안의 두 자속이 상쇄되어 I<sub>Δ</sub> ≈ 0. PE는 <b>부하전류 경로가 아니며</b> 고장 시에만 고장전류가 흐르는 보호 경로입니다.</div>`; }
+  },
+  leak: {
+    html: () => `<h3>② 누전 발생 시나리오</h3>
+      <div class="row">${['A', 'B', 'C'].map(k => `<button class="btn ${Scn.cur === k ? 'pri' : ''}" data-act="scnSel" data-arg="${k}">${{ A: 'A 접지 정상', B: 'B 접지 없음', C: 'C 시험 버튼' }[k]}</button>`).join('')}</div>
+      <div style="margin-top:8px">${faultSel()}</div>
+      <div class="row" style="margin-top:8px"><button class="btn pri" data-act="scnRun">▶ 시나리오 ${Scn.cur} 자동 실행</button><button class="btn" data-act="scnReset">초기화</button></div>`,
+    dyn: () => {
+      const f = S.flags, r = S.res, gs = Sim.groundStatus(), k = Scn.cur;
+      let steps, extra = '';
+      if (k === 'A') steps = [['접지(PE) 정상 연결 상태', gs.code === 'ok'], ['전원·ELB 투입, 부하 운전', f.ran], ['기기 내부 절연 고장 발생 (L–금속 외함)', S.fault.active || f.trip], ['고장전류가 PE → 접지극 → 대지로 흐름', f.peFlow], ['ZCT가 L/N 전류 불평형 감지', f.detect], ['누전차단기 트립 (접점 개방)', f.trip], ['전원 차단·부하 정지', f.trip && !r.running]];
+      if (k === 'B') steps = [['외함 접지선이 연결되지 않은 상태', gs.code !== 'ok'], ['전원·ELB 투입, 부하 운전', f.ran], ['절연 고장 → 외함에 고장 전압 (누설 경로 없음 → ELB 미동작)', f.encDanger], ['인체가 외함 접촉 (교육용 시각화)', f.touch], [S.elbHealth.mech ? '인체 경유 누설전류 → ELB 검출·트립' : '⚠ ELB 고장 → 트립 실패, 감전 지속', S.elbHealth.mech ? f.trip : (f.touch && !f.trip)]];
+      if (k === 'C') steps = [['전원·ELB 투입', f.ran || S.elbClosed], ['TEST 버튼 → 시험회로 전류 (ZCT 우회)', f.testPress], ['ZCT 불평형 검출', f.detect], ['트립 → 접점 개방', f.trip], ['부하 전원 차단 · 누전표시 돌출', f.trip && !r.running]];
+      if (k === 'B') extra = `<div class="row" style="margin-top:6px"><button class="btn ${S.touching ? 'bad' : ''}" data-act="touch">${S.touching ? '접촉 해제' : '인체 접촉 재현'}</button>
+        <label style="font-size:12.5px"><input type="checkbox" data-chg="elbFail" ${!S.elbHealth.mech ? 'checked' : ''}> ELB 고장 가정</label></div>
+        ${S.lastShock ? `<div class="note ${S.lastShock.cleared ? 'blue' : 'red'}">최근 접촉: 인체 전류 <b>${S.lastShock.mA.toFixed(0)} mA</b>, 외함 ${S.lastShock.V.toFixed(0)} V → ${S.lastShock.cleared ? 'ELB가 0.03 s 이내 차단(감전은 발생했으나 시간이 짧아 치명적 위험 감소)' : S.touching ? (S.elbHealth.mech ? '검출 중' : '<b>차단되지 않음 — 치명적 위험</b>') : '-'}</div>` : ''}
+        <div class="note"><b>접지가 없어도</b> 인체를 통해 대지로 흐르는 누설전류는 N으로 돌아오지 않으므로 L/N 불평형이 되어, 감도전류(30 mA) 이상이면 <b>누전차단기가 동작할 수 있습니다.</b> 단, 이는 이미 감전이 시작된 뒤의 추가 보호입니다.</div>
+        <table class="cmp"><tr><th>조건</th><th>ELB</th><th>결과</th></tr>
+        <tr><td>접지 정상 + 절연 고장</td><td><span class="pill g">즉시 동작</span></td><td>접촉 전에 차단</td></tr>
+        <tr><td>접지 없음 + 고장, 접촉 없음</td><td><span class="pill r">미동작</span></td><td>외함 충전 잠복</td></tr>
+        <tr><td>접지 없음 + 인체 접촉(전류 ≥ 감도)</td><td><span class="pill y">동작</span></td><td>단시간 감전 후 차단</td></tr>
+        <tr><td>인체 전류 &lt; 15 mA (절연 바닥 등)</td><td><span class="pill r">미동작 가능</span></td><td>지속 통전</td></tr>
+        <tr><td>ELB 고장</td><td><span class="pill r">미동작</span></td><td>지속 감전 — 치명적</td></tr>
+        <tr><td>인체가 L–N 사이 접촉</td><td><span class="pill r">검출 불가</span></td><td>L/N 평형 유지</td></tr></table>`;
+      if (k === 'A') extra = `<div class="row" style="margin-top:6px"><button class="btn ${S.fault.active ? 'bad' : ''}" data-act="fault">${S.fault.active ? '절연 고장 해제' : '절연 고장 발생'}</button></div><div class="note blue">접지가 정상이면 고장 즉시 고장전류가 PE로 흘러 ELB가 사람이 만지기 <b>전에</b> 차단합니다. 이때 고장전류 ${S.fault.active ? fmtA(Math.abs(S.res.faultI)) : '-'}는 MCCB 트립치보다 작아 MCCB만으로는 보호되지 않습니다.</div>`;
+      if (k === 'C') extra = `<div class="note blue">시험 버튼은 <b>부하측 L → 시험저항(${CFG.R_TEST / 1000} kΩ, 약 ${(CFG.V / CFG.R_TEST * 1000).toFixed(0)} mA) → 전원측 N</b>으로 ZCT를 우회하는 전류를 흘려 불평형을 만듭니다. 실제 제품은 시험회로 구조(접속 위치·시험권선 방식)와 시험전류가 제품마다 다르며, 본 회로는 대표 구조를 단순화한 교육용 회로입니다.</div>`;
+      return ctrlBtns() + chkList(steps) + extra;
+    }
+  },
+  wiring: {
+    html: () => `<h3>③ 배선 실습 ${S.quiz.wiringTask ? '<span class="badge virt">평가 과제 진행 중</span>' : ''}</h3>
+      <p class="muted" style="margin-top:0">전선 종류를 고른 뒤 3D 또는 2D 결선도에서 <b>단자 → 단자</b>를 드래그하거나 차례로 클릭하세요. (단축키 1/2/3, 선택 배선 Delete)</p>
+      <div class="wtype">${['L', 'N', 'PE'].map(t => `<button data-act="wtype" data-arg="${t}" class="${S.wireType === t ? 'on' : ''}">${t}<i style="background:${t === 'PE' ? 'repeating-linear-gradient(90deg,#2f9e3a 0 8px,#e8c800 8px 14px)' : WT[t].css}"></i><span style="font-size:10.5px;font-weight:500">${WT[t].kec}</span></button>`).join('')}</div>
+      <div class="grid2" style="margin-top:8px"><select id="tA">${Object.keys(TERMS).map(t => `<option value="${t}">${lab(t)}</option>`).join('')}</select><select id="tB">${Object.keys(TERMS).map((t, i) => `<option value="${t}" ${i === 2 ? 'selected' : ''}>${lab(t)}</option>`).join('')}</select></div>
+      <button class="btn" data-act="addSel" style="width:100%;margin-top:6px">선택한 두 단자 연결 (터치·키보드용)</button>`,
+    dyn: () => {
+      const res = S._wcheck;
+      return `<div class="row" style="margin-top:8px"><b style="font-size:13px">연결 목록 (${S.wires.length})</b>${S.selTerm ? `<span class="badge">시작 단자: ${lab(S.selTerm)}</span>` : ''}</div>
+      <div class="wlist">${S.wires.map(w => `<div class="witem" style="${S.selWire === w.id ? 'background:#e8f1fd' : ''}"><span class="sw" style="background:${w.type === 'PE' ? 'repeating-linear-gradient(90deg,#2f9e3a 0 5px,#e8c800 5px 9px)' : WT[w.type].css}"></span>${lab(w.a)} ↔ ${lab(w.b)}<button class="x" data-act="delW" data-arg="${w.id}" title="삭제">✕</button></div>`).join('') || '<p class="muted">아직 연결된 배선이 없습니다. 6개의 배선이 필요합니다.</p>'}</div>
+      <div class="grid2" style="margin-top:8px"><button class="btn pri" data-act="checkW">배선 확인 (자동 평가)</button><button class="btn" data-act="clearW">전체 지우기</button>
+      <button class="btn" data-act="answerW">정답 배선 보기</button><button class="btn ${S.mccbOn ? 'ok' : ''}" data-act="powerW">${S.mccbOn ? '전원 차단' : '전원 투입 ▶'}</button></div>
+      ${S.quiz.wiringTask ? `<button class="btn warn" data-act="submitW" style="width:100%;margin-top:6px">평가 과제 제출</button>` : ''}
+      ${res ? `<h4>평가 결과 ${res.pass ? '<span class="pill g">합격</span>' : '<span class="pill r">수정 필요</span>'}</h4>${chkList(res.items.map(i => [i.name, i.ok]), true)}
+        ${res.errs.map(e => `<div class="err"><b>✗ ${e.t}</b> <span class="muted">${e.at}</span><br>${e.why}</div>`).join('')}
+        ${res.pass ? '<div class="okmsg">✓ 올바른 배선입니다. 전원 투입 후 ELB를 올리고 시험 버튼·누전 발생 장치로 동작을 확인해 보세요.</div>' : ''}` : ''}
+      ${S.mccbOn ? ctrlBtns() : ''}
+      <div class="note blue" style="margin-top:8px"><b>교육용 가정</b>: 단자 간 1:1 연결, 전선 굵기·단자 체결 토크·압착 등은 생략. <b>실제 기준</b>: 전원 차단·잠금·검전 후 작업, KEC 전선 식별색(L 갈색·N 청색·PE 녹색-노란색), 규격 전선·단자 사용.</div>`;
+    }
+  },
+  compare: {
+    html: () => `<h3>④ 접지 유무에 따른 비교 실습</h3><p class="muted" style="margin-top:0">상태를 선택하고 "적용"을 누르면 3D·2D가 해당 상태로 바뀌고 절연 고장이 발생합니다. 표는 현재 고장저항 기준으로 4가지 상태를 동시에 계산합니다.</p>
+      <div class="grid2">${Object.entries(GSTATES).map(([k, v]) => `<button class="btn ${UI.cmpSel === k ? 'pri' : ''}" data-act="cmpSel" data-arg="${k}">${v.name}</button>`).join('')}</div>
+      <div style="margin-top:8px">${faultSel()}</div>
+      <button class="btn warn" data-act="cmpApply" style="width:100%;margin-top:8px">▶ 선택 상태 적용 + 절연 고장 발생</button>`,
+    dyn: () => {
+      const rows = Object.keys(GSTATES).map(k => compareRow(k, true)), bad = Object.keys(GSTATES).map(k => compareRow(k, false));
+      const sel = UI.cmpSel, r = S.res;
+      return `<div class="row" style="margin-top:8px"><button class="btn ${S.touching ? 'bad' : ''}" data-act="touch">${S.touching ? '접촉 해제' : '인체 접촉 재현'}</button><button class="btn" data-act="elb">${S.elbTripped ? 'ELB 재투입' : S.elbClosed ? 'ELB 투입됨' : 'ELB 투입'}</button></div>
+      <div class="note ${Math.abs(r.encV) > 50 ? 'red' : 'blue'}"><b>현재(${GSTATES[sel].name})</b> 외함 전위 ${fmtV(r.encV)} · 누설 ${fmtA(r.iDelta)} · ELB ${S.elbTripped ? '트립' : S.elbClosed ? '투입' : '개방'}<br>누설전류 경로: ${GSTATES[sel].path}</div>
+      <h4>ELB 정상일 때</h4><table class="cmp"><tr><th>상태</th><th>외함 전위(고장 시)</th><th>ELB 작동</th><th>감전 위험</th><th>보호 결과</th></tr>
+      ${rows.map(x => `<tr class="${x.code === sel ? 'sel' : ''}"><td><b>${GSTATES[x.code].name}</b></td><td>${x.ev.toFixed(1)} V</td><td>${x.elb}</td><td>${x.risk}</td><td>${x.res}<br><span class="muted">${x.mccb}</span></td></tr>`).join('')}</table>
+      <h4>ELB가 고장이거나 없을 때</h4><table class="cmp"><tr><th>상태</th><th>외함 전위</th><th>위험</th></tr>
+      ${bad.map(x => `<tr class="${x.code === sel ? 'sel' : ''}"><td>${GSTATES[x.code].name}</td><td>${x.ev.toFixed(1)} V</td><td>${x.risk}</td></tr>`).join('')}</table>
+      <div class="note red"><b>접지와 누전차단기는 서로 대체할 수 없는 별개의 보호수단입니다.</b> 접지는 고장전류 경로를 만들어 외함 전위를 억제하고 ELB를 즉시 동작시키며, ELB는 접지만으로 제거되지 않는 위험 전압·소전류 누설을 차단합니다. 어느 한쪽이 없으면 위 표처럼 보호가 무너집니다.</div>`;
+    }
+  },
+  diag: {
+    html: () => `<h3>⑤ 고장 진단 및 오류 체험 ${S.quiz.diagTask ? '<span class="badge virt">평가 과제</span>' : ''}</h3>
+      <div class="row"><select id="fSel" style="flex:1"><option value="random">무작위 고장 출제</option>${FAULTS.map((f, i) => `<option value="${f.id}">${i + 1}. ${f.name}</option>`).join('')}</select><button class="btn pri" data-act="diagStart">출제</button></div>`,
+    dyn: () => {
+      const d = S.diag;
+      if (!d) return `<div class="note blue" style="margin-top:8px">고장을 출제하면 <b>고객 신고 내용</b>만 제시됩니다. 3D 장비 조작(ELB 재투입, 부하 스위치, 시험 버튼, 누전 발생 장치)과 <b>우측 가상 측정 장비</b>로 원인을 찾은 뒤 진단을 제출하세요.</div>
+        <h4>진단 팁</h4><ul class="muted" style="font-size:12.5px"><li>트립 시: 부하 OFF로 재투입 → 유지되는지 확인</li><li>절연저항계: 전원 차단 후 L–PE, N–PE</li><li>접지저항계: 접지극 단독 vs 단자대(접지선 포함)</li><li>멀티미터: ELB 개방 상태에서 부하측 전압, PE 도통</li><li>시험 버튼 무반응 → 누전 발생 장치 30 mA 주입으로 비교</li></ul>`;
+      const el = Math.round((Date.now() - d.t0) / 1000);
+      return `<div class="note" style="margin-top:8px">📞 <b>고객 신고</b><br>${d.f.complaint}</div>
+        <p class="muted">경과 ${el}초 · 측정 ${d.measured.size}항목 · 제출 ${d.tries}회</p>
+        ${ctrlBtns()}
+        <div class="row" style="margin-top:6px"><button class="btn" data-act="inj" data-arg="30">누전 30 mA 주입</button><button class="btn" data-act="inj" data-arg="50">50 mA 주입</button></div>
+        ${d.solved ? `<div class="okmsg"><b>✓ 정답: ${d.f.name}</b><br>${d.f.explain}</div><button class="btn ok" data-act="repair" style="width:100%">🔧 수리 및 정상 상태로 복구</button>` : `
+        <h4>진단 결과 선택</h4>${FAULTS.map(f => `<label style="display:flex;gap:6px;font-size:12.5px;padding:2px 0"><input type="radio" name="dg" value="${f.id}"> ${f.name}</label>`).join('')}
+        <button class="btn pri" data-act="diagSubmit" style="width:100%;margin-top:6px">진단 제출</button>
+        ${d.last && !d.last.ok ? `<div class="err">✗ 오진입니다. 증상과 측정값을 다시 확인하세요. ${d.tries >= 2 ? `<br><b>힌트</b>: ${d.f.explain.split('.')[0]}.` : ''}</div>` : ''}`}`;
+    }
+  },
+  quiz: {
+    html: () => {
+      const q = S.quiz;
+      return `<h3>⑥ 학습 평가</h3><p class="muted" style="margin-top:0">객관식 ${QUIZ.length}문항(60점) + 실습형 배선 과제(25점) + 고장 진단 과제(15점)</p>
+      <div class="grid2"><button class="btn ${q.wiring ? 'ok' : 'pri'}" data-act="qWiring">${q.wiring ? '✓ 배선 과제 완료' : '실습 1: 배선 과제'}</button><button class="btn ${q.diag && q.diag.solved ? 'ok' : 'pri'}" data-act="qDiag">${q.diag && q.diag.solved ? '✓ 진단 과제 완료' : '실습 2: 진단 과제'}</button></div>
+      <h4>객관식</h4>${QUIZ.map(([t, ops, a, ex], i) => `<div class="q ${q.mcq ? (q.mcq[i] === a ? 'right' : 'wrong') : ''}" id="q${i}"><div class="qt">${i + 1}. ${t}</div>
+        ${ops.map((o, j) => `<label><input type="radio" name="q${i}" value="${j}" ${q.ans && q.ans[i] === j ? 'checked' : ''} ${q.mcq ? 'disabled' : ''}> ${o}${q.mcq && j === a ? ' <b style="color:#0d7a43">← 정답</b>' : ''}</label>`).join('')}
+        <div class="ex"><b>${q.mcq && q.mcq[i] === a ? '정답' : '해설'}</b> · ${ex}</div></div>`).join('')}
+      <div class="grid2"><button class="btn pri" data-act="qGrade">채점 및 최종 결과</button><button class="btn" data-act="qReset">다시 풀기</button></div><div id="qResult">${UI.qResult ? UI.qResult() : ''}</div>`;
+    }
+  }
+};
+UI.qResult = () => {
+  const q = S.quiz; if (!q.mcq) return '';
+  const n = QUIZ.filter((x, i) => q.mcq[i] === x[2]).length, mcq = Math.round(n / QUIZ.length * 60);
+  const w = q.wiring, ws = w ? Math.round(w.items.filter(i => i.ok).length / 6 * 25) : 0;
+  const d = q.diag, ds = d && d.solved ? (d.tries === 1 ? 15 : d.tries === 2 ? 10 : 5) : 0;
+  return `<div class="card" style="margin-top:10px;border-color:#0f6fd6"><h3>📊 최종 결과</h3><div class="score">${mcq + ws + ds} / 100</div>
+    <table class="cmp"><tr><td>객관식</td><td>${n}/${QUIZ.length} 정답</td><td><b>${mcq}</b>/60</td></tr>
+    <tr><td>배선 과제</td><td>${w ? `${w.items.filter(i => i.ok).length}/6 항목` : '미응시'}</td><td><b>${ws}</b>/25</td></tr>
+    <tr><td>진단 과제</td><td>${d ? (d.solved ? `${d.name} · ${d.tries}회 만에 정답` : '미해결') : '미응시'}</td><td><b>${ds}</b>/15</td></tr></table>
+    ${w && w.errs.length ? `<h4>오배선 항목 및 해설</h4>${w.errs.map(e => `<div class="err"><b>✗ ${e.t}</b> <span class="muted">${e.at}</span><br>${e.why}</div>`).join('')}` : w ? '<div class="okmsg">배선 과제: 오배선 없음</div>' : ''}
+    ${QUIZ.some((x, i) => q.mcq[i] !== x[2]) ? `<h4>틀린 객관식</h4>${QUIZ.map((x, i) => q.mcq[i] !== x[2] ? `<div class="err"><b>${i + 1}. ${x[0]}</b><br>정답: ${x[1][x[2]]}<br>${x[3]}</div>` : '').join('')}` : ''}</div>`;
+};
+const ACTS = {
+  mccb: () => Act.mccb(), elb: () => Act.elbHandle(), load: () => Act.load(), test: () => Act.test(), touch: () => Act.touch(), fault: () => Act.fault(),
+  faultR: v => { S.fault.R = +v; Sim.run(); if (S.mode === 'compare' || S.mode === 'leak') UI.renderMode(); UI.updCmp(); },
+  normalAuto: async () => { Preset.base({ power: false }); const tok = ++Scn.tok; await Scn.sleep(400); if (tok !== Scn.tok) return; Act.mccb(true); await Scn.sleep(700); if (tok !== Scn.tok) return; Act.elbHandle(); },
+  scnSel: k => { Scn.cur = k; Preset.base({ power: false }); if (k === 'B') { Preset.ground('noPE'); if (S._elbFailAssume) S.elbHealth.mech = false; } Sim.run(); UI.renderMode(); },
+  scnRun: () => Scn.run(Scn.cur),
+  scnReset: () => ACTS.scnSel(Scn.cur),
+  elbFail: (v, el) => { S._elbFailAssume = el.checked; S.elbHealth.mech = !el.checked; Log.add('warn', el.checked ? '[가정] ELB 트립 기구 고장' : '[가정 해제] ELB 정상'); Sim.run(); },
+  wtype: t => { UI.setWireType(t); },
+  addSel: () => Wiring.add($('#tA').value, $('#tB').value),
+  delW: id => Wiring.remove(+id),
+  checkW: () => { S._wcheck = Wiring.check(S.wires); Log.add(S._wcheck.pass ? 'ok' : 'warn', `배선 자동 평가: ${S._wcheck.pass ? '합격' : `오류 ${S._wcheck.errs.length}건`}`); UI.update(); },
+  clearW: () => { Wiring.clear(); S._wcheck = null; UI.update(); },
+  answerW: () => { if (S.mccbOn) return Toast.show('전원을 먼저 차단하세요', 'bad'); S.wires = Wiring.correctSet(); S.userWires = S.wires; S.wiringSource = 'user'; S._wcheck = null; Bus.emit('wires'); Sim.run(); Toast.show('정답 배선을 표시했습니다'); },
+  powerW: () => { if (S.mccbOn) { Act.mccb(false); return; } S._wcheck = Wiring.check(S.wires); if (S._wcheck.pass) Act.mccb(true); else { Toast.show('배선 오류가 있어 전원을 투입할 수 없습니다', 'bad'); UI.update(); } },
+  submitW: () => { const c = Wiring.check(S.wires); S.quiz.wiring = c; S.quiz.wiringTask = false; Log.add('info', `[평가] 배선 과제 제출: ${c.items.filter(i => i.ok).length}/6 항목 적합`); Toast.show('배선 과제가 제출되었습니다', 'ok'); UI.setMode('quiz'); },
+  cmpSel: k => { UI.cmpSel = k; UI.renderMode(); },
+  cmpApply: async () => { Preset.base({ power: false }); Preset.ground(UI.cmpSel); Sim.run(); const tok = ++Scn.tok; Act.mccb(true); await Scn.sleep(500); if (tok !== Scn.tok) return; Act.elbHandle(); await Scn.sleep(900); if (tok !== Scn.tok) return; Act.fault(true); },
+  diagStart: () => Diag.start($('#fSel').value),
+  diagSubmit: () => { const r = $('input[name=dg]:checked'); if (!r) return Toast.show('진단 결과를 선택하세요', 'warn'); Diag.submit(r.value); },
+  repair: () => Diag.repair(),
+  inj: mA => Act.leakSim(true, +mA),
+  qWiring: () => { S.quiz.wiringTask = true; S.userWires = []; UI.setMode('wiring'); S.quiz.wiringTask = true; S._wcheck = null; UI.renderMode(); Toast.show('빈 패널에서 6개 배선을 완성한 뒤 "평가 과제 제출"을 누르세요'); },
+  qDiag: () => { UI.setMode('diag'); S.quiz.diagTask = true; S.quiz.diag = null; Diag.start('random'); },
+  qGrade: () => {
+    const ans = QUIZ.map((x, i) => { const r = $(`input[name=q${i}]:checked`); return r ? +r.value : -1; });
+    S.quiz.ans = ans; S.quiz.mcq = ans; UI.renderMode();
+    const n = QUIZ.filter((x, i) => ans[i] === x[2]).length; Log.add('info', `[평가] 객관식 ${n}/${QUIZ.length}`);
+    setTimeout(() => $('#qResult').scrollIntoView({ behavior: 'smooth' }), 50);
+  },
+  qReset: () => { S.quiz.mcq = null; S.quiz.ans = null; UI.renderMode(); }
+};
+
+/* =====================================================================
+   MODULE 16 · 초기화 · 렌더 루프
+   ===================================================================== */
+Room.build(); Equip.build(); Wires3D.init(); Flow.init(); Instruments3D.init(); Pick.init();
+controls = new OrbitControls(camera, canvasEl);
+controls.target.copy(VIEWS.all[1]); controls.enableDamping = true; controls.dampingFactor = .08;
+controls.maxPolarAngle = Math.PI * .58; controls.minDistance = .3; controls.maxDistance = 9;
+camera.position.copy(VIEWS.all[0]);
+XR.init();
+SchMain = new Schematic($('#schMain'), { interactive: true });
+Bus.on('wires', () => { Wires3D.rebuild(); SchMain.setWires(S.wires); if (S.mode === 'wiring') S._wcheck = null; });
+Bus.on('update', () => { Scene3D.sync(); SchMain.update(S, S.res); UI.update(); if (SchCmp) UI.updCmp(); });
+Bus.on('log', () => UI.renderLog());
+Bus.on('trip', () => { if (S.mode !== 'quiz') UI.update(); });
+UI.init();
+Preset.base({ power: false });
+UI.setMode('normal');
+Log.list = []; Log.add('info', '실습실 준비 완료 — 교육용 가상 시뮬레이션');
+let firstSize = true;
+const ro = new ResizeObserver(() => { const w = $('#viewWrap').clientWidth, h = $('#viewWrap').clientHeight; if (!w || !h) return; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); if (firstSize) { firstSize = false; Cam.go('all'); } });
+ro.observe($('#viewWrap'));
+const clock = new THREE.Clock(); let diagTick = 0;
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(.05, clock.getDelta()), t = clock.elapsedTime;
+  Cam.update(dt); if (!renderer.xr.isPresenting) controls.update();
+  Scene3D.animate(dt, t); XR.update();
+  SchMain.animate(dt); if (SchCmp) SchCmp.forEach(s => s.animate(dt));
+  if (S.diag && !S.diag.solved && (diagTick += dt) > 1) { diagTick = 0; const p = $('#mpDyn p.muted'); if (p) { const d = S.diag; p.textContent = `경과 ${Math.round((Date.now() - d.t0) / 1000)}초 · 측정 ${d.measured.size}항목 · 제출 ${d.tries}회`; } }
+  renderer.render(scene, camera);
+});
+$('#loading').classList.add('hide');
+UI.intro();
+window.__twin = { S, Sim, Act, Wiring, Circuit, Preset, Diag, UI, Meter, compareRow, TERM3D, camera, FAULTS };
+</script>
+</body>
+</html>

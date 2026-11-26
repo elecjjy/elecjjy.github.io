@@ -1,0 +1,1606 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>플리커·부저 경보 회로 디지털 트윈</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script type="importmap">
+{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}
+</script>
+<style>
+:root{
+  --bg:#eceee8;--panel:#fff;--ink:#1b2229;--muted:#5b6672;--line:#d8dcd4;--soft:#f5f6f2;
+  --accent:#e8590c;--live:#ef3b24;--ok:#15803d;--warn:#b45309;--blue:#1d4ed8;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  font-family:'IBM Plex Sans KR',system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink)}
+body{display:flex;flex-direction:column;height:100dvh;overflow:hidden;font-size:14px;line-height:1.5}
+button{font:inherit;color:inherit}
+header.top{display:flex;align-items:center;gap:12px;padding:8px 14px;background:var(--ink);color:#fff;flex:none}
+header .logo{width:30px;height:30px;border-radius:7px;background:repeating-linear-gradient(-45deg,#f5b700 0 6px,#1b2229 6px 12px);flex:none;border:2px solid #f5b700}
+header .brand{font-weight:700;font-size:15px;letter-spacing:-.01em}
+header .sub{font-size:12px;color:#a9b3bd}
+
+#app{flex:1;min-height:0;display:grid;grid-template-columns:268px minmax(0,1fr) 352px;grid-template-rows:minmax(0,1fr) auto;
+  grid-template-areas:"left center right" "status status status"}
+#left{grid-area:left;overflow:auto;background:var(--panel);border-right:1px solid var(--line)}
+#center{grid-area:center;display:flex;flex-direction:column;min-height:0;min-width:0}
+#right{grid-area:right;display:flex;flex-direction:column;min-height:0;background:var(--panel);border-left:1px solid var(--line)}
+#viewport{position:relative;flex:1 1 56%;min-height:220px;background:#d5dbdb;overflow:hidden}
+#viewport>canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#center>.pane[data-pane=diagram]{flex:1 1 44%;overflow:auto;background:var(--panel);border-top:1px solid var(--line)}
+#tabs{display:flex;border-bottom:1px solid var(--line);background:var(--panel);flex:none}
+#tabs button{flex:1;border:0;background:none;padding:11px 4px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent}
+#tabs button.on{color:var(--ink);border-bottom-color:var(--accent)}
+#tabs button[data-tab=diagram],#tabs button[data-tab=parts]{display:none}
+#right>.pane{flex:1;overflow:auto;display:none}
+body[data-tab=control] #right>.pane[data-pane=control],
+body[data-tab=fault] #right>.pane[data-pane=fault],
+body[data-tab=quiz] #right>.pane[data-pane=quiz]{display:block}
+.pane{padding:14px 16px 22px}
+#center>.pane[data-pane=diagram]{padding:10px 14px 16px}
+
+#status{grid-area:status;display:flex;gap:6px;align-items:center;padding:7px 10px;background:var(--ink);overflow-x:auto;scrollbar-width:none}
+#status::-webkit-scrollbar{display:none}
+.chip{display:flex;align-items:center;gap:6px;flex:none;padding:4px 10px 4px 8px;border-radius:999px;background:#2a333c;color:#c5ced6;font-size:12px;font-weight:600;white-space:nowrap}
+.chip i{width:9px;height:9px;border-radius:50%;background:#4b5560;flex:none}
+.chip.on{color:#fff}
+.chip.on i{background:#22c55e;box-shadow:0 0 8px #22c55e}
+.chip.on.red i{background:#ef4444;box-shadow:0 0 8px #ef4444}
+.chip.on.amber i{background:#f59e0b;box-shadow:0 0 8px #f59e0b}
+.chip.on.violet i{background:#818cf8;box-shadow:0 0 8px #818cf8}
+.chip b{font-family:var(--mono);font-weight:600;color:#fff}
+.chip.warn{background:#7c2d12;color:#fed7aa}
+
+/* viewport overlays */
+.ov{position:absolute;z-index:3}
+#loading3d{inset:0;display:flex;align-items:center;justify-content:center;color:#3b4652;font-weight:600;font-size:14px;text-align:center;padding:20px}
+.vhint{left:10px;top:10px;font-size:11.5px;background:rgba(27,34,41,.72);color:#e5e9ec;padding:4px 9px;border-radius:6px;pointer-events:none}
+.vtools{right:10px;top:10px;display:flex;gap:6px}
+.vtools button,#vrSlot button{border:0;background:rgba(27,34,41,.8);color:#fff;font-size:12px;font-weight:600;padding:6px 10px;border-radius:7px;cursor:pointer}
+.quick{left:10px;right:10px;bottom:10px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;pointer-events:none}
+.qbtn{pointer-events:auto;border:0;border-radius:999px;padding:8px 13px;font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:0 2px 0 rgba(0,0,0,.25),0 4px 12px rgba(0,0,0,.15);transition:transform .05s}
+.qbtn.y{background:#facc15;color:#1b2229}.qbtn.b{background:#2563eb;color:#fff}.qbtn.r{background:#dc2626;color:#fff}
+.qbtn.pwr{background:#1b2229;color:#fff}.qbtn.pwr.on{background:#15803d}
+.qbtn.down,.pb.down .cap{transform:translateY(2px);box-shadow:0 0 0 rgba(0,0,0,.2)}
+#floatInfo{left:10px;top:42px;max-width:min(330px,calc(100% - 20px));background:rgba(255,255,255,.96);border-radius:10px;padding:10px 12px;box-shadow:0 6px 24px rgba(0,0,0,.18);font-size:12.5px}
+#floatInfo h4{margin:0 0 3px;font-size:13.5px}
+#floatInfo p{margin:0 0 8px;color:#3b4652}
+#floatInfo .fi-row{display:flex;gap:6px}
+#floatInfo .x{position:absolute;right:6px;top:4px;border:0;background:none;font-size:16px;cursor:pointer;color:#5b6672}
+.hold{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none}
+
+/* generic */
+h3{font-size:13px;margin:18px 0 8px;letter-spacing:.02em;color:var(--ink);display:flex;align-items:center;gap:8px}
+h3:first-child{margin-top:2px}
+h3 .tag{font-size:11px;font-weight:600;color:var(--muted)}
+.note{font-size:12.5px;color:var(--muted);margin:0 0 10px}
+.btn{font-size:13px;padding:8px 12px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer;font-weight:600}
+.btn:hover{background:var(--soft)}
+.btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn.primary:hover{background:#2b343d}
+.btn.sm{font-size:12px;padding:5px 9px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.card{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--soft)}
+.kbd{font-family:var(--mono);font-size:11px;border:1px solid #c9cec6;border-bottom-width:2px;border-radius:4px;padding:0 4px;background:#fff;color:#3b4652}
+
+/* control pane */
+.pbs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pb{display:flex;flex-direction:column;align-items:center;gap:6px;border:1px solid var(--line);border-radius:12px;padding:10px 4px 8px;background:#f4f5f1;cursor:pointer}
+.pb .cap{width:46px;height:46px;border-radius:50%;border:5px solid #c7ccd1;box-shadow:0 3px 0 rgba(0,0,0,.25),inset 0 -4px 6px rgba(0,0,0,.18);transition:transform .05s}
+.pb.y .cap{background:#facc15}.pb.b .cap{background:#2563eb}.pb.r .cap{background:#dc2626}
+.pb .t{font-size:12.5px;font-weight:700;text-align:center;line-height:1.25}
+.pb .s{font-size:11px;color:var(--muted)}
+.pwrrow{display:flex;align-items:center;gap:10px;justify-content:space-between}
+.switch{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:6px 10px;background:#fff;cursor:pointer;font-weight:700}
+.switch .lever{width:38px;height:22px;border-radius:12px;background:#9ca3af;position:relative;transition:background .15s}
+.switch .lever::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}
+.switch.on .lever{background:var(--ok)}
+.switch.on .lever::after{left:19px}
+.seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.seg button{flex:1;border:0;background:#fff;padding:8px 4px;font-size:12.5px;font-weight:600;cursor:pointer;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--ink);color:#fff}
+.sl{display:grid;grid-template-columns:92px 1fr 58px;gap:8px;align-items:center;margin:6px 0}
+.sl label{font-size:12.5px;font-weight:600}
+.sl output{font-family:var(--mono);font-size:12.5px;text-align:right}
+input[type=range]{width:100%;accent-color:var(--accent)}
+select{font:inherit;font-size:12.5px;padding:5px 6px;border-radius:7px;border:1px solid var(--line);background:#fff}
+.meas{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.meas div{background:#1b2229;color:#9ca3af;border-radius:8px;padding:6px 8px;font-size:11px}
+.meas b{display:block;color:#fff;font-family:var(--mono);font-size:15px}
+#seq{font-size:12.5px;background:#fff7ed;border:1px solid #fed7aa;border-radius:9px;padding:8px 10px;color:#7c2d12;min-height:40px}
+.tog{display:flex;align-items:center;gap:8px;font-size:12.5px;margin:5px 0;cursor:pointer}
+.tog input{accent-color:var(--accent);width:16px;height:16px}
+
+/* diagram */
+.dhead{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.dhead h3{margin:0}
+.mode-badge{font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:6px;background:#e0f2fe;color:#075985}
+.mode-badge.bad{background:#fee2e2;color:#991b1b}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:11.5px;color:var(--muted)}
+.legend span{display:flex;align-items:center;gap:4px}
+.legend i{width:16px;height:3px;border-radius:2px;display:inline-block}
+.dbody{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
+#ladderWrap{flex:1 1 400px;max-width:620px;min-width:0}
+#chartWrap{flex:1 1 300px;min-width:0}
+#ladder svg{display:block;width:100%;height:auto;font-family:'IBM Plex Sans KR',sans-serif}
+.w{stroke:#a6afb8;stroke-width:2.4;fill:none;stroke-linecap:round}
+.w.live{stroke:#ef3b24;stroke-dasharray:8 5;animation:flow .7s linear infinite}
+.w.nl.live{stroke:#2563eb}
+.w.jfault{stroke-width:3.4}
+@keyframes flow{to{stroke-dashoffset:-13}}
+.ct .sym{stroke:#334155;stroke-width:2.4;fill:none;stroke-linecap:round}
+.ct .bridge{stroke:#16a34a;stroke-width:3.2;display:none}
+.ct.closed .sym{stroke:#15803d}
+.ct.closed .bridge{display:inline}
+.hit{fill:transparent;cursor:pointer}
+.coil .cb{fill:#fff;stroke:#334155;stroke-width:2.2;transition:fill .05s}
+.coil.on .cb{fill:#fcd34d}
+.coil.k-L.on .cb{fill:#ef4444}.coil.k-PL.on .cb{fill:#22c55e}.coil.k-BZ.on .cb{fill:#fb923c}
+.coil .cx{stroke:#334155;stroke-width:1.8}
+.coil.broken .cb{stroke:#dc2626;stroke-dasharray:3 2}
+.ctxt{font-size:12px;font-weight:700;text-anchor:middle;fill:#1b2229;pointer-events:none}
+.lbl{font-size:11.5px;font-weight:700;text-anchor:middle;fill:#334155}
+.role{font-size:10.5px;text-anchor:middle;fill:#64748b}
+.bad{fill:#dc2626!important;font-weight:700}
+.faultbox{fill:rgba(239,68,68,.07);stroke:#dc2626;stroke-width:1.6;stroke-dasharray:4 3}
+.mis{display:none}.mis.show{display:inline}.nomis .mis.show{display:none}
+.mis circle{fill:#f59e0b}.mis text{fill:#fff;font-weight:800;font-size:13px;text-anchor:middle}
+.rno circle{fill:#1b2229}.rno text{fill:#fff;font-size:11px;font-weight:700;text-anchor:middle}
+.rtitle{font-size:12px;font-weight:700;fill:#1b2229;text-anchor:end}
+.tmtxt{font-size:10.5px;font-family:'IBM Plex Mono',monospace;text-anchor:middle;fill:#b45309;font-weight:600}
+.box{fill:#f8fafc;stroke:#334155;stroke-width:1.8}
+.fuse rect{fill:#fff;stroke:#334155;stroke-width:2}
+.fuse.closed rect{stroke:#15803d}
+.fuse .blownx{stroke:#dc2626;stroke-width:2.2;display:none}
+.fuse.blown .blownx{display:inline}
+.railtxt{font-size:11px;font-weight:700;fill:#64748b;text-anchor:middle}
+#chart{width:100%;height:208px;display:block;border-radius:9px;background:#11161b}
+
+/* fault */
+.flist{display:grid;gap:6px}
+.fbtn{text-align:left;border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 10px;cursor:pointer;font-size:12.5px;font-weight:600;display:flex;gap:8px;align-items:flex-start}
+.fbtn:hover{background:var(--soft)}
+.fbtn.on{border-color:#dc2626;background:#fef2f2}
+.fbtn .star{color:#e8590c;flex:none}
+.fbtn small{display:block;font-weight:400;color:var(--muted);font-size:11.5px}
+.choices{display:grid;gap:5px;margin:8px 0}
+.choices label{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer}
+.choices input{margin-top:3px;accent-color:var(--accent)}
+.verdict{margin-top:10px;border-radius:10px;padding:10px 12px;font-size:12.5px}
+.verdict.ok{background:#f0fdf4;border:1px solid #bbf7d0}
+.verdict.no{background:#fff7ed;border:1px solid #fed7aa}
+.verdict h4{margin:0 0 4px;font-size:13px}
+.verdict p{margin:4px 0}
+.mstat{font-size:12.5px;font-weight:600;padding:8px 10px;border-radius:9px;background:#1b2229;color:#fff}
+.hint{font-size:12.5px;background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:7px 9px;margin-top:6px}
+ol.steps{margin:8px 0;padding-left:20px;font-size:12.5px;color:#3b4652}
+.finfo{font-size:12.5px}
+.finfo p{margin:5px 0}
+
+/* quiz */
+.q{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:#fff}
+.q .qt{font-weight:700;font-size:13px;margin-bottom:6px}
+.q .opts{display:grid;gap:5px}
+.q .opts button{text-align:left;border:1px solid var(--line);background:var(--soft);border-radius:8px;padding:7px 9px;font-size:12.5px;cursor:pointer}
+.q .opts button.right{background:#dcfce7;border-color:#22c55e}
+.q .opts button.wrong{background:#fee2e2;border-color:#ef4444}
+.q .ex{font-size:12px;color:#3b4652;margin-top:6px;display:none}
+.q.done .ex{display:block}
+.task{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:#fff;font-size:12.5px}
+.task .tt{font-weight:700;margin-bottom:4px}
+.task .res{margin-top:6px;font-size:12px}
+.task.pass{border-color:#22c55e;background:#f0fdf4}
+.score{font-family:var(--mono);font-weight:600;background:#1b2229;color:#fff;border-radius:8px;padding:6px 10px;font-size:12.5px;display:inline-block}
+
+/* parts */
+.plist{display:grid;gap:4px}
+.pitem{display:flex;gap:9px;align-items:center;border:1px solid transparent;background:none;border-radius:8px;padding:6px 8px;text-align:left;cursor:pointer}
+.pitem:hover{background:var(--soft)}
+.pitem.on{background:#fff7ed;border-color:#fdba74}
+.pitem .dot{width:10px;height:10px;border-radius:50%;background:#cbd5e1;flex:none}
+.pitem .dot.on{background:#22c55e;box-shadow:0 0 6px #22c55e}
+.pitem .nm{font-size:12.5px;font-weight:600;line-height:1.3}
+.pitem .nm small{display:block;font-weight:400;color:var(--muted);font-size:11px}
+#pinfo h4{margin:0 0 2px;font-size:14px}
+#pinfo .tg{font-size:11.5px;color:var(--muted);margin-bottom:6px}
+#pinfo p{margin:5px 0;font-size:12.5px}
+#pinfo .st{font-family:var(--mono);font-size:12px;background:#1b2229;color:#86efac;border-radius:7px;padding:5px 8px;margin-top:6px}
+.formula{font-family:var(--mono);font-size:12px;background:#1b2229;color:#fde68a;border-radius:8px;padding:8px 10px;margin:6px 0}
+.lp{font-size:12.5px;margin:0;padding-left:18px}
+.lp li{margin:3px 0}
+
+@media (max-width:1000px){
+  body{height:auto;min-height:100dvh;overflow:visible}
+  #app{display:flex;flex-direction:column}
+  #left,#center,#right{display:contents}
+  #viewport{order:1;flex:none;height:min(50dvh,440px)}
+  #tabs{order:2;position:sticky;top:0;z-index:10}
+  #status{order:3;position:sticky;top:44px;z-index:9}
+  .pane{order:4;display:none!important}
+  #tabs button[data-tab=diagram],#tabs button[data-tab=parts]{display:block}
+  body[data-tab=control] .pane[data-pane=control],
+  body[data-tab=diagram] .pane[data-pane=diagram],
+  body[data-tab=fault] .pane[data-pane=fault],
+  body[data-tab=quiz] .pane[data-pane=quiz],
+  body[data-tab=parts] .pane[data-pane=parts]{display:block!important}
+  #center>.pane[data-pane=diagram]{border-top:0}
+  .pane{padding-bottom:40px;background:var(--panel)}
+  header .sub{display:none}
+  .vhint{display:none}
+}
+</style>
+</head>
+<body data-tab="control">
+<header class="top">
+  <div class="logo" aria-hidden="true"></div>
+  <div>
+    <div class="brand">플리커·부저 경보 회로 디지털 트윈</div>
+    <div class="sub">타이머 2개(T1·T2) · a/b 접점 · 경보 출력 — DC 24V 교육용 제어반</div>
+  </div>
+</header>
+
+<main id="app">
+  <aside id="left">
+    <section class="pane" data-pane="parts">
+      <h3>학습 포인트</h3>
+      <ol class="lp">
+        <li><b>타이머 2개</b>: T1이 꺼진 시간, T2가 켜진 시간을 만들고 서로를 리셋해 점멸을 반복합니다.</li>
+        <li><b>a/b 접점</b>: T1 회로에는 T2의 <b>한시 b접점</b>, 램프에는 T1의 <b>한시 a접점</b>을 씁니다.</li>
+        <li><b>경보 출력</b>: X 릴레이가 경보를 자기유지하고, Y 릴레이가 부저만 끕니다.</li>
+      </ol>
+      <div class="formula" id="formula">점멸 주기 = T1 + T2 = 2.0 s</div>
+      <h3>부품 목록 <span class="tag">탭하면 3D에서 위치 표시</span></h3>
+      <div class="plist" id="plist"></div>
+      <h3>부품 설명</h3>
+      <div class="card" id="pinfo"><p class="note" style="margin:0">3D 화면이나 회로도에서 부품을 누르면 기능과 작동 원리가 여기에 표시됩니다.</p></div>
+    </section>
+  </aside>
+
+  <div id="center">
+    <div id="viewport">
+      <div class="ov" id="loading3d">3D 실습실 불러오는 중…</div>
+      <div class="ov vhint">드래그: 회전 · 휠/핀치: 확대 · 부품 클릭: 설명 · 버튼은 꾹 누르기</div>
+      <div class="ov vtools"><button id="btnView">시점 초기화</button><span id="vrSlot"></span></div>
+      <div class="ov" id="floatInfo" hidden>
+        <button class="x" id="fiClose" aria-label="닫기">×</button>
+        <h4 id="fiTitle"></h4>
+        <p id="fiText"></p>
+        <div class="fi-row"><button class="btn sm" id="fiMore">자세히</button></div>
+      </div>
+      <div class="ov quick">
+        <button class="qbtn pwr hold" id="qPwr">전원 ON</button>
+        <button class="qbtn y hold" data-hold="PB1">경보 발생</button>
+        <button class="qbtn b hold" data-hold="PB2">부저 정지</button>
+        <button class="qbtn r hold" data-hold="PB0">경보 해제</button>
+      </div>
+    </div>
+
+    <section class="pane" data-pane="diagram">
+      <div class="dhead">
+        <h3>전기 회로도 (래더) <span class="mode-badge" id="dmode">설계 회로도</span></h3>
+        <div class="legend">
+          <span><i style="background:#ef3b24"></i>전압 인가(통전)</span>
+          <span><i style="background:#16a34a"></i>닫힌 접점</span>
+          <span><i style="background:#a6afb8"></i>무전압</span>
+          <span><i style="background:#f59e0b;height:9px;width:9px;border-radius:50%"></i>회로도–실물 불일치</span>
+        </div>
+      </div>
+      <div class="dbody">
+      <div id="ladderWrap"><div id="ladder"></div></div>
+      <div id="chartWrap">
+        <h3>타임 차트 <span class="tag">최근 8초 · 실시간</span></h3>
+        <canvas id="chart"></canvas>
+        <p class="note" style="margin-top:8px">T1 접점이 닫히는 순간 T2가 계시를 시작하고, T2 접점이 닫히면 두 타이머가 함께 리셋됩니다. 램프 L은 T1 접점과 똑같이 움직입니다.</p>
+      </div>
+      </div>
+    </section>
+  </div>
+
+  <aside id="right">
+    <nav id="tabs">
+      <button data-tab="control" class="on">제어</button>
+      <button data-tab="diagram">회로도</button>
+      <button data-tab="fault">고장 진단</button>
+      <button data-tab="quiz">평가</button>
+      <button data-tab="parts">부품</button>
+    </nav>
+
+    <section class="pane" data-pane="control">
+      <h3>전원</h3>
+      <div class="pwrrow">
+        <button class="switch on hold" id="swPower"><span class="lever"></span><span id="swPowerTxt">ELB 투입 (ON)</span></button>
+        <span class="note" style="margin:0">단축키 <span class="kbd">P</span></span>
+      </div>
+
+      <h3>조작 스위치 <span class="tag">꾹 누르고 있는 동안 동작</span></h3>
+      <div class="pbs">
+        <div class="pb y hold" data-hold="PB1"><div class="cap"></div><div class="t">경보 발생</div><div class="s">PB1 · a접점 · <span class="kbd">A</span></div></div>
+        <div class="pb b hold" data-hold="PB2"><div class="cap"></div><div class="t">부저 정지</div><div class="s">PB2 · a접점 · <span class="kbd">S</span></div></div>
+        <div class="pb r hold" data-hold="PB0"><div class="cap"></div><div class="t">경보 해제</div><div class="s">PB0 · b접점 · <span class="kbd">R</span></div></div>
+      </div>
+
+      <h3>경보 모드 <span class="tag">선택 스위치 SS</span></h3>
+      <div class="seg" id="ssSeg">
+        <button data-ss="LB" class="on">C 램프+부저</button>
+        <button data-ss="L">A 램프만</button>
+        <button data-ss="B">B 부저만</button>
+      </div>
+      <p class="note" style="margin-top:6px">모드 D(경보 해제)는 <b>경보 해제</b> 버튼(PB0)으로 실행합니다.</p>
+
+      <h3>동작 순서 <span class="tag">실시간</span></h3>
+      <div id="seq"></div>
+
+      <h3>타이머 설정</h3>
+      <div class="sl"><label for="t1">T1 소등 시간</label><input type="range" id="t1" min="0.2" max="3" step="0.1" value="1"><output id="t1o">1.0 s</output></div>
+      <div class="sl"><label for="t2">T2 점등 시간</label><input type="range" id="t2" min="0.2" max="3" step="0.1" value="1"><output id="t2o">1.0 s</output></div>
+      <div class="row" style="margin-top:4px">
+        <button class="btn sm" data-preset="0.3,0.3">빠른 점멸</button>
+        <button class="btn sm" data-preset="1,1">표준 1:1</button>
+        <button class="btn sm" data-preset="0.5,1.5">길게 켜짐</button>
+        <button class="btn sm" data-preset="1.5,0.3">짧게 번쩍</button>
+      </div>
+      <div class="meas">
+        <div>측정 점등<b id="mOn">—</b></div>
+        <div>측정 소등<b id="mOff">—</b></div>
+        <div>분당 점멸<b id="mRate">—</b></div>
+      </div>
+
+      <h3>부저 소리 <span class="tag">Web Audio</span></h3>
+      <label class="tog"><input type="checkbox" id="snd" checked> 소리 켜기</label>
+      <div class="sl"><label for="vol">음량</label><input type="range" id="vol" min="0" max="1" step="0.05" value="0.5"><output id="volo">50%</output></div>
+      <div class="sl"><label for="frq">주파수</label><input type="range" id="frq" min="400" max="3200" step="50" value="1800"><output id="frqo">1800 Hz</output></div>
+      <div class="row">
+        <label class="note" style="margin:0">음색 <select id="wave"><option value="square">전자 부저</option><option value="sine">피에조</option><option value="triangle">소프트</option><option value="sawtooth">거친 경보</option></select></label>
+        <label class="note" style="margin:0">패턴 <select id="pat"><option value="cont">연속음</option><option value="pulse">단속음</option><option value="siren">사이렌</option></select></label>
+      </div>
+
+      <h3>표시</h3>
+      <label class="tog"><input type="checkbox" id="optWires" checked> 3D 배선 표시</label>
+      <label class="tog"><input type="checkbox" id="optFlow" checked> 전류 흐름 입자</label>
+      <p class="note">PC 단축키: <span class="kbd">A</span> 경보 발생 · <span class="kbd">S</span> 부저 정지 · <span class="kbd">R</span> 해제 · <span class="kbd">1</span><span class="kbd">2</span><span class="kbd">3</span> 모드</p>
+    </section>
+
+    <section class="pane" data-pane="fault">
+      <h3>고장 진단 미션</h3>
+      <p class="note">고장 하나가 숨겨집니다. 버튼을 조작하며 증상을 관찰하고 원인을 고르세요.</p>
+      <div class="row"><button class="btn primary" id="btnMission">무작위 고장 미션 시작</button><button class="btn" id="btnRestore">정상 복구</button></div>
+      <div id="missionBox" hidden style="margin-top:10px">
+        <div class="mstat" id="mStat"></div>
+        <ol class="steps">
+          <li>전원 표시등(PL)과 전압계(P–N)를 확인한다.</li>
+          <li>경보 발생 → 램프·부저·타이머 표시를 관찰한다.</li>
+          <li>부저 정지, 경보 해제를 차례로 시험한다.</li>
+          <li>회로도에서 <b style="color:#b45309">주황 ! 표시</b>(설계상 동작해야 할 상태와 실물이 다른 곳)를 찾는다.</li>
+        </ol>
+        <div class="row"><button class="btn sm" id="btnHint">힌트 보기</button><button class="btn sm" id="btnReveal">결선 공개(포기)</button></div>
+        <div id="hintBox"></div>
+        <div class="choices" id="choices"></div>
+        <button class="btn primary" id="btnJudge">판정</button>
+        <div id="verdict"></div>
+      </div>
+
+      <h3>오류 직접 체험 <span class="tag">★ = 이번 회로의 핵심 오류</span></h3>
+      <p class="note">오류를 고르면 실제 오결선이 회로도에 빨간 점선으로 표시됩니다. 조작해 보며 증상을 확인하세요.</p>
+      <div class="flist" id="flist"></div>
+      <div id="finfo" class="card finfo" style="margin-top:8px" hidden></div>
+      <label class="tog" style="margin-top:10px"><input type="checkbox" id="optMis" checked> 회로도–실물 불일치(!) 표시 — 끄면 난이도 상승</label>
+    </section>
+
+    <section class="pane" data-pane="quiz">
+      <h3>학습 평가 <span class="score" id="score">0 / 14</span></h3>
+      <p class="note">객관식 10문항 + 회로 조작형 4문항. 조작형은 실제로 회로를 조작한 상태에서 <b>확인</b>을 누르세요.</p>
+      <div id="quizMC"></div>
+      <h3>회로 조작형 문제</h3>
+      <div id="quizOp"></div>
+    </section>
+  </aside>
+
+  <footer id="status">
+    <span class="chip" id="c-pwr"><i></i>전원 <b id="c-pwr-v">0V</b></span>
+    <span class="chip amber" id="c-x"><i></i>X 경보</span>
+    <span class="chip amber" id="c-t1"><i></i>T1 <b id="c-t1-v">0.0</b></span>
+    <span class="chip amber" id="c-t2"><i></i>T2 <b id="c-t2-v">0.0</b></span>
+    <span class="chip red" id="c-l"><i></i>경고등</span>
+    <span class="chip violet" id="c-y"><i></i>Y 부저정지</span>
+    <span class="chip red" id="c-bz"><i></i>부저</span>
+    <span class="chip" id="c-ss"><i></i>모드 <b id="c-ss-v">C</b></span>
+    <span class="chip warn" id="c-fault" hidden>고장 미션 진행 중</span>
+  </footer>
+</main>
+
+<script type="module">
+/* =========================================================
+   1. 회로 모델 (래더 시퀀스 시뮬레이터)
+   ========================================================= */
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+
+const S = {
+  power: true,
+  pb: { PB0: false, PB1: false, PB2: false },
+  ss: 'LB',
+  relay: { X: false, Y: false },
+  tm: { T1: { set: 1.0, acc: 0, coil: false, out: false }, T2: { set: 1.0, acc: 0, coil: false, out: false } },
+  pow: { PL: false, L: false, BZ: false },
+  rp: {},              // 실제 회로 각 rung 통전 여부
+  t: 0,
+  lastXOn: -1e9,
+  fault: null,
+  mission: { active: false, revealed: false, solved: false, tries: 0, hint: 0 },
+  opt: { mis: true, wires: true, flow: true },
+};
+const WIRING = new Set(['t2ab', 't1ab', 'bzbypass', 'hold', 'ynohold']);
+const powerOK = () => S.power && S.fault !== 'fuse';
+const lampLit = () => S.pow.L && S.fault !== 'lampopen';
+const bzOn = () => S.pow.BZ && S.fault !== 'bzopen';
+
+const C = (dev, kind, o = {}) => ({ t: 'c', dev, kind, ...o });
+const J = (o = {}) => ({ t: 'w', ...o });           // 점퍼(직결선)
+const PAR = (...br) => ({ t: 'p', br });
+
+function schematic(f) {
+  return [
+    { id: 'r0', no: 0, title: '전원 표시등', coil: 'PL', segs: [] },
+    { id: 'r1', no: 1, title: '경보 입력 · 자기유지', coil: 'X', segs: f === 'hold'
+        ? [PAR([C('PB0', 'b', { role: '해제' }), C('PB1', 'a', { role: '경보발생' })], [C('X', 'a', { role: '자기유지 ✗', fault: true })])]
+        : [C('PB0', 'b', { role: '해제' }), PAR([C('PB1', 'a', { role: '경보발생' })], [C('X', 'a', { role: '자기유지' })])] },
+    { id: 'r2', no: 2, title: 'T1 · 소등 시간', coil: 'T1', segs: [
+        C('X', 'a', { role: '경보' }),
+        f === 't2ab' ? C('T2', 'a', { timed: true, role: '한시 a ✗', fault: true }) : C('T2', 'b', { timed: true, role: '한시 b' })] },
+    { id: 'r3', no: 3, title: 'T2 · 점등 시간', coil: 'T2', segs: [C('T1', 'a', { timed: true, role: '한시 a' })] },
+    { id: 'r4', no: 4, title: '경고등 출력', coil: 'L', segs: [
+        f === 't1ab' ? C('T1', 'b', { timed: true, role: '한시 b ✗', fault: true }) : C('T1', 'a', { timed: true, role: '한시 a' }),
+        C('SSL', 'a', { role: '모드(램프)' })] },
+    { id: 'r5', no: 5, title: '부저 정지 · 자기유지', coil: 'Y', segs: [
+        C('X', 'a', { role: '경보' }),
+        f === 'ynohold' ? C('PB2', 'a', { role: '자기유지 없음 ✗', fault: true }) : PAR([C('PB2', 'a', { role: '부저정지' })], [C('Y', 'a', { role: '자기유지' })])] },
+    { id: 'r6', no: 6, title: '부저 출력', coil: 'BZ', segs: f === 'bzbypass'
+        ? [J({ role: 'P 직결 ✗', fault: true }), C('Y', 'b', { role: '부저정지' }), C('SSB', 'a', { role: '모드(부저)' })]
+        : [C('X', 'a', { role: '경보' }), C('Y', 'b', { role: '부저정지' }), C('SSB', 'a', { role: '모드(부저)' })] },
+  ];
+}
+const schCache = {};
+const sch = f => schCache[f || '-'] || (schCache[f || '-'] = schematic(f));
+const actualRungs = () => sch(WIRING.has(S.fault) ? S.fault : null);
+const hiddenMission = () => S.mission.active && !S.mission.revealed;
+const drawnFault = () => (S.fault && WIRING.has(S.fault) && !hiddenMission()) ? S.fault : null;
+const hwShown = () => (S.fault && !WIRING.has(S.fault) && !hiddenMission()) ? S.fault : null;
+
+function act(dev) {
+  switch (dev) {
+    case 'PB0': case 'PB1': case 'PB2': return S.pb[dev];
+    case 'X': case 'Y': return S.relay[dev];
+    case 'T1': case 'T2': return S.tm[dev].out;
+    case 'SSL': return S.ss !== 'B';
+    case 'SSB': return S.ss !== 'L';
+  }
+  return false;
+}
+const conducts = e => e.t === 'w' ? true : (e.kind === 'a' ? act(e.dev) : !act(e.dev));
+function pathOK(segs) {
+  for (const s of segs) {
+    const ok = s.t === 'p' ? s.br.some(pathOK) : conducts(s);
+    if (!ok) return false;
+  }
+  return true;
+}
+function applyCoil(c, p) {
+  if (c === 'X' || c === 'Y') S.relay[c] = p;
+  else if (c === 'T1' || c === 'T2') {
+    const t = S.tm[c]; t.coil = p;
+    if (!p) t.acc = 0;
+    t.out = p && t.acc >= t.set - 1e-6;
+  } else S.pow[c] = p;
+}
+const snap = () => { const a = S.tm.T1, b = S.tm.T2; return '' + +S.relay.X + +S.relay.Y + +a.coil + +a.out + +b.coil + +b.out + +S.pow.L + +S.pow.BZ + +S.pow.PL; };
+function solve() {
+  const rungs = actualRungs(), ok = powerOK();
+  for (let i = 0; i < 30; i++) {
+    const before = snap();
+    for (const r of rungs) { const p = ok && pathOK(r.segs); S.rp[r.id] = p; applyCoil(r.coil, p); }
+    if (snap() === before) break;
+  }
+  if (S.relay.X) S.lastXOn = S.t;
+}
+
+/* 램프 점멸 측정 */
+const E = { last: false, since: 0, on: null, off: null, edges: [] };
+function trackEdges() {
+  const lit = lampLit();
+  if (lit !== E.last) {
+    const d = S.t - E.since;
+    if (E.last) E.on = d; else if (E.edges.length) E.off = d;
+    E.since = S.t; E.last = lit; E.edges.push(S.t);
+    if (E.edges.length > 24) E.edges.shift();
+  }
+}
+const recentToggles = w => E.edges.filter(t => S.t - t < w).length;
+
+/* 타임 차트 샘플 */
+const LANES = [
+  ['X 경보', () => S.relay.X, '#f59e0b'],
+  ['T1 코일', () => S.tm.T1.coil, '#94a3b8'],
+  ['T1 접점', () => S.tm.T1.out, '#38bdf8'],
+  ['T2 코일', () => S.tm.T2.coil, '#94a3b8'],
+  ['T2 접점', () => S.tm.T2.out, '#38bdf8'],
+  ['램프 L', lampLit, '#ef4444'],
+  ['Y 정지', () => S.relay.Y, '#818cf8'],
+  ['부저 BZ', bzOn, '#fb923c'],
+];
+const samples = []; let lastSample = -1;
+function sample() {
+  if (S.t - lastSample < 0.02) return;
+  lastSample = S.t;
+  samples.push({ t: S.t, v: LANES.map(l => l[1]()) });
+  while (samples.length && S.t - samples[0].t > 9) samples.shift();
+}
+
+let simAcc = 0;
+function simulate(dt) {
+  simAcc += dt; const h = 0.005; let n = 0;
+  while (simAcc >= h && n < 300) {
+    simAcc -= h; n++; S.t += h;
+    for (const k of ['T1', 'T2']) { const t = S.tm[k]; if (t.coil) t.acc = Math.min(t.acc + h, t.set + 120); }
+    solve(); trackEdges(); sample();
+  }
+}
+
+/* 입력 */
+function press(dev) { if (S.pb[dev]) return; S.pb[dev] = true; solve(); }
+function release(dev) { if (!S.pb[dev]) return; S.pb[dev] = false; solve(); }
+function setPower(on) { S.power = on; solve(); }
+function setSS(m) { S.ss = m; solve(); }
+function cycleSS() { setSS({ LB: 'L', L: 'B', B: 'LB' }[S.ss]); }
+function resetCircuit() {
+  S.pb.PB0 = S.pb.PB1 = S.pb.PB2 = false; S.relay.X = S.relay.Y = false;
+  for (const k of ['T1', 'T2']) Object.assign(S.tm[k], { acc: 0, coil: false, out: false });
+  S.power = true; S.ss = 'LB'; solve();
+}
+
+/* =========================================================
+   2. 부저 오디오 (Web Audio API)
+   ========================================================= */
+const Snd = {
+  ctx: null, osc: null, gain: null, enabled: true, vol: 0.5, freq: 1800, wave: 'square', pattern: 'cont', lg: -1, lf: -1,
+  ensure() {
+    try {
+      if (!this.ctx) {
+        const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+        this.ctx = new AC();
+        this.gain = this.ctx.createGain(); this.gain.gain.value = 0;
+        const lp = this.ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 6000;
+        this.osc = this.ctx.createOscillator(); this.osc.type = this.wave; this.osc.frequency.value = this.freq;
+        this.osc.connect(lp); lp.connect(this.gain); this.gain.connect(this.ctx.destination); this.osc.start();
+      }
+      if (this.ctx.state === 'suspended') this.ctx.resume();
+    } catch (e) { /* 오디오 미지원 */ }
+  },
+  update(on, t) {
+    if (!this.ctx) return;
+    let g = 0, f = this.freq;
+    if (on && this.enabled) {
+      if (this.pattern === 'cont') g = 1;
+      else if (this.pattern === 'pulse') g = (t % 0.4) < 0.2 ? 1 : 0;
+      else { g = 1; f = this.freq * (0.8 + 0.2 * Math.sin(t * Math.PI * 2 * 0.9)); }
+    }
+    const scale = { square: 0.14, sawtooth: 0.14, triangle: 0.35, sine: 0.4 }[this.wave];
+    const tg = g * this.vol * scale, now = this.ctx.currentTime;
+    if (Math.abs(tg - this.lg) > 1e-4) { this.gain.gain.setTargetAtTime(tg, now, 0.006); this.lg = tg; }
+    if (Math.abs(f - this.lf) > 0.5) { this.osc.frequency.setTargetAtTime(f, now, 0.01); this.lf = f; }
+    if (this.osc.type !== this.wave) this.osc.type = this.wave;
+  }
+};
+document.addEventListener('pointerdown', () => Snd.ensure(), { capture: true });
+document.addEventListener('keydown', () => Snd.ensure(), { capture: true });
+
+/* =========================================================
+   3. 부품 정보
+   ========================================================= */
+const f1 = n => n.toFixed(1);
+const accOf = t => Math.min(t.acc, t.set);
+const PARTS = {
+  elb: { name: '누전차단기 ELB', tag: 'AC 220V 입력 · 누전/과전류 보호 · 주 전원 스위치',
+    fn: '실습반의 주 전원 스위치입니다. 누설전류(지락)나 과전류가 생기면 자동으로 회로를 끊어 감전과 화재를 막습니다.',
+    how: '영상변류기(ZCT)가 왕복 전류의 차이를 감지하면 트립 장치가 접점을 엽니다. 과전류는 열동/전자식 트립이 감지합니다. 3D에서 레버를 누르면 ON/OFF 됩니다.',
+    where: 'AC 220V → ELB → SMPS 입력', state: () => S.power ? 'ON (투입)' : 'OFF (차단)', on: () => S.power },
+  smps: { name: 'SMPS (DC 24V 전원 공급 장치)', tag: 'AC 220V → DC 24V 변환',
+    fn: 'AC 220V를 제어용 안전 저전압 DC 24V로 바꿔 P(+)·N(−) 모선에 공급합니다.',
+    how: '정류 → 고주파 스위칭 → 변압 → 정류·평활 순서로 직류를 만듭니다. 전면 녹색 LED(DC OK)로 출력 상태를 확인합니다.',
+    where: 'ELB 2차측 → SMPS → 퓨즈 → P 모선', state: () => S.power ? '출력 24.0 V' : '출력 없음', on: () => S.power },
+  fuse: { name: '제어 퓨즈 F', tag: 'DC 24V 제어회로 단락 보호',
+    fn: '제어회로에 단락이나 과전류가 생기면 퓨즈 엘리먼트가 녹아 회로를 끊습니다.',
+    how: '한 번 끊어진 퓨즈는 교체해야 합니다. 퓨즈 홀더의 적색 단선 표시등이 켜지면 단선입니다. 교체 전 반드시 단락 원인을 제거합니다.',
+    where: 'SMPS(+) → F → P 모선', state: () => S.fault === 'fuse' && !hiddenMission() ? '단선' : (S.fault === 'fuse' && S.power ? '단선 표시등 점등' : '정상'), on: () => powerOK() },
+  meter: { name: 'DC 전압계 (P–N)', tag: '모선 전압 상시 측정',
+    fn: '제어 모선 P–N 사이 전압을 표시합니다. 고장 진단 때 가장 먼저 보는 측정점입니다.',
+    how: '퓨즈 뒤쪽 P 모선에 연결되어 있어 퓨즈가 끊어지면 SMPS가 정상이어도 0 V가 됩니다.',
+    where: 'P 모선 ↔ N 모선', state: () => (powerOK() ? '24.0' : '0.0') + ' V', on: () => powerOK() },
+  x: { name: '보조 릴레이 X (경보 유지)', tag: '자기유지 회로의 핵심',
+    fn: '경보 발생 신호(PB1)를 받아 동작하고, 자기 a접점으로 자기유지해 버튼을 떼도 경보 상태를 유지합니다.',
+    how: '코일 여자 → 가동 철편이 끌려가 a접점(NO) 닫힘, b접점(NC) 열림. X의 a접점은 ① 자기유지 ② T1 회로 ③ Y 회로 ④ 부저 회로에 쓰입니다.',
+    where: '① PB0(b) → [PB1(a) ∥ X(a)] → X', state: () => S.relay.X ? '여자 (동작)' : '무여자 (복귀)', on: () => S.relay.X },
+  y: { name: '보조 릴레이 Y (부저 정지)', tag: '부저만 끄는 경보 확인(Acknowledge)',
+    fn: '부저 정지(PB2)를 누르면 동작·자기유지하고, 부저 회로의 Y b접점을 열어 부저만 끕니다. 램프는 계속 점멸해 경보가 남아 있음을 알립니다.',
+    how: 'Y 코일 회로가 X(a)를 거치므로, 경보 해제로 X가 복귀하면 Y의 자기유지도 함께 풀려 다음 경보 때 부저가 다시 울립니다.',
+    where: '⑤ X(a) → [PB2(a) ∥ Y(a)] → Y, ⑥의 Y(b)', state: () => S.relay.Y ? '여자 (부저 정지 중)' : '무여자', on: () => S.relay.Y },
+  t1: { name: '타이머 T1 (소등 시간)', tag: '온딜레이 타이머 · 한시 접점',
+    fn: '코일이 여자되고 설정 시간이 지나면 한시 a접점이 닫힙니다. 이 시간 동안 램프는 꺼져 있습니다.',
+    how: 'T1 한시 a접점이 닫히면 ① 램프 점등 ② T2 코일 여자. T2 시간이 차면 T2 한시 b접점이 열려 T1이 리셋되고 사이클이 반복됩니다.',
+    where: '② X(a) → T2(한시 b) → T1', state: () => `${f1(accOf(S.tm.T1))} / ${f1(S.tm.T1.set)} s · 접점 ${S.tm.T1.out ? '닫힘' : '열림'}`, on: () => S.tm.T1.coil },
+  t2: { name: '타이머 T2 (점등 시간)', tag: '온딜레이 타이머 · 한시 접점',
+    fn: 'T1 접점이 닫힌 순간부터 계시합니다. 이 시간 동안 램프가 켜져 있고, 시간이 차면 T2 한시 b접점이 열려 T1을 리셋합니다.',
+    how: 'T1 리셋 → T1 접점 열림 → T2도 리셋 → T2 b접점 다시 닫힘 → T1 재계시. 두 타이머가 서로를 리셋하는 것이 플리커의 핵심입니다.',
+    where: '③ T1(한시 a) → T2', state: () => `${f1(accOf(S.tm.T2))} / ${f1(S.tm.T2.set)} s · 접점 ${S.tm.T2.out ? '닫힘' : '열림'}`, on: () => S.tm.T2.coil },
+  tb: { name: '단자대 TB', tag: '제어반 ↔ 현장 기기 중계',
+    fn: '제어반 내부 기기와 외부 기기(조작반 스위치, 경광등, 부저)를 연결하는 중계 단자입니다.',
+    how: '결선도의 단자 번호와 실제 배선을 대조하는 것이 오결선 진단의 기본입니다. 파란 단자는 N(0V) 공통입니다.',
+    where: '제어반 하단 레일', state: () => powerOK() ? 'P 단자 24 V' : 'P 단자 0 V', on: () => powerOK() },
+  pb1: { name: '경보 발생 버튼 PB1 (a접점)', tag: '순간 동작 · NO',
+    fn: '평상시 열린 a접점 푸시버튼입니다. 누르는 순간 X 코일에 전원을 줍니다. 실제 설비에서는 이 자리에 이상 감지 센서 접점이 들어갑니다.',
+    how: '손을 떼면 다시 열리는 순간 동작형이라서 X의 자기유지가 필요합니다. 단축키 A.',
+    where: '① PB1(a)', state: () => S.pb.PB1 ? '누름 (닫힘)' : '복귀 (열림)', on: () => S.pb.PB1 },
+  pb2: { name: '부저 정지 버튼 PB2 (a접점)', tag: '경보 확인(Acknowledge)',
+    fn: '경보 중에 부저 소리만 끄는 버튼입니다. Y 릴레이를 동작시킵니다.',
+    how: 'Y가 자기유지되므로 한 번만 눌러도 부저가 계속 꺼져 있습니다. 단축키 S.',
+    where: '⑤ PB2(a)', state: () => S.pb.PB2 ? '누름 (닫힘)' : '복귀 (열림)', on: () => S.pb.PB2 },
+  pb0: { name: '경보 해제 버튼 PB0 (b접점)', tag: '정지/리셋 · NC · 모드 D',
+    fn: '평상시 닫힌 b접점입니다. 누르면 열려 X의 자기유지를 끊고 경보 전체를 해제합니다.',
+    how: '정지·해제 버튼을 b접점으로 쓰면 배선이 끊어졌을 때 회로가 정지 쪽으로 동작하는 안전측(fail-safe) 설계가 됩니다. 단축키 R.',
+    where: '① PB0(b)', state: () => S.pb.PB0 ? '누름 (열림)' : '복귀 (닫힘)', on: () => S.pb.PB0 },
+  ss: { name: '선택 스위치 SS (경보 모드)', tag: '모드 C 램프+부저 / A 램프만 / B 부저만',
+    fn: '경보 출력 모드를 고릅니다. 3D에서 누를 때마다 C → A → B 순서로 바뀝니다.',
+    how: 'SS(램프) 접점은 램프 회로에, SS(부저) 접점은 부저 회로에 직렬로 들어가 각 출력을 허용하거나 차단합니다.',
+    where: '④ SS(램프), ⑥ SS(부저)', state: () => ({ LB: '모드 C · 램프+부저', L: '모드 A · 램프만', B: '모드 B · 부저만' })[S.ss], on: () => true },
+  pl: { name: '전원 표시등 PL (녹색)', tag: '제어 전원 확인',
+    fn: 'P–N 모선에 제어 전원이 있으면 켜집니다.',
+    how: '퓨즈 뒤에서 전원을 받으므로 PL이 꺼져 있으면 ELB 차단이나 퓨즈 단선을 의심합니다.',
+    where: '⓪ P → PL → N', state: () => S.pow.PL ? '점등' : '소등', on: () => S.pow.PL },
+  lamp: { name: '경고등 L (적색 경광등)', tag: 'DC 24V LED 경광등',
+    fn: 'T1 한시 a접점을 통해 주기적으로 24 V를 받아 점멸합니다.',
+    how: '점등 시간 = T2 설정, 소등 시간 = T1 설정, 주기 = T1 + T2.',
+    where: '④ T1(한시 a) → SS(램프) → L', state: () => lampLit() ? '점등' : '소등', on: lampLit },
+  bz: { name: '부저 BZ', tag: 'DC 24V 전자식 부저',
+    fn: '경보 중 경보음을 냅니다. X(a) → Y(b) → SS(부저) 경로로 전원을 받습니다.',
+    how: '전자식 부저는 내부 발진 회로가 압전 소자를 울립니다. 이 페이지는 Web Audio로 실제 소리를 냅니다(제어 탭에서 음량·음색 조절).',
+    where: '⑥ X(a) → Y(b) → SS(부저) → BZ', state: () => bzOn() ? '울림' : '정지', on: bzOn },
+  hmi: { name: '상태 표시 패널 (HMI)', tag: '회로 동작 상태 모니터',
+    fn: '전원, 릴레이, 타이머, 출력 상태를 실시간으로 표시합니다.',
+    how: '디지털 트윈의 시뮬레이션 상태와 동기화되어 있어 회로도·3D 장비와 항상 같은 상태를 보여줍니다.',
+    where: '실습실 벽면', state: () => '동기화 중', on: () => powerOK() },
+};
+const PART_ORDER = ['elb', 'smps', 'fuse', 'meter', 'pl', 'pb1', 'pb2', 'pb0', 'ss', 'x', 'y', 't1', 't2', 'lamp', 'bz', 'tb', 'hmi'];
+const DEVPART = { PB0: 'pb0', PB1: 'pb1', PB2: 'pb2', X: 'x', Y: 'y', T1: 't1', T2: 't2', SSL: 'ss', SSB: 'ss' };
+const COILPART = { X: 'x', Y: 'y', T1: 't1', T2: 't2', L: 'lamp', BZ: 'bz', PL: 'pl' };
+
+/* =========================================================
+   4. 고장 정의
+   ========================================================= */
+const FAULTS = [
+  { id: 't2ab', star: true, part: 't2', name: 'T2 접점 a/b 혼동 (T1 코일 회로)',
+    symptom: '경보 발생 시 X와 부저는 동작하지만 T1이 계시를 시작하지 않아 경고등이 한 번도 켜지지 않습니다.',
+    cause: 'T1 코일 회로에는 T2의 한시 b접점(평상시 닫힘)이 들어가야 하는데 a접점(평상시 열림)에 결선했습니다. T2는 T1이 먼저 동작해야 여자되므로, 열린 a접점 때문에 T1이 영원히 여자되지 못합니다(교착 상태).',
+    fix: 'T2 접점 배선을 COM–NC(b) 단자로 옮깁니다. 타이머 접점은 COM·NO·NC 세 단자이므로 단자 번호를 결선도와 대조합니다.',
+    hints: ['경보 발생 후 회로도에서 동작해야 하는데 동작하지 않는 코일을 찾으세요.', 'T1 코일 앞에 있는 접점 중 열려 있는 것은 무엇인가요?', '타이머가 아직 동작하지 않은 상태에서 닫혀 있는 접점은 a일까요, b일까요?'] },
+  { id: 't1ab', star: true, part: 't1', name: 'T1 접점 a/b 혼동 (램프 회로)',
+    symptom: '경보가 없는데도 전원만 넣으면 경고등이 켜져 있습니다. 경보 중에는 점등/소등 시간이 서로 바뀝니다.',
+    cause: '램프는 T1의 한시 a접점으로 켜져야 하는데 b접점(NC)에 결선했습니다. T1이 꺼져 있는 대기 상태에서 b접점이 닫혀 있어 램프가 켜지고, 경보 중에는 T1 계시 동안 켜지고 T2 계시 동안 꺼집니다.',
+    fix: '램프 배선을 T1의 COM–NO(a) 단자로 옮깁니다. 대기 상태에서 램프 단자 전압이 0 V인지 확인합니다.',
+    hints: ['경보 발생 전, 대기 상태의 램프를 보세요.', '램프 회로(④)의 T1 접점은 대기 상태에서 열려 있어야 합니다.', '타이머 출력 접점이 NO가 아닌 NC에 연결되면 어떻게 될까요?'] },
+  { id: 'bzbypass', star: true, part: 'bz', name: '부저가 X 접점을 거치지 않고 P에 직결',
+    symptom: '경보가 없는데도 전원을 넣자마자 부저가 울리고, 부저 정지를 눌러도 멈추지 않습니다. 경보 중에는 부저 정지가 듣지만 경보를 해제하면 다시 울립니다. 램프 회로는 정상입니다.',
+    cause: '부저 공급선이 경보 릴레이 X의 a접점을 거치지 않고 P(+24V) 모선에 직접 연결되었습니다. 부저 정지 릴레이 Y는 X(a)를 통해서만 여자되므로 경보가 없는 대기 상태에서는 Y가 동작할 수 없고, Y b접점이 닫힌 채로 부저가 계속 울립니다. 경보 해제로 X가 복귀하면 Y의 자기유지도 풀려 부저가 다시 울립니다.',
+    fix: '부저 공급선을 X a접점 뒤(경보 출력 측)로 옮깁니다. 결선 후 경보가 없을 때 부저 단자 전압이 0 V인지 측정합니다.',
+    hints: ['경보 해제 버튼을 누르면 램프는 멈추나요? 부저는요?', '부저 회로(⑥)는 경보가 없을 때 어떤 접점이 끊어 줘야 하나요?', '부저 정지(PB2)를 눌러도 Y가 동작하지 않는 이유를 Y 코일 회로(⑤)에서 찾아보세요.'] },
+  { id: 'hold', star: true, part: 'x', name: '자기유지 접점이 해제 버튼까지 병렬',
+    symptom: '경보 해제 버튼을 눌러도 램프 점멸과 부저가 멈추지 않습니다. 전원(ELB)을 내려야만 정지합니다.',
+    cause: 'X의 자기유지 a접점은 경보 발생 버튼(PB1)에만 병렬이어야 하는데, 해제 버튼(PB0)까지 포함해 병렬로 연결했습니다. PB0가 열려도 X(a)로 전류가 우회해 X가 계속 여자됩니다.',
+    fix: '자기유지 접점의 시작점을 PB0 뒤(PB0과 PB1 사이)로 옮깁니다. 올바른 직렬 순서: PB0(b) → [PB1(a) ∥ X(a)] → X.',
+    hints: ['경보 해제를 누르고 있는 동안 X 릴레이 LED는 어떤가요?', '해제 버튼이 열려도 X 코일로 가는 다른 길이 있나요?', '①번 줄에서 자기유지 접점이 어디서 갈라져 나오는지 보세요.'] },
+  { id: 'ynohold', star: true, part: 'y', name: '부저 정지 릴레이 Y 자기유지 누락',
+    symptom: '부저 정지 버튼을 누르고 있는 동안만 부저가 멈추고, 손을 떼면 다시 울립니다.',
+    cause: 'Y 코일 회로에 Y의 a접점(자기유지)을 PB2와 병렬로 연결하지 않았습니다. 순간 접점인 PB2를 떼면 Y가 복귀해 Y b접점이 다시 닫히고 부저가 울립니다.',
+    fix: 'Y의 a접점을 PB2와 병렬로 추가합니다. 경보 해제(X 복귀) 때 X(a)가 열리면서 Y 자기유지도 함께 풀리는지 확인합니다.',
+    hints: ['부저 정지 버튼을 눌렀다가 떼 보세요.', '버튼을 떼도 Y가 동작을 유지하려면 무엇이 필요할까요?', '⑤번 줄에 Y 자신의 a접점이 있나요?'] },
+  { id: 'fuse', part: 'fuse', name: '제어 퓨즈 단선 (전원 공급 불량)',
+    symptom: '전원 표시등(PL)이 꺼져 있고 어떤 버튼을 눌러도 동작하지 않습니다. SMPS의 DC OK 표시는 켜져 있습니다.',
+    cause: 'SMPS는 24 V를 출력하지만 퓨즈가 끊어져 P 모선에 전압이 없습니다.',
+    fix: 'ELB 차단 → 퓨즈 양단 도통 확인 → 단락 원인 제거 → 같은 정격 퓨즈로 교체 → 전압계 24 V 확인.',
+    hints: ['전압계(P–N)는 몇 V를 가리키나요?', 'SMPS LED는 켜져 있는데 모선 전압이 없다면 그 사이에 무엇이 있나요?'] },
+  { id: 'lampopen', part: 'lamp', name: '경고등 단선 (램프 불량)',
+    symptom: '타이머 T1·T2는 정상적으로 번갈아 계시하고 부저도 울리지만 경고등만 켜지지 않습니다.',
+    cause: '램프 회로에는 주기적으로 24 V가 들어가지만 램프(LED 모듈) 자체가 단선되어 빛을 내지 못합니다.',
+    fix: '램프 단자 전압이 주기적으로 24 V가 되는지 측정합니다. 전압이 정상이면 램프를 교체합니다.',
+    hints: ['타이머 T1·T2 표시(LED)는 번갈아 바뀌나요?', '회로도에서 ④번 줄에 전압이 들어오는 순간에 램프가 켜지나요?'] },
+  { id: 'bzopen', part: 'bz', name: '부저 단선',
+    symptom: '경고등은 정상적으로 점멸하지만 부저 정지를 누르지 않았는데도 부저가 울리지 않습니다.',
+    cause: '부저 단자에 24 V가 들어가지만 부저 소자가 단선되었습니다.',
+    fix: '부저 단자 전압을 측정(24 V 확인)하고 부저를 교체합니다. 전압이 없다면 Y(b), SS 접점을 차례로 점검합니다.',
+    hints: ['선택 스위치가 램프+부저(C) 모드인지 먼저 확인하세요.', '회로도 ⑥번 줄의 부저 앞까지 전압이 와 있나요?'] },
+];
+const FBY = Object.fromEntries(FAULTS.map(f => [f.id, f]));
+
+/* =========================================================
+   5. 래더 회로도 (SVG) — 실시간 연동
+   ========================================================= */
+const SW = 80, RP = 40, COILX = 400, RN = 452, ROWH = 84, BRH = 72, VBW = 470;
+const LAD = { key: null, nodes: [], tm: {} };
+const slots = segs => segs.reduce((a, s) => a + (s.t === 'p' ? Math.max(...s.br.map(slots)) : 1), 0);
+function rowsOf(segs) { let m = 1; for (const s of segs) if (s.t === 'p') m = Math.max(m, s.br.reduce((a, b) => a + rowsOf(b), 0)); return m; }
+
+function buildLadder(rungs, df, hw) {
+  const out = [], nodes = []; let nid = 0;
+  const node = (key, cls) => { const id = 'ld' + (nid++); nodes.push({ id, key, cls }); return id; };
+  const wire = (x1, y1, x2, y2, key, extra = '') => out.push(`<line id="${node(key, 'live')}" class="w ${extra}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`);
+  const text = (x, y, s, cls) => out.push(`<text class="${cls}" x="${x}" y="${y}">${s}</text>`);
+  const showFault = !!df;
+
+  function contact(x, y, s, k) {
+    const cx = x + 43;
+    wire(x, y, x + 33, y, k + ':in'); wire(x + 53, y, x + SW, y, k + ':out');
+    const bad = s.fault && showFault;
+    if (bad) out.push(`<rect class="faultbox" x="${x + 19}" y="${y - 38}" width="48" height="78" rx="6"/>`);
+    if (s.t === 'w') {
+      wire(x + 33, y, x + 53, y, k + ':in', bad ? 'jfault' : '');
+      text(cx, y - 12, '직결', 'lbl' + (bad ? ' bad' : ''));
+      if (s.role) text(cx, y + 27, s.role, 'role' + (bad ? ' bad' : ''));
+      return;
+    }
+    const id = node(k + ':c', 'closed');
+    let g = `<g id="${id}" class="ct" data-part="${DEVPART[s.dev]}"><rect class="hit" x="${x + 25}" y="${y - 34}" width="36" height="70"/>`;
+    g += `<line class="sym" x1="${x + 33}" y1="${y - 11}" x2="${x + 33}" y2="${y + 11}"/><line class="sym" x1="${x + 53}" y1="${y - 11}" x2="${x + 53}" y2="${y + 11}"/>`;
+    g += `<line class="bridge" x1="${x + 33}" y1="${y}" x2="${x + 53}" y2="${y}"/>`;
+    if (s.kind === 'b') g += `<line class="sym" x1="${x + 29}" y1="${y + 12}" x2="${x + 57}" y2="${y - 12}"/>`;
+    if (s.timed) g += `<path class="sym" d="M${x + 36} ${y - 14} Q${cx} ${y - 23} ${x + 50} ${y - 14}"/>`;
+    if (/^PB/.test(s.dev)) g += `<line class="sym" x1="${cx}" y1="${y - 12}" x2="${cx}" y2="${y - 19}"/><line class="sym" x1="${cx - 7}" y1="${y - 19}" x2="${cx + 7}" y2="${y - 19}"/>`;
+    if (/^SS/.test(s.dev)) g += `<line class="sym" x1="${cx}" y1="${y - 12}" x2="${cx}" y2="${y - 18}"/><line class="sym" x1="${cx - 6}" y1="${y - 22}" x2="${cx + 6}" y2="${y - 16}"/>`;
+    g += '</g>';
+    out.push(g);
+    const lbl = { SSL: 'SS', SSB: 'SS' }[s.dev] || s.dev;
+    text(cx, y - 25, lbl + (s.kind === 'b' ? '-b' : '-a'), 'lbl' + (bad ? ' bad' : ''));
+    if (s.role) text(cx, y + 27, s.role, 'role' + (bad ? ' bad' : ''));
+  }
+
+  function series(segs, x, y, pre) {
+    segs.forEach((s, i) => {
+      const k = pre + i;
+      if (s.t === 'p') {
+        const w = Math.max(...s.br.map(slots)) * SW; let by = y; const ys = [];
+        s.br.forEach((b, j) => {
+          ys.push(by);
+          const ex = series(b, x, by, k + '.' + j + '/');
+          if (ex < x + w) wire(ex, by, x + w, by, k + '.' + j + ':bout');
+          by += rowsOf(b) * BRH;
+        });
+        const yl = ys[ys.length - 1];
+        wire(x, y, x, yl, k + ':in'); wire(x + w, y, x + w, yl, k + ':out');
+        x += w;
+      } else { contact(x, y, s, k); x += SW; }
+    });
+    return x;
+  }
+
+  function coil(r, y) {
+    const cx = COILX, ty = r.coil;
+    const broken = (hw === 'lampopen' && ty === 'L') || (hw === 'bzopen' && ty === 'BZ');
+    let inner = '';
+    if (ty === 'L' || ty === 'PL') inner = `<circle class="cb" cx="${cx}" cy="${y}" r="15"/><line class="cx" x1="${cx - 10.6}" y1="${y - 10.6}" x2="${cx + 10.6}" y2="${y + 10.6}"/><line class="cx" x1="${cx - 10.6}" y1="${y + 10.6}" x2="${cx + 10.6}" y2="${y - 10.6}"/>`;
+    else if (ty === 'BZ') inner = `<path class="cb" d="M${cx - 14} ${y + 11} V${y - 1} A14 14 0 0 1 ${cx + 14} ${y - 1} V${y + 11} Z"/>`;
+    else inner = `<circle class="cb" cx="${cx}" cy="${y}" r="15"/><text class="ctxt" x="${cx}" y="${y + 4}">${ty}</text>`;
+    out.push(`<g id="${node(r.id + ':obs', 'on')}" class="coil k-${ty}${broken ? ' broken' : ''}" data-part="${COILPART[ty]}"><rect class="hit" x="${cx - 20}" y="${y - 22}" width="40" height="44"/>${inner}</g>`);
+    if (ty === 'L' || ty === 'PL' || ty === 'BZ') text(cx, y + 31, { L: 'L 경고등', PL: 'PL 전원', BZ: 'BZ 부저' }[ty] + (broken ? ' (단선)' : ''), 'role' + (broken ? ' bad' : ''));
+    if (ty === 'T1' || ty === 'T2') out.push(`<text class="tmtxt" id="ldtm-${ty}" x="${cx}" y="${y + 31}"></text>`);
+    out.push(`<g id="${node(r.id + ':mis', 'show')}" class="mis"><circle cx="${cx - 30}" cy="${y + 17}" r="9"/><text x="${cx - 30}" y="${y + 21.5}">!</text></g>`);
+  }
+
+  // 전원부: AC → ELB → SMPS → F → P
+  text(302, 24, 'AC 220V', 'railtxt');
+  wire(280, 20, 262, 20, 'ac');
+  out.push(`<g id="${node('elbc', 'closed')}" class="ct" data-part="elb"><rect class="hit" x="236" y="2" width="34" height="34"/><line class="sym" x1="244" y1="12" x2="244" y2="28"/><line class="sym" x1="262" y1="12" x2="262" y2="28"/><line class="bridge" x1="244" y1="20" x2="262" y2="20"/><line class="sym" x1="249" y1="4" x2="257" y2="10"/><line class="sym" x1="257" y1="4" x2="249" y2="10"/></g>`);
+  wire(244, 20, 220, 20, 'pin');
+  text(253, 44, 'ELB', 'lbl');
+  out.push(`<g data-part="smps" style="cursor:pointer"><rect class="box" x="130" y="6" width="90" height="38" rx="5"/><text class="lbl" x="175" y="22">SMPS</text><text class="role" x="175" y="37">AC→DC 24V</text></g>`);
+  wire(130, 20, 98, 20, 'pin');
+  out.push(`<g id="${node('fusec', 'closed')}" class="fuse${hw === 'fuse' ? ' blown' : ''}" data-part="fuse" style="cursor:pointer"><rect x="72" y="14" width="26" height="12" rx="2"/><line class="blownx" x1="76" y1="8" x2="94" y2="32"/><line class="blownx" x1="94" y1="8" x2="76" y2="32"/></g>`);
+  text(85, 44, hw === 'fuse' ? 'F 단선' : 'F 퓨즈', hw === 'fuse' ? 'lbl bad' : 'lbl');
+  wire(72, 20, RP, 20, 'p');
+  wire(220, 36, RN, 36, 'n', 'nl');
+
+  let y = 100; const yStart = 20;
+  for (const r of rungs) {
+    out.push(`<g class="rno"><circle cx="18" cy="${y}" r="10"/><text x="18" y="${y + 4}">${r.no}</text></g>`);
+    const ex = series(r.segs, RP, y, r.id + '/');
+    wire(ex, y, COILX - 15, y, r.id + ':coil');
+    coil(r, y);
+    wire(COILX + 15, y, RN, y, r.id + ':coil', 'nl');
+    text(RN - 8, y - 32, r.title, 'rtitle');
+    y += ROWH + (rowsOf(r.segs) - 1) * BRH;
+  }
+  const yEnd = y - ROWH + 12;
+  out.unshift(`<line id="${node('p', 'live')}" class="w" x1="${RP}" y1="${yStart}" x2="${RP}" y2="${yEnd}"/>`, `<line id="${node('n', 'live')}" class="w nl" x1="${RN}" y1="36" x2="${RN}" y2="${yEnd}"/>`);
+  out.push(`<text class="railtxt" x="${RP}" y="${yEnd + 16}">P (+24V)</text><text class="railtxt" x="${RN}" y="${yEnd + 16}">N (0V)</text>`);
+
+  const H = yEnd + 26;
+  $('#ladder').innerHTML = `<svg viewBox="0 0 ${VBW} ${H}" xmlns="http://www.w3.org/2000/svg" class="${S.opt.mis ? '' : 'nomis'}">${out.join('')}</svg>`;
+  LAD.nodes = nodes.map(n => ({ ...n, el: document.getElementById(n.id), val: undefined }));
+  LAD.tm = { T1: document.getElementById('ldtm-T1'), T2: document.getElementById('ldtm-T2') };
+}
+
+function evalDraw(rungs) {
+  const v = {}, ok = powerOK();
+  v.ac = true; v.elbc = S.power; v.pin = S.power;
+  v.fusec = hiddenMission() ? true : S.fault !== 'fuse';
+  v.p = ok; v.n = ok;
+  const ser = (segs, pw, pre) => {
+    segs.forEach((s, i) => {
+      const k = pre + i;
+      if (s.t === 'p') {
+        v[k + ':in'] = pw; let any = false;
+        s.br.forEach((b, j) => { const o = ser(b, pw, k + '.' + j + '/'); v[k + '.' + j + ':bout'] = o; any = any || o; });
+        v[k + ':out'] = any; pw = any;
+      } else {
+        v[k + ':in'] = pw; const c = conducts(s); v[k + ':c'] = c; pw = pw && c; v[k + ':out'] = pw;
+      }
+    });
+    return pw;
+  };
+  const obs = c => ({ X: S.relay.X, Y: S.relay.Y, T1: S.tm.T1.coil, T2: S.tm.T2.coil, L: lampLit(), BZ: bzOn(), PL: S.pow.PL })[c];
+  for (const r of rungs) {
+    const o = ser(r.segs, ok, r.id + '/');
+    v[r.id + ':coil'] = o; const b = obs(r.coil); v[r.id + ':obs'] = b; v[r.id + ':mis'] = o !== b;
+  }
+  return v;
+}
+
+function updateLadder() {
+  const df = drawnFault(), hw = hwShown();
+  const key = (df || '-') + '|' + (hw || '-');
+  if (key !== LAD.key) { LAD.key = key; buildLadder(sch(df), df, hw); }
+  const bk = (S.fault || '-') + hiddenMission(); if (bk !== LAD.bk) { LAD.bk = bk; updateDiagramBadge(); }
+  const v = evalDraw(sch(df));
+  for (const n of LAD.nodes) { const b = !!v[n.key]; if (b !== n.val) { n.val = b; n.el && n.el.classList.toggle(n.cls, b); } }
+  for (const k of ['T1', 'T2']) { const el = LAD.tm[k], t = S.tm[k]; if (el) { const s = `${f1(accOf(t))}/${f1(t.set)}s`; if (el.textContent !== s) el.textContent = s; } }
+}
+function updateDiagramBadge() {
+  const b = $('#dmode');
+  if (hiddenMission()) { b.textContent = '설계 회로도 · 고장 미션 중'; b.className = 'mode-badge bad'; }
+  else if (S.fault) { b.textContent = '실제 결선 · 오류: ' + FBY[S.fault].name; b.className = 'mode-badge bad'; }
+  else { b.textContent = '설계 회로도 = 실제 결선 (정상)'; b.className = 'mode-badge'; }
+}
+$('#ladder').addEventListener('click', e => { const g = e.target.closest('[data-part]'); if (g) selectPart(g.dataset.part, { focus: true }); });
+
+/* 타임 차트 */
+const chart = $('#chart'), cg = chart.getContext('2d');
+function drawChart() {
+  if (!chart.offsetParent) return;
+  const dpr = Math.min(devicePixelRatio || 1, 2), W = chart.clientWidth, H = chart.clientHeight;
+  if (chart.width !== Math.round(W * dpr) || chart.height !== Math.round(H * dpr)) { chart.width = Math.round(W * dpr); chart.height = Math.round(H * dpr); }
+  cg.setTransform(dpr, 0, 0, dpr, 0, 0);
+  cg.clearRect(0, 0, W, H);
+  const LW = 70, top = 8, lh = (H - top - 18) / LANES.length, win = 8, t1 = S.t, t0 = t1 - win;
+  const X = t => LW + (t - t0) / win * (W - LW - 8);
+  cg.font = '600 11px "IBM Plex Sans KR", sans-serif'; cg.textBaseline = 'middle';
+  cg.strokeStyle = 'rgba(255,255,255,.07)'; cg.lineWidth = 1;
+  for (let s = Math.ceil(t0); s <= t1; s++) { const x = X(s); cg.beginPath(); cg.moveTo(x, top); cg.lineTo(x, H - 16); cg.stroke(); }
+  cg.fillStyle = '#6b7684'; cg.textAlign = 'center';
+  cg.fillText('← 8 s', LW + 18, H - 7); cg.fillText('지금', W - 22, H - 7);
+  LANES.forEach((L, i) => {
+    const yb = top + (i + 1) * lh - 4, yh = top + i * lh + 5;
+    cg.textAlign = 'left'; cg.fillStyle = '#c3ccd5'; cg.fillText(L[0], 8, (yb + yh) / 2);
+    cg.strokeStyle = L[2]; cg.lineWidth = 2; cg.beginPath();
+    let prev = null;
+    for (const s of samples) {
+      if (s.t < t0) { prev = s.v[i]; continue; }
+      const x = X(s.t), y = s.v[i] ? yh : yb;
+      if (prev === null) cg.moveTo(x, y); else { cg.lineTo(x, prev ? yh : yb); cg.lineTo(x, y); }
+      prev = s.v[i];
+    }
+    if (prev !== null) cg.lineTo(X(t1), prev ? yh : yb);
+    cg.stroke();
+    cg.fillStyle = L[2] + '22';
+    let st = null;
+    for (const s of samples) { if (s.t < t0) continue; if (s.v[i] && st === null) st = s.t; if (!s.v[i] && st !== null) { cg.fillRect(X(st), yh, X(s.t) - X(st), yb - yh); st = null; } }
+    if (st !== null) cg.fillRect(X(st), yh, X(t1) - X(st), yb - yh);
+  });
+}
+
+/* =========================================================
+   6. UI 연결
+   ========================================================= */
+const isDesktop = () => matchMedia('(min-width: 1001px)').matches;
+function setTab(t) {
+  if (isDesktop() && (t === 'diagram' || t === 'parts')) t = 'control';
+  document.body.dataset.tab = t;
+  $$('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+}
+$$('#tabs button').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
+addEventListener('resize', () => setTab(document.body.dataset.tab));
+
+// 누르고 있는 동안 동작하는 버튼
+function bindHold(el, dev) {
+  el.addEventListener('pointerdown', e => { e.preventDefault(); try { el.setPointerCapture(e.pointerId); } catch (_) {} press(dev); });
+  const up = () => release(dev);
+  el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); el.addEventListener('lostpointercapture', up);
+  el.addEventListener('contextmenu', e => e.preventDefault());
+}
+$$('[data-hold]').forEach(el => bindHold(el, el.dataset.hold));
+const togglePower = () => setPower(!S.power);
+$('#swPower').addEventListener('click', togglePower);
+$('#qPwr').addEventListener('click', togglePower);
+$$('#ssSeg button').forEach(b => b.addEventListener('click', () => setSS(b.dataset.ss)));
+
+const t1In = $('#t1'), t2In = $('#t2');
+function setTimer(k, v) { S.tm[k].set = Math.round(v * 10) / 10; solve(); }
+t1In.addEventListener('input', () => setTimer('T1', +t1In.value));
+t2In.addEventListener('input', () => setTimer('T2', +t2In.value));
+$$('[data-preset]').forEach(b => b.addEventListener('click', () => { const [a, c] = b.dataset.preset.split(',').map(Number); setTimer('T1', a); setTimer('T2', c); t1In.value = a; t2In.value = c; }));
+
+$('#snd').addEventListener('change', e => { Snd.enabled = e.target.checked; Snd.ensure(); });
+$('#vol').addEventListener('input', e => { Snd.vol = +e.target.value; $('#volo').textContent = Math.round(Snd.vol * 100) + '%'; });
+$('#frq').addEventListener('input', e => { Snd.freq = +e.target.value; $('#frqo').textContent = Snd.freq + ' Hz'; });
+$('#wave').addEventListener('change', e => { Snd.wave = e.target.value; });
+$('#pat').addEventListener('change', e => { Snd.pattern = e.target.value; });
+$('#optWires').addEventListener('change', e => { S.opt.wires = e.target.checked; });
+$('#optFlow').addEventListener('change', e => { S.opt.flow = e.target.checked; });
+$('#optMis').addEventListener('change', e => { S.opt.mis = e.target.checked; const sv = $('#ladder svg'); sv && sv.classList.toggle('nomis', !S.opt.mis); });
+
+// 키보드
+const KEYS = { a: 'PB1', s: 'PB2', r: 'PB0' };
+addEventListener('keydown', e => {
+  if (e.target.closest('input,select,textarea') || e.repeat || e.metaKey || e.ctrlKey) return;
+  const k = e.key.toLowerCase();
+  if (KEYS[k]) press(KEYS[k]);
+  else if (k === 'p') togglePower();
+  else if (k === '1') setSS('LB'); else if (k === '2') setSS('L'); else if (k === '3') setSS('B');
+});
+addEventListener('keyup', e => { const k = e.key.toLowerCase(); if (KEYS[k]) release(KEYS[k]); });
+addEventListener('blur', () => { release('PB0'); release('PB1'); release('PB2'); });
+
+// 부품 목록 · 정보
+let selected = null;
+const plist = $('#plist');
+plist.innerHTML = PART_ORDER.map(k => `<button class="pitem" data-p="${k}"><span class="dot"></span><span class="nm">${PARTS[k].name}<small>${PARTS[k].tag}</small></span></button>`).join('');
+$$('.pitem').forEach(b => b.addEventListener('click', () => selectPart(b.dataset.p, { focus: true, float: false })));
+const pdots = Object.fromEntries($$('.pitem').map(b => [b.dataset.p, b.querySelector('.dot')]));
+function selectPart(k, o = {}) {
+  const p = PARTS[k]; if (!p) return;
+  selected = k;
+  $$('.pitem').forEach(b => b.classList.toggle('on', b.dataset.p === k));
+  $('#pinfo').innerHTML = `<h4>${p.name}</h4><div class="tg">${p.tag}</div><p><b>기능</b> ${p.fn}</p><p><b>작동 원리</b> ${p.how}</p><p><b>회로 위치</b> ${p.where}</p><div class="st" id="pstate"></div><div class="row" style="margin-top:8px"><button class="btn sm" id="pFocus">3D에서 보기</button></div>`;
+  $('#pFocus').onclick = () => { three && three.focus(k); if (!isDesktop()) { setTab('control'); $('#viewport').scrollIntoView({ behavior: 'smooth' }); } };
+  if (o.float !== false) { $('#fiTitle').textContent = p.name; $('#fiText').textContent = p.fn; $('#floatInfo').hidden = false; }
+  if (three) { three.select(k); if (o.focus) three.focus(k); }
+}
+$('#fiClose').onclick = () => { $('#floatInfo').hidden = true; three && three.select(null); };
+$('#fiMore').onclick = () => { if (isDesktop()) $('#pinfo').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); else { setTab('parts'); setTimeout(() => $('#pinfo').scrollIntoView({ behavior: 'smooth' }), 50); } };
+$('#btnView').onclick = () => three && three.home();
+
+/* 고장 진단 UI */
+const flist = $('#flist');
+flist.innerHTML = FAULTS.map(f => `<button class="fbtn" data-f="${f.id}"><span class="star">${f.star ? '★' : '·'}</span><span>${f.name}<small>${f.symptom}</small></span></button>`).join('');
+$$('.fbtn').forEach(b => b.addEventListener('click', () => practiceFault(b.dataset.f)));
+function finfoHTML(f) { return `<p><b>증상</b> ${f.symptom}</p><p><b>원인</b> ${f.cause}</p><p><b>조치</b> ${f.fix}</p>`; }
+function practiceFault(id) {
+  endMission(false);
+  S.fault = id; resetCircuit();
+  $$('.fbtn').forEach(b => b.classList.toggle('on', b.dataset.f === id));
+  const f = FBY[id];
+  $('#finfo').hidden = false;
+  $('#finfo').innerHTML = `<b style="color:#b91c1c">체험 중: ${f.name}</b>${finfoHTML(f)}<div class="row"><button class="btn sm" id="fFocus">3D에서 위치 보기</button><button class="btn sm" id="fOff">정상으로 복구</button></div>`;
+  $('#fFocus').onclick = () => { three && three.focus(f.part); };
+  $('#fOff').onclick = restoreNormal;
+}
+function restoreNormal() {
+  endMission(false); S.fault = null; resetCircuit();
+  $$('.fbtn').forEach(b => b.classList.remove('on'));
+  $('#finfo').hidden = true;
+}
+$('#btnRestore').onclick = restoreNormal;
+
+let lastMissionFault = null;
+$('#btnMission').onclick = () => {
+  const pool = FAULTS.filter(f => f.id !== lastMissionFault);
+  const f = pool[Math.floor(Math.random() * pool.length)];
+  lastMissionFault = f.id;
+  $$('.fbtn').forEach(b => b.classList.remove('on')); $('#finfo').hidden = true;
+  S.fault = f.id; Object.assign(S.mission, { active: true, revealed: false, solved: false, tries: 0, hint: 0 });
+  resetCircuit();
+  $('#missionBox').hidden = false; $('#hintBox').innerHTML = ''; $('#verdict').innerHTML = '';
+  $('#choices').innerHTML = FAULTS.map(x => `<label><input type="radio" name="fc" value="${x.id}"><span>${x.name}</span></label>`).join('');
+  $('#btnJudge').disabled = false;
+  updateMissionStat();
+};
+function updateMissionStat() {
+  const m = S.mission;
+  $('#mStat').textContent = m.solved ? `해결 완료 · 시도 ${m.tries}회 · 힌트 ${m.hint}개` : m.revealed ? '정답 공개됨' : `진단 중 · 시도 ${m.tries}회 · 힌트 ${m.hint}개`;
+  $('#c-fault').hidden = !(m.active && !m.revealed);
+}
+function endMission(hideBox = true) {
+  Object.assign(S.mission, { active: false, revealed: false, solved: false });
+  if (hideBox) $('#missionBox').hidden = true;
+  $('#missionBox').hidden = true;
+  $('#c-fault').hidden = true;
+}
+$('#btnHint').onclick = () => {
+  if (!S.mission.active) return;
+  const f = FBY[S.fault]; const i = Math.min(S.mission.hint, f.hints.length - 1);
+  if (S.mission.hint < f.hints.length) S.mission.hint++;
+  $('#hintBox').innerHTML = f.hints.slice(0, S.mission.hint).map((h, j) => `<div class="hint">힌트 ${j + 1}. ${h}</div>`).join('');
+  updateMissionStat();
+};
+function revealMission(solved) {
+  const f = FBY[S.fault];
+  S.mission.revealed = true; S.mission.solved = solved;
+  $('#btnJudge').disabled = true;
+  $('#verdict').innerHTML = `<div class="verdict ${solved ? 'ok' : 'no'}"><h4>${solved ? '정답입니다!' : '정답 공개'} — ${f.name}</h4>${finfoHTML(f)}<p>회로도가 <b>실제 결선</b>으로 바뀌었고, 오결선 위치가 빨간 점선으로 표시됩니다.</p><div class="row"><button class="btn sm" id="vFocus">3D에서 위치 보기</button><button class="btn sm primary" id="vFix">고장 수리(정상 복구)</button></div></div>`;
+  $('#vFocus').onclick = () => three && three.focus(f.part);
+  $('#vFix').onclick = () => { restoreNormal(); $('#missionBox').hidden = false; $('#verdict').innerHTML = '<div class="verdict ok"><h4>수리 완료</h4><p>정상 회로로 복구되었습니다. 경보 발생으로 정상 동작을 확인해 보세요.</p></div>'; $('#choices').innerHTML = ''; $('#hintBox').innerHTML = ''; $('#mStat').textContent = '수리 완료 · 새 미션을 시작할 수 있습니다'; };
+  updateMissionStat();
+}
+$('#btnJudge').onclick = () => {
+  if (!S.mission.active || S.mission.revealed) return;
+  const sel = document.querySelector('input[name=fc]:checked');
+  if (!sel) { $('#verdict').innerHTML = '<div class="verdict no"><p>원인을 하나 고르세요.</p></div>'; return; }
+  S.mission.tries++;
+  if (sel.value === S.fault) revealMission(true);
+  else {
+    const g = FBY[sel.value];
+    $('#verdict').innerHTML = `<div class="verdict no"><h4>아직 아닙니다</h4><p>‘${g.name}’이라면 <b>${g.symptom}</b></p><p>지금 보이는 증상과 비교해 보세요. 버튼을 다시 조작해 보는 것도 좋습니다.</p></div>`;
+    updateMissionStat();
+  }
+};
+$('#btnReveal').onclick = () => { if (S.mission.active && !S.mission.revealed) revealMission(false); };
+
+/* 평가 */
+const MC = [
+  { q: '2-타이머 플리커 회로에서 경고등이 "꺼져 있는 시간"을 정하는 것은?', o: ['T1 설정 시간', 'T2 설정 시간', 'T1 + T2', 'X 릴레이 동작 시간'], a: 0,
+    e: 'X가 동작하면 T1이 계시를 시작하고, 그 동안 T1 한시 a접점이 열려 있어 램프가 꺼져 있습니다. T1 시간이 차야 램프가 켜집니다.' },
+  { q: '경고등이 "켜져 있는 시간"을 정하는 것은?', o: ['T1 설정 시간', 'T2 설정 시간', '부저 정지 시간', 'SMPS 출력 전압'], a: 1,
+    e: 'T1 접점이 닫히면 램프가 켜지고 동시에 T2가 계시합니다. T2 시간이 차면 T2 b접점이 열려 T1이 리셋되고 램프가 꺼집니다.' },
+  { q: 'T1 코일 회로에 T2의 "한시 b접점"을 넣는 이유는?', o: ['T2가 시간이 차면 T1을 리셋해 사이클을 반복시키려고', 'T1 계시를 빠르게 하려고', '부저를 정지시키려고', '과전류를 막으려고'], a: 0,
+    e: 'T2 b접점이 열리면 T1이 복귀 → T1 접점이 열려 T2도 복귀 → T2 b접점이 다시 닫혀 T1이 재계시. 두 타이머가 서로를 리셋해 점멸이 반복됩니다.' },
+  { q: 'a접점(NO)에 대한 설명으로 옳은 것은?', o: ['평상시 열려 있고 코일이 여자되면 닫힌다', '평상시 닫혀 있고 코일이 여자되면 열린다', '항상 닫혀 있다', '타이머에만 있는 접점이다'], a: 0,
+    e: 'a접점 = Arbeit(동작) 접점 = NO(Normally Open). b접점 = Break 접점 = NC(Normally Closed).' },
+  { q: '경보 해제 버튼(PB0)을 b접점으로 쓰는 가장 큰 이유는?', o: ['누르면 회로를 끊어 자기유지를 풀고, 배선이 끊겨도 정지 쪽으로 동작하기 때문', 'b접점이 더 저렴해서', '누르면 X가 동작하도록 하려고', '부저 음량을 줄이려고'], a: 0,
+    e: '정지·해제 계열을 b접점으로 쓰면 단선 시에도 회로가 정지 측으로 동작하는 fail-safe 설계가 됩니다.' },
+  { q: 'PB1에 X의 a접점을 병렬로 연결한 회로를 무엇이라 하나요?', o: ['인터록 회로', '자기유지 회로', '플리커 회로', '한시 복귀 회로'], a: 1,
+    e: '버튼에서 손을 떼도 X 자신의 a접점으로 전류가 계속 흘러 동작을 유지합니다.' },
+  { q: '부저 정지 버튼을 누르면 램프는 계속 점멸하고 부저만 꺼지는 이유는?', o: ['Y가 동작해 부저 회로의 Y b접점만 열리기 때문', 'X가 복귀하기 때문', 'T1이 리셋되기 때문', '퓨즈가 끊어지기 때문'], a: 0,
+    e: 'Y b접점은 부저 회로(⑥)에만 있습니다. 램프 회로(④)는 Y와 관계없어 계속 점멸합니다.' },
+  { q: '경보 해제를 누르면 램프 점멸은 멈추는데 부저만 다시 울린다. 가장 의심되는 결선은?', o: ['부저 공급선이 X a접점을 거치지 않고 P 모선에 직결', 'T1 설정 시간이 너무 짧음', '경고등 단선', '선택 스위치가 램프만 위치'], a: 0,
+    e: '부저가 X와 무관하게 P에서 전원을 받으면 X가 복귀해도 부저가 멈추지 않습니다. Y도 X(a)를 거쳐야 여자되므로 대기 상태에서는 부저 정지도 듣지 않습니다.' },
+  { q: '전원 표시등이 꺼져 있고 아무 것도 동작하지 않을 때 진단 순서로 가장 알맞은 것은?', o: ['전원(ELB·SMPS·퓨즈·P–N 전압) → 입력 스위치 → 코일 → 접점 → 부하', '램프 교체 → 타이머 교체 → 전원 확인', '타이머 시간 변경 → 부저 교체', '부하부터 무작위로 교체'], a: 0,
+    e: '전원에서 부하 쪽으로, 신호가 흐르는 순서대로 측정하면 가장 빨리 원인을 좁힐 수 있습니다.' },
+  { q: 'ELB(누전차단기)와 퓨즈의 공통 역할은?', o: ['이상 전류가 흐를 때 회로를 끊어 설비와 사람을 보호한다', '점멸 주기를 만든다', '부저 음량을 조절한다', '전압을 높인다'], a: 0,
+    e: 'ELB는 누설전류·과전류, 퓨즈는 단락·과전류 시 회로를 차단합니다.' },
+];
+const OPS = [
+  { t: '짧게 꺼지고 길게 켜지는 점멸 만들기', d: 'T1(소등)=0.5 s, T2(점등)=1.5 s로 설정하고 경보를 발생시키세요.',
+    check: () => { const m = []; if (S.fault) m.push('고장이 없는 정상 회로에서 하세요.'); if (Math.abs(S.tm.T1.set - 0.5) > 0.05) m.push('T1을 0.5 s로'); if (Math.abs(S.tm.T2.set - 1.5) > 0.05) m.push('T2를 1.5 s로'); if (!S.relay.X) m.push('경보 발생(PB1)'); else if (recentToggles(4.5) < 2) m.push('램프가 점멸 중이어야 합니다'); return m; } },
+  { t: '부저만 끄기 (경보 확인)', d: '경보 중에 부저만 정지시켜 램프는 계속 점멸하게 하세요.',
+    check: () => { const m = []; if (S.fault) m.push('정상 회로에서 하세요.'); if (!S.relay.X) m.push('먼저 경보를 발생시키세요'); if (!S.relay.Y) m.push('부저 정지(PB2)로 Y를 동작시키세요'); if (bzOn()) m.push('부저가 아직 울립니다'); if (recentToggles(S.tm.T1.set + S.tm.T2.set + 1) < 1) m.push('램프가 계속 점멸해야 합니다'); return m; } },
+  { t: '모드 A: 램프만 경보', d: '선택 스위치를 "램프만"으로 두고 경보를 발생시켜, 부저 없이 램프만 점멸하게 하세요.',
+    check: () => { const m = []; if (S.fault) m.push('정상 회로에서 하세요.'); if (S.ss !== 'L') m.push('모드를 A(램프만)로'); if (!S.relay.X) m.push('경보 발생'); if (S.pow.BZ) m.push('부저가 울리고 있습니다'); if (recentToggles(S.tm.T1.set + S.tm.T2.set + 1) < 1) m.push('램프 점멸이 보여야 합니다'); return m; } },
+  { t: '경보 완전 해제 (모드 D)', d: '경보를 발생시킨 뒤 해제해 X·Y·T1·T2가 모두 복귀한 대기 상태로 되돌리세요. 전원은 켠 채로 둡니다.',
+    check: () => { const m = []; if (S.fault) m.push('정상 회로에서 하세요.'); if (!powerOK()) m.push('전원은 ON이어야 합니다'); if (S.t - S.lastXOn > 60) m.push('최근 1분 안에 경보를 발생시킨 뒤 해제하세요'); if (S.relay.X || S.relay.Y || S.tm.T1.coil || S.tm.T2.coil) m.push('아직 동작 중인 릴레이/타이머가 있습니다'); return m; } },
+];
+const quiz = { mc: MC.map(() => null), op: OPS.map(() => false) };
+function renderQuiz() {
+  $('#quizMC').innerHTML = MC.map((q, i) => `<div class="q" id="q${i}"><div class="qt">${i + 1}. ${q.q}</div><div class="opts">${q.o.map((o, j) => `<button data-q="${i}" data-o="${j}">${'①②③④'[j]} ${o}</button>`).join('')}</div><div class="ex"></div></div>`).join('');
+  $$('#quizMC button').forEach(b => b.addEventListener('click', () => {
+    const i = +b.dataset.q, j = +b.dataset.o; if (quiz.mc[i] !== null) return;
+    quiz.mc[i] = j === MC[i].a;
+    const box = $('#q' + i); box.classList.add('done');
+    box.querySelectorAll('button').forEach((x, k) => { if (k === MC[i].a) x.classList.add('right'); else if (k === j) x.classList.add('wrong'); });
+    box.querySelector('.ex').innerHTML = `<b>${quiz.mc[i] ? '정답' : '오답'}</b> — ${MC[i].e}`;
+    updateScore();
+  }));
+  $('#quizOp').innerHTML = OPS.map((o, i) => `<div class="task" id="op${i}"><div class="tt">${i + 1}. ${o.t}</div>${o.d}<div class="row" style="margin-top:6px"><button class="btn sm primary" data-op="${i}">확인</button></div><div class="res"></div></div>`).join('');
+  $$('#quizOp [data-op]').forEach(b => b.addEventListener('click', () => {
+    const i = +b.dataset.op, m = OPS[i].check(), el = $('#op' + i);
+    if (!m.length) { quiz.op[i] = true; el.classList.add('pass'); el.querySelector('.res').innerHTML = '<b style="color:#15803d">통과!</b> 회로 상태가 조건을 만족합니다.'; }
+    else el.querySelector('.res').innerHTML = '<b style="color:#b45309">아직</b> — ' + m.join(' · ');
+    updateScore();
+  }));
+}
+function updateScore() { const s = quiz.mc.filter(Boolean).length + quiz.op.filter(Boolean).length; $('#score').textContent = `${s} / ${MC.length + OPS.length}`; }
+renderQuiz();
+
+/* 상태 표시 갱신 */
+const chips = { pwr: $('#c-pwr'), x: $('#c-x'), t1: $('#c-t1'), t2: $('#c-t2'), l: $('#c-l'), y: $('#c-y'), bz: $('#c-bz'), ss: $('#c-ss') };
+const prevUI = {};
+const setOnce = (k, v, fn) => { if (prevUI[k] !== v) { prevUI[k] = v; fn(v); } };
+function updateUI() {
+  const ok = powerOK();
+  setOnce('pwr', ok, v => { chips.pwr.classList.toggle('on', v); $('#c-pwr-v').textContent = v ? '24V' : '0V'; });
+  setOnce('x', S.relay.X, v => chips.x.classList.toggle('on', v));
+  setOnce('t1', S.tm.T1.coil, v => chips.t1.classList.toggle('on', v));
+  setOnce('t2', S.tm.T2.coil, v => chips.t2.classList.toggle('on', v));
+  setOnce('t1v', f1(accOf(S.tm.T1)) + (S.tm.T1.out ? '✓' : ''), v => $('#c-t1-v').textContent = v);
+  setOnce('t2v', f1(accOf(S.tm.T2)) + (S.tm.T2.out ? '✓' : ''), v => $('#c-t2-v').textContent = v);
+  setOnce('l', lampLit(), v => chips.l.classList.toggle('on', v));
+  setOnce('y', S.relay.Y, v => chips.y.classList.toggle('on', v));
+  setOnce('bz', bzOn(), v => chips.bz.classList.toggle('on', v));
+  setOnce('ss', S.ss, v => { $('#c-ss-v').textContent = { LB: 'C 램프+부저', L: 'A 램프만', B: 'B 부저만' }[v]; $$('#ssSeg button').forEach(b => b.classList.toggle('on', b.dataset.ss === v)); });
+  setOnce('power', S.power, v => { $('#swPower').classList.toggle('on', v); $('#swPowerTxt').textContent = v ? 'ELB 투입 (ON)' : 'ELB 차단 (OFF)'; $('#qPwr').classList.toggle('on', v); $('#qPwr').textContent = v ? '전원 ON' : '전원 OFF'; });
+  for (const d of ['PB0', 'PB1', 'PB2']) setOnce('pb' + d, S.pb[d], v => $$(`[data-hold="${d}"]`).forEach(el => el.classList.toggle('down', v)));
+  setOnce('t1s', S.tm.T1.set, v => { $('#t1o').textContent = f1(v) + ' s'; });
+  setOnce('t2s', S.tm.T2.set, v => { $('#t2o').textContent = f1(v) + ' s'; });
+  setOnce('form', S.tm.T1.set + S.tm.T2.set, v => { $('#formula').textContent = `점멸 주기 = T1 + T2 = ${f1(S.tm.T1.set)} + ${f1(S.tm.T2.set)} = ${f1(v)} s  (분당 ${Math.round(60 / v)}회)`; });
+  // 측정값
+  const fresh = recentToggles((S.tm.T1.set + S.tm.T2.set) * 2 + 0.5) >= 2;
+  setOnce('mOn', fresh && E.on != null ? E.on.toFixed(2) + ' s' : '—', v => $('#mOn').textContent = v);
+  setOnce('mOff', fresh && E.off != null ? E.off.toFixed(2) + ' s' : '—', v => $('#mOff').textContent = v);
+  setOnce('mRate', fresh && E.on && E.off ? Math.round(60 / (E.on + E.off)) + ' 회' : '—', v => $('#mRate').textContent = v);
+  setOnce('seq', seqText(), v => $('#seq').innerHTML = v);
+  for (const k of PART_ORDER) setOnce('dot' + k, !!PARTS[k].on(), v => pdots[k].classList.toggle('on', v));
+  if (selected) { const el = $('#pstate'); if (el) setOnce('pstate', '현재 상태: ' + PARTS[selected].state(), v => el.textContent = v); }
+}
+function seqText() {
+  if (!S.power) return '<b>전원 차단</b> — ELB를 투입하세요.';
+  if (!powerOK()) return '<b>P 모선 0 V</b> — 전원은 들어왔지만 제어회로에 전압이 없습니다.';
+  const a = S.tm.T1, b = S.tm.T2;
+  let s;
+  if (!S.relay.X) s = '<b>대기</b> — 경보 발생(PB1)을 누르면 X가 여자되고 자기유지합니다.';
+  else if (a.coil && !a.out) s = `<b>① T1 계시 ${f1(a.acc)}/${f1(a.set)} s</b> — T1 한시 a접점 열림 → 램프 <b>소등</b> 구간`;
+  else if (a.out && b.coil) s = `<b>② T2 계시 ${f1(b.acc)}/${f1(b.set)} s</b> — T1 a접점 닫힘 → 램프 <b>점등</b>, 시간이 차면 T2 b접점이 T1을 리셋`;
+  else s = '<b>X 동작 중</b> — 타이머가 동작하지 않습니다. 회로를 점검하세요.';
+  const bz = bzOn() ? ' · 부저 <b>울림</b>' : S.relay.Y ? ' · Y 자기유지로 부저 <b>정지</b>' : S.ss === 'L' ? ' · 모드 A: 부저 없음' : '';
+  return s + bz;
+}
+
+/* =========================================================
+   7. 메인 루프
+   ========================================================= */
+let three = null, lastT = performance.now(), chartT = 0;
+function frame() {
+  const now = performance.now(); let dt = Math.min((now - lastT) / 1000, 0.25); lastT = now;
+  simulate(dt);
+  Snd.update(bzOn(), now / 1000);
+  updateLadder(); updateUI();
+  chartT += dt; if (chartT > 1 / 30) { chartT = 0; drawChart(); }
+}
+let rafOn = true;
+(function raf() { if (!rafOn) return; frame(); requestAnimationFrame(raf); })();
+
+solve();
+setTab('control');
+
+/* =========================================================
+   8. 3D 실습실 (Three.js · OrbitControls · WebXR)
+   ========================================================= */
+async function init3D(host) {
+  const [THREE, { OrbitControls }, { VRButton }] = await Promise.all([
+    import('three'), import('three/addons/controls/OrbitControls.js'), import('three/addons/webxr/VRButton.js')]);
+  try { await Promise.race([document.fonts.load('700 20px "IBM Plex Sans KR"'), new Promise(r => setTimeout(r, 1500))]); } catch (_) {}
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0;
+  renderer.xr.enabled = true;
+  host.prepend(renderer.domElement);
+  const canvas = renderer.domElement;
+
+  const scene = new THREE.Scene(); scene.background = new THREE.Color(0xdde2e0);
+  const camera = new THREE.PerspectiveCamera(40, 1, 0.02, 60);
+  const rig = new THREE.Group(); scene.add(rig); rig.add(camera);
+  const HOME = { tgt: new THREE.Vector3(0.1, 1.47, -0.15), dir: new THREE.Vector3(0.04, 0.1, 1).normalize(), dist: 2.1 };
+  const controls = new OrbitControls(camera, canvas);
+  controls.enableDamping = true; controls.dampingFactor = 0.08; controls.minDistance = 0.25; controls.maxDistance = 4.2;
+  controls.maxPolarAngle = Math.PI * 0.62;
+
+  scene.add(new THREE.HemisphereLight(0xffffff, 0xc4bdb0, 1.7));
+  const keyL = new THREE.DirectionalLight(0xffffff, 1.5); keyL.position.set(1.4, 3.6, 3.2); scene.add(keyL);
+  const fillL = new THREE.DirectionalLight(0xe6eeff, 0.55); fillL.position.set(-3, 2, 2); scene.add(fillL);
+
+  const M = (c, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: o.r ?? 0.6, metalness: o.m ?? 0, ...(o.x || {}) });
+  const box = (w, h, d, mat, x = 0, y = 0, z = 0, parent) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); parent && parent.add(m); return m; };
+  const cyl = (rt, rb, h, mat, seg = 28) => new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), mat);
+  const FONT = '"IBM Plex Sans KR","Noto Sans KR",sans-serif';
+  function canvasTex(w, h, draw) { const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'); draw && draw(g, w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return { tex: t, c, g }; }
+  function label(lines, w, h, o = {}) {
+    const W = 512, H = Math.max(40, Math.round(512 * h / w));
+    const { tex } = canvasTex(W, H, (g) => {
+      g.fillStyle = o.bg || '#f3f3ee'; g.fillRect(0, 0, W, H);
+      if (o.border) { g.strokeStyle = o.border; g.lineWidth = 10; g.strokeRect(5, 5, W - 10, H - 10); }
+      g.fillStyle = o.fg || '#1b2229'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      let fs = o.fs || Math.floor(H / (lines.length + 0.5));
+      const fit = () => { g.font = `${o.weight || 700} ${fs}px ${FONT}`; return Math.max(...lines.map(s => g.measureText(s).width)); };
+      while (fit() > W * 0.9 && fs > 8) fs -= 2;
+      lines.forEach((s, i) => g.fillText(s, W / 2, H / 2 + (i - (lines.length - 1) / 2) * fs * 1.12));
+    });
+    return new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
+  }
+  const parts = {}, pickables = [];
+  const reg = (k, o) => { o.userData.part = k; parts[k] = o; pickables.push(o); return o; };
+
+  /* --- 실습실 --- */
+  const { tex: floorT } = canvasTex(256, 256, (g, W) => { g.fillStyle = '#d4d7cf'; g.fillRect(0, 0, W, W); g.strokeStyle = '#bfc3ba'; g.lineWidth = 3; g.strokeRect(0, 0, W, W); g.fillStyle = 'rgba(0,0,0,.03)'; for (let i = 0; i < 60; i++) g.fillRect(Math.random() * W, Math.random() * W, 3, 3); });
+  floorT.wrapS = floorT.wrapT = THREE.RepeatWrapping; floorT.repeat.set(12, 12);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), new THREE.MeshStandardMaterial({ map: floorT, roughness: 0.85 })); floor.rotation.x = -Math.PI / 2; scene.add(floor);
+  const wallM = M(0xedefea, { r: 0.95 });
+  const back = new THREE.Mesh(new THREE.PlaneGeometry(14, 4.5), wallM); back.position.set(0, 2.25, -0.32); scene.add(back);
+  const wains = new THREE.Mesh(new THREE.PlaneGeometry(14, 0.9), M(0xc5cfcc, { r: 0.9 })); wains.position.set(0, 0.45, -0.318); scene.add(wains);
+  const lw = new THREE.Mesh(new THREE.PlaneGeometry(8, 4.5), wallM); lw.rotation.y = Math.PI / 2; lw.position.set(-3.4, 2.25, 3); scene.add(lw);
+  const rw = lw.clone(); rw.rotation.y = -Math.PI / 2; rw.position.x = 3.4; scene.add(rw);
+  const { tex: stripeT } = canvasTex(256, 32, (g) => { for (let i = -2; i < 20; i++) { g.fillStyle = i % 2 ? '#1b2229' : '#f5b700'; g.beginPath(); g.moveTo(i * 16, 32); g.lineTo(i * 16 + 16, 32); g.lineTo(i * 16 + 32, 0); g.lineTo(i * 16 + 16, 0); g.fill(); } });
+  const stripe = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.08), new THREE.MeshStandardMaterial({ map: stripeT, roughness: 0.8 })); stripe.rotation.x = -Math.PI / 2; stripe.position.set(0.1, 0.003, 0.55); scene.add(stripe);
+  const sign = label(['교육용 경보 제어반  ·  DC 24V', '플리커(타이머 2개) · 부저 경보 회로'], 1.0, 0.15, { bg: '#1b2229', fg: '#f5f5f0' }); sign.position.set(0.1, 2.05, -0.315); scene.add(sign);
+  // 작업대
+  const bench = new THREE.Group(); bench.position.set(-1.75, 0, 0.25); scene.add(bench);
+  box(1.3, 0.05, 0.7, M(0xb98d5f, { r: 0.7 }), 0, 0.86, 0, bench);
+  for (const [x, z] of [[-0.6, -0.3], [0.6, -0.3], [-0.6, 0.3], [0.6, 0.3]]) box(0.04, 0.84, 0.04, M(0x4b5563, { m: 0.5, r: 0.4 }), x, 0.42, z, bench);
+  const meterH = box(0.09, 0.16, 0.035, M(0xf5b700), 0.25, 0.9, 0.05, bench); meterH.rotation.x = -1.35;
+  box(0.06, 0.04, 0.005, M(0x1f2937), 0.25, 0.895, 0.02, bench).rotation.x = -1.35;
+  box(0.4, 0.14, 0.2, M(0xc0392b, { r: 0.5, m: 0.3 }), -0.3, 0.955, -0.1, bench);
+
+  /* --- 제어반 (패널 로컬 좌표, 판넬 앞면 z=0) --- */
+  const PG = new THREE.Group(); PG.position.set(-0.12, 1.38, -0.22); scene.add(PG);
+  const encM = M(0xd3d4cc, { r: 0.55 });
+  box(1.16, 1.0, 0.02, encM, 0, 0, -0.01, PG);
+  box(0.03, 1.03, 0.24, encM, -0.595, 0, 0.11, PG); box(0.03, 1.03, 0.24, encM, 0.595, 0, 0.11, PG);
+  box(1.22, 0.03, 0.24, encM, 0, 0.515, 0.11, PG); box(1.22, 0.03, 0.24, encM, 0, -0.515, 0.11, PG);
+  box(1.1, 0.95, 0.008, M(0xe3e6e8, { r: 0.45, m: 0.25 }), 0, 0, 0.004, PG);
+  const railM = M(0xb3b9be, { m: 0.8, r: 0.35 });
+  for (const y of [0.3, 0, -0.3]) box(0.98, 0.035, 0.008, railM, 0, y, 0.012, PG);
+  const { tex: ductT } = canvasTex(256, 32, (g) => { g.fillStyle = '#9aa1a7'; g.fillRect(0, 0, 256, 32); g.fillStyle = '#7d858c'; for (let x = 4; x < 256; x += 12) g.fillRect(x, 0, 5, 22); });
+  ductT.wrapS = THREE.RepeatWrapping; ductT.repeat.set(5, 1);
+  const ductM = new THREE.MeshStandardMaterial({ map: ductT, roughness: 0.7 });
+  for (const y of [0.15, -0.15]) box(0.98, 0.055, 0.05, ductM, 0, y, 0.03, PG);
+  box(0.05, 0.25, 0.05, M(0x9aa1a7), -0.52, 0, 0.03, PG); box(0.05, 0.25, 0.05, M(0x9aa1a7), 0.52, 0, 0.03, PG);
+  const glandM = M(0x5b6672, { r: 0.4 });
+  for (const y of [-0.145, -0.235]) { const g = cyl(0.028, 0.028, 0.04, glandM); g.rotation.z = Math.PI / 2; g.position.set(0.595, y, 0.068); PG.add(g); }
+  const panelTag = label(['제어반 CP-1'], 0.16, 0.035, { bg: '#1b2229', fg: '#fff' }); panelTag.position.set(0.42, 0.44, 0.012); PG.add(panelTag);
+
+  // ELB
+  const elb = new THREE.Group(); elb.position.set(-0.4, 0.3, 0); PG.add(elb); reg('elb', elb);
+  box(0.075, 0.13, 0.075, M(0xf1f1ec, { r: 0.5 }), 0, 0, 0.0535, elb);
+  const elbFace = label(['ELB', '30mA'], 0.05, 0.03, { bg: '#f1f1ec' }); elbFace.position.set(0, -0.035, 0.0915); elb.add(elbFace);
+  const elbTest = cyl(0.007, 0.007, 0.006, M(0xf5b700)); elbTest.rotation.x = Math.PI / 2; elbTest.position.set(0.022, 0.045, 0.093); elb.add(elbTest);
+  const elbHandle = box(0.022, 0.03, 0.03, M(0x1d4ed8, { r: 0.4 }), 0, 0.018, 0.1, elb);
+  // SMPS
+  const smps = new THREE.Group(); smps.position.set(-0.18, 0.3, 0); PG.add(smps); reg('smps', smps);
+  const { tex: ventT } = canvasTex(256, 160, (g, W, H) => { g.fillStyle = '#c4cacf'; g.fillRect(0, 0, W, H); g.fillStyle = '#8f979e'; for (let y = 12; y < 80; y += 12) for (let x = 14; x < W - 10; x += 14) g.fillRect(x, y, 8, 5); g.fillStyle = '#1b2229'; g.font = `700 22px ${FONT}`; g.fillText('SMPS  DC 24V 2.5A', 14, 112); g.font = `500 16px ${FONT}`; g.fillText('INPUT AC 220V  ·  OUTPUT +V  −V', 14, 140); });
+  box(0.2, 0.135, 0.1, [M(0xc4cacf, { m: 0.6, r: 0.4 }), M(0xc4cacf, { m: 0.6, r: 0.4 }), M(0xc4cacf, { m: 0.6, r: 0.4 }), M(0xc4cacf, { m: 0.6, r: 0.4 }), new THREE.MeshStandardMaterial({ map: ventT, metalness: 0.4, roughness: 0.5 }), M(0xc4cacf)], 0, 0, 0.066, smps);
+  const smpsLed = new THREE.Mesh(new THREE.SphereGeometry(0.005, 12, 8), M(0x14532d, { x: { emissive: 0x22c55e, emissiveIntensity: 0 } })); smpsLed.position.set(0.085, 0.05, 0.117); smps.add(smpsLed);
+  // 퓨즈
+  const fuse = new THREE.Group(); fuse.position.set(0.0, 0.3, 0); PG.add(fuse); reg('fuse', fuse);
+  box(0.034, 0.115, 0.072, M(0x48525c, { r: 0.5 }), 0, 0, 0.052, fuse);
+  const fcap = cyl(0.012, 0.012, 0.02, M(0x1f2328)); fcap.rotation.x = Math.PI / 2; fcap.position.set(0, 0.02, 0.095); fuse.add(fcap);
+  const fuseLed = new THREE.Mesh(new THREE.SphereGeometry(0.0055, 12, 8), M(0x450a0a, { x: { emissive: 0xef4444, emissiveIntensity: 0 } })); fuseLed.position.set(0, -0.035, 0.089); fuse.add(fuseLed);
+  const fTag = label(['F 2A'], 0.03, 0.012); fTag.position.set(0, 0.048, 0.0885); fuse.add(fTag);
+  // 전압계
+  const meter = new THREE.Group(); meter.position.set(0.22, 0.3, 0); PG.add(meter); reg('meter', meter);
+  box(0.1, 0.07, 0.06, M(0x1b2229), 0, 0, 0.046, meter);
+  const mScr = canvasTex(256, 140); const meterScreen = new THREE.Mesh(new THREE.PlaneGeometry(0.088, 0.048), new THREE.MeshBasicMaterial({ map: mScr.tex, toneMapped: false })); meterScreen.position.set(0, 0, 0.0765); meter.add(meterScreen);
+  let meterKey = '';
+  function drawMeter(v) { const k = v.toFixed(1); if (k === meterKey) return; meterKey = k; const g = mScr.g; g.fillStyle = '#071209'; g.fillRect(0, 0, 256, 140); g.fillStyle = v > 1 ? '#4ade80' : '#14532d'; g.font = `600 78px ${'"IBM Plex Mono",monospace'}`; g.textAlign = 'right'; g.textBaseline = 'middle'; g.fillText(k, 200, 66); g.font = `700 22px ${FONT}`; g.fillStyle = '#86efac'; g.fillText('V', 236, 80); g.textAlign = 'left'; g.font = `600 18px ${FONT}`; g.fillText('DC  P–N', 12, 124); mScr.tex.needsUpdate = true; }
+  const mTag = label(['전압계 P–N'], 0.08, 0.016); mTag.position.set(0, -0.05, 0.012); meter.add(mTag);
+
+  // 릴레이 X, Y
+  function makeRelay(k, x, name) {
+    const g = new THREE.Group(); g.position.set(x, 0, 0); PG.add(g); reg(k, g);
+    box(0.07, 0.1, 0.03, M(0x30353a), 0, 0, 0.031, g);
+    const cover = box(0.052, 0.076, 0.056, new THREE.MeshStandardMaterial({ color: 0xd6e8ff, transparent: true, opacity: 0.38, roughness: 0.1, depthWrite: false }), 0, 0.004, 0.074, g);
+    const coilM = cyl(0.012, 0.012, 0.032, M(0xb45309, { m: 0.6, r: 0.35 })); coilM.position.set(-0.008, 0.0, 0.07); g.add(coilM);
+    const arm = box(0.03, 0.004, 0.03, M(0x9ca3af, { m: 0.8, r: 0.3 }), 0.006, 0.026, 0.07, g);
+    const led = new THREE.Mesh(new THREE.SphereGeometry(0.0045, 12, 8), M(0x450a0a, { x: { emissive: 0xef4444, emissiveIntensity: 0 } })); led.position.set(0.016, 0.03, 0.103); g.add(led);
+    const tag = label([name], 0.034, 0.016, { bg: '#fff' }); tag.position.set(0, -0.04, 0.0465); g.add(tag);
+    return { g, arm, led, cover };
+  }
+  const RX = makeRelay('x', -0.4, 'X'), RY = makeRelay('y', -0.3, 'Y');
+  // 타이머 T1, T2
+  function makeTimer(k, x, name, mode) {
+    const g = new THREE.Group(); g.position.set(x, 0, 0); PG.add(g); reg(k, g);
+    box(0.062, 0.104, 0.075, M(0x1f2328, { r: 0.45 }), 0, 0, 0.0535, g);
+    const face = canvasTex(160, 270);
+    const fm = new THREE.Mesh(new THREE.PlaneGeometry(0.056, 0.0945), new THREE.MeshBasicMaterial({ map: face.tex, toneMapped: false })); fm.position.set(0, 0, 0.0915); g.add(fm);
+    return { g, face, name, mode, key: '' };
+  }
+  const TM = { T1: makeTimer('t1', -0.14, 'T1', '소등 시간'), T2: makeTimer('t2', -0.02, 'T2', '점등 시간') };
+  function drawTimer(T, st) {
+    const key = `${+st.coil}${+st.out}${accOf(st).toFixed(2)}${st.set}`; if (key === T.key) return; T.key = key;
+    const g = T.face.g, W = 160, H = 270;
+    g.fillStyle = '#16191d'; g.fillRect(0, 0, W, H);
+    g.fillStyle = '#e5e7eb'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.font = `700 30px ${FONT}`; g.fillText(T.name, W / 2, 26);
+    g.font = `600 17px ${FONT}`; g.fillStyle = '#9ca3af'; g.fillText(T.mode + ' · ON딜레이', W / 2, 52);
+    const cx = W / 2, cy = 122, R = 42, a0 = Math.PI * 0.75, span = Math.PI * 1.5, A = v => a0 + Math.min(v / 3, 1) * span;
+    g.lineWidth = 9; g.strokeStyle = '#2e343b'; g.beginPath(); g.arc(cx, cy, R, a0, a0 + span); g.stroke();
+    if (st.coil) { g.strokeStyle = st.out ? '#ef4444' : '#f59e0b'; g.beginPath(); g.arc(cx, cy, R, a0, A(Math.min(st.acc, st.set))); g.stroke(); }
+    g.strokeStyle = '#6b7280'; g.lineWidth = 2;
+    for (let s = 0; s <= 3; s += 0.5) { const a = A(s); g.beginPath(); g.moveTo(cx + Math.cos(a) * (R + 7), cy + Math.sin(a) * (R + 7)); g.lineTo(cx + Math.cos(a) * (R + 13), cy + Math.sin(a) * (R + 13)); g.stroke(); }
+    g.fillStyle = '#d1d5db'; g.beginPath(); g.arc(cx, cy, 22, 0, Math.PI * 2); g.fill();
+    const as = A(st.set); g.strokeStyle = '#111827'; g.lineWidth = 5; g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(as) * 20, cy + Math.sin(as) * 20); g.stroke();
+    g.fillStyle = '#9ca3af'; g.font = `600 14px ${FONT}`; g.fillText('0', cx + Math.cos(a0) * (R + 22), cy + Math.sin(a0) * (R + 22)); g.fillText('3s', cx + Math.cos(a0 + span) * (R + 22), cy + Math.sin(a0 + span) * (R + 22));
+    g.fillStyle = '#000'; g.fillRect(14, 186, W - 28, 36);
+    g.fillStyle = st.coil ? '#fbbf24' : '#57534e'; g.font = `600 22px "IBM Plex Mono",monospace`; g.fillText(`${accOf(st).toFixed(1)}/${st.set.toFixed(1)}s`, W / 2, 205);
+    const led = (x, on, col, t) => { g.fillStyle = on ? col : '#3f3f46'; g.beginPath(); g.arc(x, 244, 8, 0, Math.PI * 2); g.fill(); if (on) { g.shadowColor = col; g.shadowBlur = 10; g.fill(); g.shadowBlur = 0; } g.fillStyle = '#9ca3af'; g.font = `600 13px ${FONT}`; g.fillText(t, x, 262); };
+    led(48, st.coil, '#22c55e', 'PWR'); led(112, st.out, '#ef4444', 'UP');
+    T.face.tex.needsUpdate = true;
+  }
+  // 단자대
+  const tb = new THREE.Group(); tb.position.set(0, -0.3, 0); PG.add(tb); reg('tb', tb);
+  for (let i = 0; i < 18; i++) {
+    const blue = i >= 15; const x = -0.42 + i * 0.024;
+    box(0.022, 0.062, 0.05, M(blue ? 0x2563eb : 0x9aa0a6, { r: 0.55 }), x, 0, 0.041, tb);
+    const sc = cyl(0.005, 0.005, 0.004, M(0xd4d4d8, { m: 0.9, r: 0.3 })); sc.rotation.x = Math.PI / 2; sc.position.set(x, 0.018, 0.067); tb.add(sc);
+    const sc2 = sc.clone(); sc2.position.y = -0.018; tb.add(sc2);
+  }
+  const tbTag = label(['TB  1 ─ 15 : P · 신호     16 ─ 18 : N (0V)'], 0.44, 0.018, { bg: '#fff' }); tbTag.position.set(-0.216, -0.047, 0.012); tb.add(tbTag);
+
+  /* --- 조작반 + 경광등 + 부저 --- */
+  const SG = new THREE.Group(); SG.position.set(0.72, 1.3, -0.14); scene.add(SG);
+  box(0.32, 0.62, 0.16, M(0xd3d4cc, { r: 0.55 }), 0, 0, 0, SG);
+  box(0.08, 0.08, 0.1, M(0x6b7280, { m: 0.5 }), 0, 0, -0.12, SG);
+  const sTitle = label(['경보 조작반 OP-1'], 0.27, 0.04, { bg: '#1b2229', fg: '#fff' }); sTitle.position.set(0, 0.255, 0.081); SG.add(sTitle);
+  const bezelM = M(0xc8ccd0, { m: 0.85, r: 0.25 });
+  function pushButton(k, x, y, color, lines) {
+    const g = new THREE.Group(); g.position.set(x, y, 0.08); SG.add(g); reg(k, g);
+    const bz = cyl(0.03, 0.03, 0.012, bezelM); bz.rotation.x = Math.PI / 2; bz.position.z = 0.006; g.add(bz);
+    const cap = cyl(0.022, 0.022, 0.024, M(color, { r: 0.35 })); cap.rotation.x = Math.PI / 2; cap.position.z = 0.018; g.add(cap);
+    const lb = label(lines, 0.11, 0.032); lb.position.set(0, -0.052, 0.001); g.add(lb);
+    return { g, cap, base: 0.018 };
+  }
+  const BTN = {
+    pb1: pushButton('pb1', -0.07, 0.15, 0xfacc15, ['경보 발생', 'PB1 (a)']),
+    pb2: pushButton('pb2', -0.07, 0.02, 0x2563eb, ['부저 정지', 'PB2 (a)']),
+    pb0: pushButton('pb0', -0.07, -0.11, 0xdc2626, ['경보 해제', 'PB0 (b)']),
+  };
+  // 전원표시등
+  const pl = new THREE.Group(); pl.position.set(0.07, 0.15, 0.08); SG.add(pl); reg('pl', pl);
+  { const bz = cyl(0.03, 0.03, 0.012, bezelM); bz.rotation.x = Math.PI / 2; bz.position.z = 0.006; pl.add(bz); }
+  const plLens = new THREE.Mesh(new THREE.SphereGeometry(0.022, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), M(0x14532d, { r: 0.2, x: { emissive: 0x22c55e, emissiveIntensity: 0 } })); plLens.rotation.x = Math.PI / 2; plLens.position.z = 0.012; pl.add(plLens);
+  { const lb = label(['전원 PL'], 0.11, 0.032); lb.position.set(0, -0.052, 0.001); pl.add(lb); }
+  // 선택 스위치
+  const ss = new THREE.Group(); ss.position.set(0.07, 0.0, 0.08); SG.add(ss); reg('ss', ss);
+  { const bz = cyl(0.03, 0.03, 0.012, bezelM); bz.rotation.x = Math.PI / 2; bz.position.z = 0.006; ss.add(bz); const body = cyl(0.023, 0.023, 0.014, M(0x1b2229)); body.rotation.x = Math.PI / 2; body.position.z = 0.016; ss.add(body); }
+  const ssKnob = new THREE.Group(); ssKnob.position.z = 0.026; ss.add(ssKnob);
+  box(0.012, 0.044, 0.016, M(0x2b2f34, { r: 0.4 }), 0, 0, 0, ssKnob); box(0.004, 0.016, 0.002, M(0xffffff), 0, 0.013, 0.009, ssKnob);
+  for (const [t, a] of [['C', 0], ['A', 0.785], ['B', -0.785]]) { const l = label([t], 0.016, 0.016, { bg: '#d3d4cc' }); l.position.set(-Math.sin(a) * 0.043, Math.cos(a) * 0.043, 0.001); ss.add(l); }
+  { const lb = label(['모드 SS', 'C 램프+부저 · A 램프 · B 부저'], 0.13, 0.034); lb.position.set(0, -0.062, 0.001); ss.add(lb); }
+  const hintL = label(['버튼은 꾹 누르세요'], 0.13, 0.02, { bg: '#d3d4cc', fg: '#5b6672', weight: 500 }); hintL.position.set(0.07, -0.18, 0.081); SG.add(hintL);
+
+  // 경광등
+  const lamp = new THREE.Group(); lamp.position.set(-0.07, 0.31, 0); SG.add(lamp); reg('lamp', lamp);
+  { const b = cyl(0.032, 0.036, 0.03, M(0x2b2f34)); b.position.y = 0.015; lamp.add(b); const p = cyl(0.012, 0.012, 0.06, M(0x6b7280, { m: 0.6 })); p.position.y = 0.06; lamp.add(p); }
+  const lensM = new THREE.MeshStandardMaterial({ color: 0xb91c1c, transparent: true, opacity: 0.78, roughness: 0.15, emissive: 0xff1a1a, emissiveIntensity: 0.05 });
+  const lens = cyl(0.042, 0.042, 0.13, lensM, 32); lens.position.y = 0.155; lamp.add(lens);
+  const coreM = new THREE.MeshStandardMaterial({ color: 0x7f1d1d, emissive: 0xff2a1a, emissiveIntensity: 0 });
+  const core = cyl(0.018, 0.018, 0.11, coreM); core.position.y = 0.155; lamp.add(core);
+  { const c = cyl(0.045, 0.045, 0.016, M(0x2b2f34)); c.position.y = 0.228; lamp.add(c); }
+  const { tex: glowT } = canvasTex(128, 128, (g) => { const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, 'rgba(255,80,60,1)'); gr.addColorStop(0.35, 'rgba(255,40,30,.45)'); gr.addColorStop(1, 'rgba(255,0,0,0)'); g.fillStyle = gr; g.fillRect(0, 0, 128, 128); });
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowT, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0 })); glow.scale.set(0.42, 0.42, 1); glow.position.y = 0.155; lamp.add(glow);
+  const lampLight = new THREE.PointLight(0xff2a1a, 0, 2.2, 2); lampLight.position.set(0, 0.16, 0.05); lamp.add(lampLight);
+  const lTag = label(['경고등 L'], 0.08, 0.018, { bg: '#1b2229', fg: '#fff' }); lTag.position.set(0, 0.015, 0.0365); lamp.add(lTag);
+  // 부저
+  const bzG = new THREE.Group(); bzG.position.set(0.08, 0.31, 0); SG.add(bzG); reg('bz', bzG);
+  const bzBody = new THREE.Group(); bzG.add(bzBody);
+  { const b = cyl(0.042, 0.048, 0.045, M(0x1f2328, { r: 0.5 })); b.position.y = 0.0225; bzBody.add(b); const t = cyl(0.03, 0.03, 0.004, M(0x3f464d)); t.position.y = 0.047; bzBody.add(t); for (let r = 0.008; r < 0.03; r += 0.007) { const ring = new THREE.Mesh(new THREE.TorusGeometry(r, 0.0012, 6, 32), M(0x111418)); ring.rotation.x = Math.PI / 2; ring.position.y = 0.0495; bzBody.add(ring); } }
+  const bzTag = label(['부저 BZ'], 0.07, 0.016, { bg: '#1b2229', fg: '#fff' }); bzTag.position.set(0, 0.02, 0.0485); bzG.add(bzTag);
+  const waves = [0, 1, 2].map(() => { const m = new THREE.Mesh(new THREE.TorusGeometry(0.04, 0.0025, 8, 40), new THREE.MeshBasicMaterial({ color: 0xfb923c, transparent: true, opacity: 0 })); m.rotation.x = Math.PI / 2; m.position.y = 0.06; bzG.add(m); return m; });
+
+  /* --- 상태 표시 패널 (HMI) --- */
+  const hmi = new THREE.Group(); hmi.position.set(-1.02, 1.5, -0.29); scene.add(hmi); reg('hmi', hmi);
+  box(0.6, 0.4, 0.03, M(0x1b2229, { r: 0.4 }), 0, 0, 0.015, hmi);
+  const hScr = canvasTex(600, 380); const hMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.56, 0.355), new THREE.MeshBasicMaterial({ map: hScr.tex, toneMapped: false })); hMesh.position.z = 0.031; hmi.add(hMesh);
+  let hmiKey = '';
+  function drawHMI() {
+    const ok = powerOK(), a = S.tm.T1, b = S.tm.T2;
+    const k = [ok, S.relay.X, S.relay.Y, a.coil, a.out, accOf(a).toFixed(1), b.coil, b.out, accOf(b).toFixed(1), lampLit(), bzOn(), S.ss, S.mission.active && !S.mission.revealed].join();
+    if (k === hmiKey) return; hmiKey = k;
+    const g = hScr.g, W = 600, H = 380;
+    g.fillStyle = '#0d1418'; g.fillRect(0, 0, W, H);
+    g.fillStyle = '#1e293b'; g.fillRect(0, 0, W, 46);
+    g.fillStyle = '#e2e8f0'; g.font = `700 24px ${FONT}`; g.textBaseline = 'middle'; g.textAlign = 'left'; g.fillText('경보 회로 상태 모니터', 18, 24);
+    g.textAlign = 'right'; g.font = `600 18px ${FONT}`; g.fillStyle = ok ? '#4ade80' : '#f87171'; g.fillText(ok ? 'P–N 24.0 V' : 'P–N 0.0 V', W - 18, 24);
+    const rows = [
+      ['경보 릴레이 X', S.relay.X, '#f59e0b', S.relay.X ? '동작 (자기유지)' : '복귀'],
+      ['타이머 T1 (소등)', a.coil, '#f59e0b', `${accOf(a).toFixed(1)} / ${a.set.toFixed(1)} s ${a.out ? '· UP' : ''}`],
+      ['타이머 T2 (점등)', b.coil, '#f59e0b', `${accOf(b).toFixed(1)} / ${b.set.toFixed(1)} s ${b.out ? '· UP' : ''}`],
+      ['경고등 L', lampLit(), '#ef4444', lampLit() ? '점등' : '소등'],
+      ['부저 정지 릴레이 Y', S.relay.Y, '#818cf8', S.relay.Y ? '동작' : '복귀'],
+      ['부저 BZ', bzOn(), '#fb923c', bzOn() ? '울림' : '정지'],
+    ];
+    rows.forEach((r, i) => {
+      const y = 78 + i * 40;
+      g.fillStyle = r[1] ? r[2] : '#334155'; g.beginPath(); g.arc(32, y, 11, 0, Math.PI * 2); g.fill();
+      g.textAlign = 'left'; g.fillStyle = '#cbd5e1'; g.font = `600 20px ${FONT}`; g.fillText(r[0], 54, y);
+      g.textAlign = 'right'; g.fillStyle = r[1] ? '#fff' : '#64748b'; g.font = `600 19px ${FONT}`; g.fillText(r[3], W - 20, y);
+    });
+    g.textAlign = 'left'; g.fillStyle = '#94a3b8'; g.font = `600 17px ${FONT}`;
+    g.fillText('모드: ' + ({ LB: 'C 램프+부저', L: 'A 램프만', B: 'B 부저만' })[S.ss], 20, H - 22);
+    if (S.mission.active && !S.mission.revealed) { g.textAlign = 'right'; g.fillStyle = '#fbbf24'; g.fillText('⚠ 고장 진단 미션', W - 20, H - 22); }
+    hScr.tex.needsUpdate = true;
+  }
+
+  /* --- 배선 (전류 흐름 시각화) --- */
+  scene.updateMatrixWorld(true);
+  const pp = (x, y, z) => PG.localToWorld(new THREE.Vector3(x, y, z));
+  const sp = (x, y, z) => SG.localToWorld(new THREE.Vector3(x, y, z));
+  const zw = 0.068;
+  const WIRES = [
+    { live: () => S.power, col: 0x2b2f34, pts: [pp(-0.4, 0.235, 0.05), pp(-0.4, 0.172, zw), pp(-0.26, 0.172, zw), pp(-0.26, 0.232, 0.05)] },
+    { live: () => S.power, col: 0x6b2a2a, pts: [pp(-0.12, 0.232, 0.05), pp(-0.12, 0.162, zw), pp(0.0, 0.162, zw), pp(0.0, 0.243, 0.05)] },
+    { live: powerOK, col: 0x6b2a2a, pts: [pp(0.0, 0.357, 0.05), pp(0.0, 0.41, zw), pp(0.49, 0.41, zw), pp(0.49, -0.205, zw), pp(-0.42, -0.205, zw), pp(-0.42, -0.268, 0.05)] },
+    { live: powerOK, col: 0x2b3a67, nl: true, pts: [pp(-0.22, 0.232, 0.05), pp(-0.22, 0.142, zw), pp(-0.5, 0.142, zw), pp(-0.5, -0.222, zw), pp(-0.06, -0.222, zw), pp(-0.06, -0.268, 0.05)] },
+    { live: powerOK, col: 0x6b2a2a, pts: [pp(-0.396, -0.268, 0.05), pp(-0.396, -0.236, zw), pp(0.6, -0.236, zw), sp(-0.16, -0.2, 0.0)] },
+    { live: () => S.rp.r1, col: 0x55524c, pts: [sp(-0.16, -0.1, 0.0), pp(0.6, -0.125, zw), pp(-0.4, -0.125, zw), pp(-0.4, -0.052, 0.045)] },
+    { live: () => S.rp.r2, col: 0x55524c, pts: [pp(-0.39, 0.052, 0.045), pp(-0.39, 0.122, zw), pp(-0.14, 0.122, zw), pp(-0.14, 0.054, 0.05)] },
+    { live: () => S.rp.r3, col: 0x55524c, pts: [pp(-0.128, 0.054, 0.05), pp(-0.128, 0.132, zw), pp(-0.02, 0.132, zw), pp(-0.02, 0.054, 0.05)] },
+    { live: () => S.rp.r4, col: 0x55524c, pts: [pp(-0.14, -0.054, 0.05), pp(-0.14, -0.14, zw), pp(0.6, -0.14, zw), sp(-0.16, 0.05, 0.0), sp(-0.16, 0.29, 0.0), sp(-0.07, 0.315, 0.0)] },
+    { live: () => S.rp.r5, col: 0x55524c, pts: [sp(-0.16, -0.04, 0.0), pp(0.6, -0.155, zw), pp(-0.3, -0.155, zw), pp(-0.3, -0.052, 0.045)] },
+    { live: () => S.rp.r6, col: 0x55524c, pts: [pp(-0.288, -0.052, 0.045), pp(-0.288, -0.168, zw + 0.004), pp(0.6, -0.168, zw), sp(-0.16, 0.12, 0.0), sp(-0.15, 0.3, 0.02), sp(0.08, 0.315, 0.0)] },
+  ];
+  const wireGroup = new THREE.Group(); scene.add(wireGroup);
+  const dotGeo = new THREE.SphereGeometry(0.0055, 8, 6);
+  for (const w of WIRES) {
+    const path = new THREE.CurvePath();
+    for (let i = 0; i < w.pts.length - 1; i++) path.add(new THREE.LineCurve3(w.pts[i], w.pts[i + 1]));
+    w.path = path;
+    w.mat = new THREE.MeshStandardMaterial({ color: w.col, roughness: 0.55, emissive: w.nl ? 0x3b82f6 : 0xff5a1a, emissiveIntensity: 0 });
+    w.lv = null;
+    const m = new THREE.Mesh(new THREE.TubeGeometry(path, w.pts.length * 12, 0.0032, 6, false), w.mat); wireGroup.add(m);
+    const len = path.getLength(); const n = Math.max(2, Math.round(len / 0.12));
+    w.dots = Array.from({ length: n }, (_, i) => { const d = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: w.nl ? 0x93c5fd : 0xffd27a })); d.userData.off = i / n; d.visible = false; wireGroup.add(d); return d; });
+    w.len = len;
+  }
+
+  /* --- 선택/고장 표시 --- */
+  let selBox = null, faultBox = null;
+  function select(k) {
+    if (selBox) { scene.remove(selBox); selBox = null; }
+    if (k && parts[k]) { selBox = new THREE.BoxHelper(parts[k], 0xff7a00); scene.add(selBox); }
+  }
+  function setFaultBox(k) {
+    if (faultBox && faultBox.userData.k === k) return;
+    if (faultBox) { scene.remove(faultBox); faultBox = null; }
+    if (k && parts[k]) { faultBox = new THREE.BoxHelper(parts[k], 0xff0000); faultBox.userData.k = k; scene.add(faultBox); }
+  }
+
+  /* --- 카메라 --- */
+  let anim = null;
+  function fitDist() {
+    const vf = THREE.MathUtils.degToRad(camera.fov), hf = 2 * Math.atan(Math.tan(vf / 2) * camera.aspect);
+    return Math.max(0.7 / Math.tan(vf / 2), 0.92 / Math.tan(hf / 2)) + 0.1;
+  }
+  function goTo(tgt, pos) { anim = { k: 0, ft: controls.target.clone(), fp: camera.position.clone(), tt: tgt, tp: pos }; }
+  function home(instant) {
+    const pos = HOME.tgt.clone().addScaledVector(HOME.dir, fitDist());
+    if (instant) { controls.target.copy(HOME.tgt); camera.position.copy(pos); controls.update(); } else goTo(HOME.tgt.clone(), pos);
+  }
+  function focus(k) {
+    const o = parts[k]; if (!o) return;
+    const b = new THREE.Box3().setFromObject(o), c = b.getCenter(new THREE.Vector3()), s = b.getSize(new THREE.Vector3()).length();
+    const dir = camera.position.clone().sub(controls.target).normalize(); dir.z = Math.max(dir.z, 0.75); dir.normalize();
+    goTo(c, c.clone().addScaledVector(dir, Math.max(0.32, s * 2.4)));
+  }
+
+  /* --- 포인터 조작 --- */
+  const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+  const INTERACT = { pb0: 'PB0', pb1: 'PB1', pb2: 'PB2', ss: 1, elb: 1 };
+  const partOf = hits => { for (const h of hits) { let o = h.object; while (o && !o.userData.part) o = o.parent; if (o) return o.userData.part; } return null; };
+  function pickAt(x, y) { const r = canvas.getBoundingClientRect(); ndc.set(((x - r.left) / r.width) * 2 - 1, -((y - r.top) / r.height) * 2 + 1); ray.setFromCamera(ndc, camera); return partOf(ray.intersectObjects(pickables, true)); }
+  function doPress(k) { if (k === 'ss') cycleSS(); else if (k === 'elb') setPower(!S.power); else if (INTERACT[k]) press(INTERACT[k]); }
+  function doRelease(k) { if (/^pb/.test(k)) release(INTERACT[k]); }
+  let down = null, holding = null;
+  canvas.addEventListener('pointerdown', e => {
+    if (!e.isPrimary) { if (holding) { doRelease(holding); holding = null; controls.enabled = true; } return; }
+    const k = pickAt(e.clientX, e.clientY);
+    down = { x: e.clientX, y: e.clientY, k };
+    if (k && INTERACT[k]) { controls.enabled = false; holding = k; doPress(k); }
+  });
+  const endPointer = e => {
+    if (holding) { doRelease(holding); holding = null; controls.enabled = true; }
+    if (down && e && e.type === 'pointerup' && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 7 && down.k) selectPart(down.k, { float: !INTERACT[down.k] });
+    down = null;
+  };
+  addEventListener('pointerup', endPointer); addEventListener('pointercancel', endPointer);
+  canvas.addEventListener('pointermove', e => { if (e.pointerType !== 'mouse' || e.buttons) return; const k = pickAt(e.clientX, e.clientY); canvas.style.cursor = k ? 'pointer' : 'grab'; });
+
+  /* --- WebXR (VR) --- */
+  const ctrls = [];
+  if (navigator.xr && navigator.xr.isSessionSupported) {
+    navigator.xr.isSessionSupported('immersive-vr').then(ok => {
+      if (!ok) return;
+      const b = VRButton.createButton(renderer);
+      Object.assign(b.style, { position: 'static', left: '', bottom: '', width: 'auto', padding: '6px 10px', font: '600 12px sans-serif', borderRadius: '7px', background: 'rgba(27,34,41,.8)', border: '0', opacity: '1' });
+      $('#vrSlot').appendChild(b);
+    }).catch(() => {});
+    const tmpM = new THREE.Matrix4();
+    for (let i = 0; i < 2; i++) {
+      const c = renderer.xr.getController(i);
+      const lg = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -1)]);
+      const line = new THREE.Line(lg, new THREE.LineBasicMaterial({ color: 0xffa94d })); line.scale.z = 2; c.add(line);
+      c.addEventListener('selectstart', () => {
+        tmpM.identity().extractRotation(c.matrixWorld);
+        ray.ray.origin.setFromMatrixPosition(c.matrixWorld); ray.ray.direction.set(0, 0, -1).applyMatrix4(tmpM);
+        const k = partOf(ray.intersectObjects(pickables, true));
+        if (k) { c.userData.k = k; if (INTERACT[k]) doPress(k); selectPart(k); }
+      });
+      c.addEventListener('selectend', () => { if (c.userData.k) doRelease(c.userData.k); c.userData.k = null; });
+      rig.add(c); ctrls.push(c);
+    }
+    let saved = null;
+    renderer.xr.addEventListener('sessionstart', () => { saved = camera.position.clone(); rig.position.set(0.15, 0, 0.95); controls.enabled = false; });
+    renderer.xr.addEventListener('sessionend', () => { rig.position.set(0, 0, 0); if (saved) camera.position.copy(saved); camera.rotation.set(0, 0, 0); controls.enabled = true; controls.update(); });
+  }
+
+  /* --- 리사이즈 --- */
+  let first = true;
+  const ro = new ResizeObserver(() => {
+    const w = host.clientWidth, h = host.clientHeight; if (!w || !h) return;
+    renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+    if (first) { first = false; home(true); }
+  });
+  ro.observe(host);
+
+  /* --- 프레임 갱신 --- */
+  const clock = new THREE.Clock();
+  const lerp = (a, b, k) => a + (b - a) * k;
+  function update(dt, t) {
+    const ok = powerOK(), lit = lampLit(), bz = bzOn();
+    // 경광등
+    coreM.emissiveIntensity = lit ? 4 : 0; lensM.emissiveIntensity = lit ? 1.6 : 0.04;
+    glow.material.opacity = lit ? 0.95 : 0; lampLight.intensity = lit ? 2.2 : 0;
+    // 부저
+    waves.forEach((m, i) => { if (bz) { const ph = (t * 1.6 + i / 3) % 1; m.scale.setScalar(1 + ph * 2.2); m.material.opacity = (1 - ph) * 0.85; m.position.y = 0.06 + ph * 0.03; } else m.material.opacity = 0; });
+    bzBody.position.x = bz ? Math.sin(t * 160) * 0.0008 : 0;
+    // 릴레이
+    for (const [R, on] of [[RX, S.relay.X], [RY, S.relay.Y]]) { R.led.material.emissiveIntensity = on ? 3 : 0; R.arm.position.y = lerp(R.arm.position.y, on ? 0.018 : 0.026, Math.min(1, dt * 30)); }
+    drawTimer(TM.T1, S.tm.T1); drawTimer(TM.T2, S.tm.T2);
+    // 전원 계통
+    smpsLed.material.emissiveIntensity = S.power ? 3 : 0;
+    fuseLed.material.emissiveIntensity = (S.fault === 'fuse' && S.power) ? 3 : 0;
+    elbHandle.position.y = lerp(elbHandle.position.y, S.power ? 0.02 : -0.016, Math.min(1, dt * 20));
+    elbHandle.material.color.setHex(S.power ? 0xdc2626 : 0x1d4ed8);
+    plLens.material.emissiveIntensity = S.pow.PL ? 2.2 : 0;
+    drawMeter(ok ? 24 : 0);
+    // 조작 버튼
+    for (const [k, b] of Object.entries(BTN)) b.cap.position.z = lerp(b.cap.position.z, S.pb[INTERACT[k]] ? b.base - 0.009 : b.base, Math.min(1, dt * 30));
+    ssKnob.rotation.z = lerp(ssKnob.rotation.z, { LB: 0, L: 0.785, B: -0.785 }[S.ss], Math.min(1, dt * 18));
+    // 배선
+    wireGroup.visible = S.opt.wires;
+    if (S.opt.wires) for (const w of WIRES) {
+      const live = !!w.live();
+      if (live !== w.lv) { w.lv = live; w.mat.color.setHex(live ? (w.nl ? 0x2563eb : 0xff4d1a) : w.col); }
+      w.mat.emissiveIntensity = live ? 0.55 + 0.25 * Math.sin(t * 6) : 0;
+      const showDots = live && S.opt.flow;
+      for (const d of w.dots) { d.visible = showDots; if (showDots) { const u = (d.userData.off + t * 0.22 / w.len * 1.5) % 1; d.position.copy(w.path.getPointAt(u)); } }
+    }
+    drawHMI();
+    // 고장 위치 표시
+    const fk = (S.fault && !(S.mission.active && !S.mission.revealed)) ? FBY[S.fault].part : null;
+    setFaultBox(fk);
+    if (faultBox) faultBox.material.opacity = 0.5 + 0.5 * Math.sin(t * 6), faultBox.material.transparent = true;
+    if (selBox) selBox.update();
+    // 카메라 애니메이션
+    if (anim) { anim.k = Math.min(1, anim.k + dt / 0.6); const e = 1 - Math.pow(1 - anim.k, 3); controls.target.lerpVectors(anim.ft, anim.tt, e); camera.position.lerpVectors(anim.fp, anim.tp, e); if (anim.k >= 1) anim = null; }
+  }
+
+  rafOn = false; // 메인 루프를 렌더 루프로 이관 (VR에서도 동작)
+  renderer.setAnimationLoop(() => {
+    const dt = Math.min(clock.getDelta(), 0.1);
+    frame();
+    update(dt, clock.elapsedTime);
+    if (!renderer.xr.isPresenting) controls.update();
+    renderer.render(scene, camera);
+  });
+  return { select, focus, home: () => home(false) };
+}
+
+init3D($('#viewport')).then(api => { three = api; $('#loading3d').remove(); })
+  .catch(err => { console.error(err); $('#loading3d').innerHTML = '3D 화면을 불러오지 못했습니다.<br>회로도·제어·고장 진단·평가는 그대로 사용할 수 있습니다.'; });
+</script>
+</body>
+</html>
